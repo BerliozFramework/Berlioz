@@ -1,0 +1,271 @@
+<?php
+/**
+ * This file is part of Berlioz framework.
+ *
+ * @license   https://opensource.org/licenses/MIT MIT License
+ * @copyright 2017 Ronan GIRON
+ * @author    Ronan GIRON <https://github.com/ElGigi>
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code, to the root.
+ */
+
+namespace Berlioz\Core;
+
+
+use Berlioz\Core\App\Profile;
+use Berlioz\Core\App\ServiceContainer;
+use Berlioz\Core\Exception\BerliozException;
+use Berlioz\Core\Exception\RuntimeException;
+use Psr\Http\Message\ResponseInterface;
+
+/**
+ * App class manage global application with controllers
+ *
+ * This class manage controllers and routes.
+ * All controllers of the application with routes must be included
+ * in this class to work fine.
+ *
+ * @package Berlioz
+ */
+class App
+{
+    /** Key name used in system cache to store routing information */
+    const CACHE_KEY_ROUTING = '_BERLIOZ_ROUTE_SET';
+    /** Key name used in system cache to store debug profiles */
+    const CACHE_KEY_DEBUG = '_BERLIOZ_DEBUG';
+    /** @var \Berlioz\Core\ConfigInterface Configuration */
+    private $config;
+    /** @var \Berlioz\Core\App\ServiceContainer Service container */
+    private $services;
+    /** @var \Berlioz\Core\App\Profile Profile */
+    private $profile;
+
+    /**
+     * App constructor.
+     *
+     * @param \Berlioz\Core\ConfigInterface $config Configuration of application
+     */
+    public function __construct(ConfigInterface $config)
+    {
+        $this->setConfig($config);
+    }
+
+    /**
+     * App destructor.
+     */
+    public function __destruct()
+    {
+    }
+
+    /**
+     * __sleep() PHP magic method.
+     *
+     * @throws \Berlioz\Core\Exception\BerliozException
+     */
+    public function __sleep()
+    {
+        throw new BerliozException(sprintf('"%s" can not be serialized', get_class()));
+    }
+
+    /**
+     * __wakeup() PHP magic method.
+     *
+     * @throws \Berlioz\Core\Exception\BerliozException
+     */
+    public function __wakeup()
+    {
+        throw new BerliozException(sprintf('"%s" can not be serialized', get_class()));
+    }
+
+    /**
+     * Get configuration.
+     *
+     * @return \Berlioz\Core\ConfigInterface
+     * @throws \Berlioz\Core\Exception\BerliozException if no configuration initialized
+     */
+    public function getConfig(): ConfigInterface
+    {
+        if (is_null($this->config)) {
+            throw new BerliozException('No configuration initialized');
+        }
+
+        return $this->config;
+    }
+
+    /**
+     * Set configuration.
+     *
+     * @param \Berlioz\Core\ConfigInterface $config
+     */
+    public function setConfig(ConfigInterface $config)
+    {
+        $this->config = $config;
+    }
+
+    /**
+     * Get service container.
+     *
+     * @return \Berlioz\Core\App\ServiceContainer
+     */
+    public function getServices(): ServiceContainer
+    {
+        if (is_null($this->services)) {
+            $this->services = new ServiceContainer();
+            $this->services->setApp($this);
+        }
+
+        return $this->services;
+    }
+
+    /**
+     * Set service container.
+     *
+     * @param \Berlioz\Core\App\ServiceContainer $services
+     */
+    public function setServices(ServiceContainer $services)
+    {
+        $this->services = $services;
+    }
+
+    /**
+     * Get service.
+     *
+     * @param string $name Name of service
+     *
+     * @return mixed
+     */
+    public function getService(string $name)
+    {
+        return $this->getServices()->get($name);
+    }
+
+    /**
+     * Has service ?
+     *
+     * @param string $name Name of service
+     *
+     * @return bool
+     */
+    public function hasService(string $name)
+    {
+        return $this->getServices()->has($name);
+    }
+
+    /**
+     * Get profile.
+     *
+     * @return \Berlioz\Core\App\Profile
+     */
+    public function getProfile(): Profile
+    {
+        if (is_null($this->profile)) {
+            $this->profile = new Profile($this);
+        }
+
+        return $this->profile;
+    }
+
+    /**
+     * Add extension.
+     *
+     * @param \Berlioz\Core\ExtensionInterface $extension
+     *
+     * @throws \Berlioz\Core\Exception\RuntimeException If unable to load extension
+     */
+    public function addExtension(ExtensionInterface $extension)
+    {
+        try {
+            if (!$extension->isInitialized()) {
+                $extension->init($this);
+            }
+        } catch (\Exception $e) {
+            throw new RuntimeException(sprintf('Unable to load extension "%s"', get_class($extension)));
+        }
+    }
+
+    /**
+     * Register routes and routing exceptions.
+     *
+     * Controllers and functions should be declared in this method for the good work of cache system.
+     */
+    protected function register()
+    {
+    }
+
+    /**
+     * Handle.
+     */
+    public function handle()
+    {
+        // Log
+        $this->getService('logging')->debug(sprintf('%s / Initialization', __METHOD__));
+
+        // Event
+        $this->getService('events')->trigger('_berlioz.core.app.handle.before', $this);
+
+        // Get router
+        /** @var \Berlioz\Core\Services\Routing\RouterInterface $router */
+        $router = $this->getService('routing');
+
+        // Get route set from cache
+        if ($this->hasService('caching') && $this->getService('caching')->has(self::CACHE_KEY_ROUTING)) {
+            /** @var \Berlioz\Core\Services\Routing\RouteSetInterface $routeSet */
+            $routeSet = $this->getService('caching')->get(self::CACHE_KEY_ROUTING);
+
+            // Define route set from cache
+            $router->setRouteSet($routeSet);
+
+            // Log
+            $this->getService('logging')->debug(sprintf('%s / Router gotten from cache', __METHOD__));
+        } else {
+            // Register routes ans exceptions
+            $this->register();
+
+            // Log
+            $this->getService('logging')->debug(sprintf('%s / Routes and exceptions declared', __METHOD__));
+
+            if ($this->hasService('caching')) {
+                $this->getService('caching')->set(self::CACHE_KEY_ROUTING, $router->getRouteSet());
+
+                // Log
+                $this->getService('logging')->debug(sprintf('%s / Router saved in cache', __METHOD__));
+            }
+        }
+
+        // Handle router
+        $response = $router->handle();
+
+        // Debug
+        $this->getService('logging')->debug(sprintf('%s / Done', __METHOD__));
+
+        if ($response instanceof ResponseInterface) {
+            // Headers
+            if (!headers_sent()) {
+                // Remove headers and add main header
+                header_remove();
+                header('HTTP/' . $response->getProtocolVersion() . ' ' . $response->getStatusCode() . ' ' . $response->getReasonPhrase(), false);
+
+                // Headers
+                foreach ($response->getHeaders() as $name => $values) {
+                    $replace = true;
+                    foreach ($values as $value) {
+                        header(sprintf('%s: %s', $name, $value), $replace);
+                        $replace = false;
+                    }
+                }
+            }
+
+            // Content
+            print $response->getBody();
+        } else {
+            print $response;
+        }
+
+        // Log
+        $this->getService('logging')->debug(sprintf('%s / Response printed', __METHOD__));
+
+        // Event
+        $this->getService('events')->trigger('_berlioz.core.app.handle.after', $this);
+    }
+}
