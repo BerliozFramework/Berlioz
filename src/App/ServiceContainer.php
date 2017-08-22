@@ -78,7 +78,7 @@ class ServiceContainer implements ContainerInterface, AppAwareInterface
     {
         if (!$this->initialized) {
             if ($this->hasApp()) {
-                $services = $this->getApp()->getConfig()->get('services');
+                $services = $this->getApp()->getConfig()->get('app.services');
 
                 if (!empty($services) && is_array($services)) {
                     // Parse services in configuration
