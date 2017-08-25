@@ -123,7 +123,7 @@ class Route implements RouteInterface
                            Router::HTTP_METHOD_TRACE,
                            Router::HTTP_METHOD_PUT,
                            Router::HTTP_METHOD_DELETE];
-        $methods = explode(',', mb_strtoupper($this->route_options['method']) ?? '');
+        $methods = explode(',', mb_strtoupper($this->route_options['method'] ?? ''));
         $methods = array_intersect($methods, $defaultMethods);
 
         if (empty($methods)) {
