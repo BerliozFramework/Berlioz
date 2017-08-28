@@ -608,6 +608,31 @@ function b_hazard_string(int $length = 12, bool $withNumber = true, bool $onlyLo
 }
 
 /**
+ * Valid email format.
+ *
+ * @param string $email
+ *
+ * @return bool
+ */
+function b_valid_email(string $email): bool
+{
+    $test = strtr($email, ' ', '#');
+    $test = trim(strtr($test,
+                       'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789.@_-',
+                       '                                                                  '));
+
+    if (strlen($test) > 0) {
+        return false;
+    } else {
+        if (preg_match("#^[A-z0-9][\w.-]*@[A-z0-9][\w\-\.]+\.[A-z0-9]{2,6}$#", $email)) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+}
+
+/**
  * Extract account part of email
  *
  * @param string $email
