@@ -42,6 +42,7 @@ class DefaultEngine implements TemplateInterface
         }
         if ($this->getApp()->getConfig()->hasDebugEnabled()) {
             $this->getTwig()->enableDebug();
+            $this->getTwig()->addExtension(new \Twig_Extension_Debug());
         }
     }
 
