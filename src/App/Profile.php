@@ -14,6 +14,7 @@ namespace Berlioz\Core\App;
 
 
 use Berlioz\Core\App;
+use Berlioz\Core\Services\Routing\RouteInterface;
 
 class Profile
 {
@@ -81,7 +82,7 @@ class Profile
     /**
      * Get current route.
      *
-     * @return mixed
+     * @return \Berlioz\Core\Services\Routing\RouteInterface
      */
     public function getRoute()
     {
@@ -91,9 +92,9 @@ class Profile
     /**
      * Set current route.
      *
-     * @param mixed $route
+     * @param \Berlioz\Core\Services\Routing\RouteInterface $route
      */
-    public function setRoute($route)
+    public function setRoute(RouteInterface $route)
     {
         $this->route = $route;
     }
