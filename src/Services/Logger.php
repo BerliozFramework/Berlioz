@@ -120,16 +120,18 @@ class Logger extends AbstractLogger implements LoggerInterface
         $fileName = $this->getApp()->getConfig()->getDirectory(ConfigInterface::DIR_VAR_LOGS) . '/Berlioz.log';
 
         if (is_resource($this->fp) || is_resource($this->fp = @fopen($fileName, 'a'))) {
-            foreach ($this->getLogs() as &$log) {
-                if (!$log['written']) {
-                    $line = sprintf("%-26s %-11s %s\n",
-                                    \DateTime::createFromFormat('U.u', number_format($log['time'], 6, '.', ''))
-                                             ->format('Y-m-d H:i:s.u'),
-                                    '[' . $log['level'] . ']',
-                                    $log['message']);
+            if (count($this->logs) > 0) {
+                foreach ($this->logs as $key => $log) {
+                    if (!$log['written']) {
+                        $line = sprintf("%-26s %-11s %s\n",
+                                        \DateTime::createFromFormat('U.u', number_format($log['time'], 6, '.', ''))
+                                                 ->format('Y-m-d H:i:s.u'),
+                                        '[' . $log['level'] . ']',
+                                        $log['message']);
 
-                    if (@fwrite($this->fp, $line) !== false) {
-                        $log['written'] = true;
+                        if (@fwrite($this->fp, $line) !== false) {
+                            $this->logs[$key]['written'] = true;
+                        }
                     }
                 }
             }
