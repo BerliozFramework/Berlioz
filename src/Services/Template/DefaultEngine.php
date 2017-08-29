@@ -16,6 +16,7 @@ namespace Berlioz\Core\Services\Template;
 use Berlioz\Core\App;
 use Berlioz\Core\App\AppAwareTrait;
 use Berlioz\Core\ConfigInterface;
+use Berlioz\Core\Exception\InvalidArgumentException;
 
 class DefaultEngine implements TemplateInterface
 {
@@ -29,8 +30,11 @@ class DefaultEngine implements TemplateInterface
      * DefaultEngine constructor
      *
      * @param \Berlioz\Core\App $app
+     * @param string[]          $extensions Extensions
+     *
+     * @throws \Berlioz\Core\Exception\InvalidArgumentException if extension does'nt exists
      */
-    public function __construct(App $app)
+    public function __construct(App $app, array $extensions = [])
     {
         $this->setApp($app);
 
@@ -43,6 +47,15 @@ class DefaultEngine implements TemplateInterface
         if ($this->getApp()->getConfig()->hasDebugEnabled()) {
             $this->getTwig()->enableDebug();
             $this->getTwig()->addExtension(new \Twig_Extension_Debug());
+        }
+
+        // Extensions
+        foreach ($extensions as $extension) {
+            if (is_string($extension) && class_exists($extension)) {
+                $this->getTwig()->addExtension(new $extension);
+            } else {
+                throw new InvalidArgumentException(sprintf('Extension "%s" does\'nt exists', $extension));
+            }
         }
     }
 

@@ -21,9 +21,10 @@ interface TemplateInterface extends AppAwareInterface
     /**
      * TemplateInterface constructor
      *
-     * @param \Berlioz\Core\App $app Application
+     * @param \Berlioz\Core\App $app        Application
+     * @param array             $extensions Extensions
      */
-    public function __construct(App $app);
+    public function __construct(App $app, array $extensions = []);
 
     /**
      * Register a new path for template engine
