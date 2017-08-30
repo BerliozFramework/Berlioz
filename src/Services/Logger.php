@@ -52,6 +52,30 @@ class Logger extends AbstractLogger implements LoggerInterface
     }
 
     /**
+     * __set_state() magic method.
+     *
+     * @param array $an_array Properties array.
+     *
+     * @return array
+     */
+    public static function __set_state($an_array)
+    {
+        return ['fp'   => $an_array['fp'],
+                'logs' => sprintf('*** NOT DISPLAYED, LOT OF LINES (%d) ***', count($an_array['logs']))];
+    }
+
+    /**
+     * __debugInfo() magic method.
+     *
+     * @return array
+     */
+    public function __debugInfo()
+    {
+        return ['fp'   => $this->fp,
+                'logs' => sprintf('*** NOT DISPLAYED, LOT OF LINES (%d) ***', count($this->logs))];
+    }
+
+    /**
      * @inheritdoc
      */
     public function count(): int
