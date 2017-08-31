@@ -289,7 +289,7 @@ class Router implements RouterInterface
 
                     // Set current route
                     $this->current_route = $route->withParametersValues(array_merge($parameters, $_GET));
-                    $this->getApp()->getProfile()->setRoute($route);
+                    $this->getApp()->getProfile()->setRoute($this->current_route);
 
                     // Create controller
                     $invoke = $this->current_route->getInvoke();
