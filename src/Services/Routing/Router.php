@@ -260,9 +260,19 @@ class Router implements RouterInterface
             stream_copy_to_stream(fopen('php://input', 'r'), $stream);
             rewind($stream);
 
+            // Request URI
+            $requestUri = new Uri($_SERVER['REQUEST_SCHEME'] ?? '',
+                                  $_SERVER['HTTP_HOST'] ?? '',
+                                  $_SERVER['SERVER_PORT'] ?? '',
+                                  $this->getHttpPath(),
+                                  $this->getHttpQueryString(),
+                                  '',
+                                  $_SERVER['PHP_AUTH_USER'] ?? '',
+                                  $_SERVER['PHP_AUTH_PW'] ?? '');
+
             // Request
             $this->server_request = new ServerRequest($this->getHttpMethod(),
-                                                      $requestUri = Uri::createFromString($this->getHttpPath() . ($this->getHttpQueryString() ? '?' . $this->getHttpQueryString() : '')),
+                                                      $requestUri,
                                                       $this->getHttpHeaders(),
                                                       $_COOKIE,
                                                       $_SERVER,
@@ -329,6 +339,8 @@ class Router implements RouterInterface
             } catch (RoutingException $e) {
                 throw $e;
             } catch (\Exception $e) {
+                throw new RoutingException(Router::HTTP_STATUS_INTERNAL_SERVER_ERROR, null, $e);
+            } catch (\Error $e) {
                 throw new RoutingException(Router::HTTP_STATUS_INTERNAL_SERVER_ERROR, null, $e);
             }
         } catch (RoutingException $e) {
