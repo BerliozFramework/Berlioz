@@ -49,27 +49,6 @@ class OptionList
     }
 
     /**
-     * __get() magic method.
-     *
-     * @param string $name Option name
-     *
-     * @return mixed
-     * @deprecated Use get(string $name) method instead
-     */
-    public function __get($name)
-    {
-        if (isset(self::$globalOptions[$name])) {
-            return self::$globalOptions[$name];
-        } else {
-            if (isset($this->options[$name])) {
-                return $this->options[$name];
-            } else {
-                return null;
-            }
-        }
-    }
-
-    /**
      * __toString() magic method.
      *
      * @return string
@@ -86,7 +65,7 @@ class OptionList
      *
      * @return mixed
      */
-    public function get($name)
+    public function get(string $name): mixed
     {
         if (isset(self::$globalOptions[$name])) {
             return self::$globalOptions[$name];
@@ -149,6 +128,55 @@ class OptionList
                 return array_key_exists($name, $this->options);
             }
         }
+    }
+
+    /**
+     * Get global option value.
+     *
+     * @param string $name Option name
+     *
+     * @return mixed
+     */
+    public static function getGlobal(string $name)
+    {
+        if (isset(self::$globalOptions[$name])) {
+            return self::$globalOptions[$name];
+        } else {
+            return null;
+        }
+    }
+
+    /**
+     * Set global option.
+     *
+     * @param string $name  Option name
+     * @param mixed  $value Option value
+     */
+    public static function setGlobal(string $name, $value)
+    {
+        self::$globalOptions[$name] = $value;
+    }
+
+    /**
+     * Unset global option.
+     *
+     * @param string $name
+     */
+    public static function unsetGlobal(string $name)
+    {
+        unset(self::$globalOptions[$name]);
+    }
+
+    /**
+     * Know if global option exists.
+     *
+     * @param string $name Option name
+     *
+     * @return bool
+     */
+    public static function issetGlobal(string $name)
+    {
+        return array_key_exists($name, self::$globalOptions);
     }
 
     /**
