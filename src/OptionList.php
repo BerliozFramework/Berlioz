@@ -65,7 +65,7 @@ class OptionList
      *
      * @return mixed
      */
-    public function get(string $name): mixed
+    public function get(string $name)
     {
         if (isset(self::$globalOptions[$name])) {
             return self::$globalOptions[$name];
