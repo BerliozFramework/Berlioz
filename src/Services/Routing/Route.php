@@ -123,7 +123,11 @@ class Route implements RouteInterface
                            Router::HTTP_METHOD_TRACE,
                            Router::HTTP_METHOD_PUT,
                            Router::HTTP_METHOD_DELETE];
-        $methods = explode(',', mb_strtoupper($this->route_options['method'] ?? ''));
+        if (isset($this->route_options['method']) && is_string($this->route_options['method'])) {
+            $methods = explode(',', mb_strtoupper($this->route_options['method'] ?? ''));
+        } else {
+            $methods = [];
+        }
         $methods = array_intersect($methods, $defaultMethods);
 
         if (empty($methods)) {
@@ -417,7 +421,7 @@ EOD;
 
         $matches = [];
         if (preg_match($this->getRouteRegex(), $path, $matches) == 1) {
-            $parameters = array_filter($matches, 'is_string', ARRAY_FILTER_USE_KEY);
+            $parameters = array_filter($matches, 'is_string', \ARRAY_FILTER_USE_KEY);
         }
 
         foreach ($this->parameters as $parameter) {
