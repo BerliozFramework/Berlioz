@@ -184,7 +184,7 @@ class Pagination
      */
     public function handle($mixed): Pagination
     {
-        if ($mixed instanceof Collection || is_int($mixed)) {
+        if ($mixed instanceof Collection) {
             $this->mixed = $mixed;
             $this->nb_pages = ceil(max($mixed->nbTotal, 1) / max($this->nb_per_page, 1));
         } else {
