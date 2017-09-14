@@ -47,21 +47,21 @@ interface ConfigInterface
      *
      * @return bool
      */
-    public function has(string $key = null);
+    public function has(string $key = null): bool;
 
     /**
      * Has debug mode enabled in configuration ?
      *
      * @return bool
      */
-    public function hasDebugEnabled();
+    public function hasDebugEnabled(): bool;
 
     /**
      * Has cache mode enabled in configuration ?
      *
      * @return bool
      */
-    public function hasCacheEnabled();
+    public function hasCacheEnabled(): bool;
 
     /**
      * Get log level defined in configuration.

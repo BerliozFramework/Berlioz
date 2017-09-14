@@ -16,6 +16,7 @@ namespace Berlioz\Core\Controller;
 use Berlioz\Core\App;
 use Berlioz\Core\App\AppAwareTrait;
 use Berlioz\Core\Http\ServerRequest;
+use Berlioz\Core\Services\Routing\RouteInterface;
 use Berlioz\Core\Services\Routing\RouterInterface;
 
 /**
@@ -50,7 +51,7 @@ abstract class Controller implements ControllerInterface
      *
      * @return mixed[]
      */
-    public function __sleep()
+    public function __sleep(): array
     {
         return [];
     }
@@ -58,18 +59,22 @@ abstract class Controller implements ControllerInterface
     /**
      * __wakeup() magic method.
      */
-    public function __wakeup()
+    public function __wakeup(): void
     {
     }
 
     /**
      * Get router.
      *
-     * @return \Berlioz\Core\Services\Routing\RouterInterface
+     * @return \Berlioz\Core\Services\Routing\RouterInterface|null
      */
-    final public function getRouter(): RouterInterface
+    final public function getRouter(): ?RouterInterface
     {
-        return $this->getApp()->getService('routing');
+        if ($this->hasApp()) {
+            return $this->getApp()->getService('routing');
+        } else {
+            return null;
+        }
     }
 
     /**
@@ -83,7 +88,7 @@ abstract class Controller implements ControllerInterface
     /**
      * @inheritdoc
      */
-    public function _b_init(ServerRequest $request)
+    public function _b_init(ServerRequest $request): void
     {
     }
 
@@ -92,7 +97,7 @@ abstract class Controller implements ControllerInterface
      *
      * @return \Berlioz\Core\Services\Routing\RouteInterface|null
      */
-    public function getRoute()
+    public function getRoute(): ?RouteInterface
     {
         if (!is_null($this->getApp())) {
             return $this->getApp()->getService('routing')->getCurrentRoute();
@@ -106,8 +111,10 @@ abstract class Controller implements ControllerInterface
      *
      * @param  string $url              URL of redirection
      * @param  int    $httpResponseCode HTTP Redirection code (301, 302...)
+     *
+     * @return void
      */
-    protected function redirect($url, $httpResponseCode = 302)
+    protected function redirect($url, $httpResponseCode = 302): void
     {
         header('Location: ' . $url, true, $httpResponseCode);
         exit;
@@ -119,9 +126,10 @@ abstract class Controller implements ControllerInterface
      * @param string[] $get   Additional parameters for GET query string
      * @param bool     $merge Merge parameters
      *
+     * @return void
      * @uses Controller::redirect()
      */
-    protected function reload($get = [], $merge = false)
+    protected function reload($get = [], $merge = false): void
     {
         $path = parse_url($_SERVER["REQUEST_URI"], PHP_URL_PATH);
 
@@ -146,9 +154,10 @@ abstract class Controller implements ControllerInterface
      * @param string $type    Type of message
      * @param string $message Message
      *
+     * @return void
      * @see \Berlioz\Core\Services\FlashBag FlashBag class whose manage all flash messages
      */
-    protected function addFlash($type, $message)
+    protected function addFlash($type, $message): void
     {
         $this->getApp()->getService('flashbag')->add($type, $message);
     }

@@ -58,7 +58,7 @@ class Logger extends AbstractLogger implements LoggerInterface
      *
      * @return array
      */
-    public static function __set_state($an_array)
+    public static function __set_state($an_array): array
     {
         return ['fp'   => $an_array['fp'],
                 'logs' => sprintf('*** NOT DISPLAYED, LOT OF LINES (%d) ***', count($an_array['logs']))];
@@ -69,7 +69,7 @@ class Logger extends AbstractLogger implements LoggerInterface
      *
      * @return array
      */
-    public function __debugInfo()
+    public function __debugInfo(): array
     {
         return ['fp'   => $this->fp,
                 'logs' => sprintf('*** NOT DISPLAYED, LOT OF LINES (%d) ***', count($this->logs))];
@@ -117,7 +117,7 @@ class Logger extends AbstractLogger implements LoggerInterface
     /**
      * @inheritdoc
      */
-    public function log($level, $message, array $context = [])
+    public function log($level, $message, array $context = []): void
     {
         if ($this->needToLog($level)) {
             // Insert context into message
@@ -137,8 +137,10 @@ class Logger extends AbstractLogger implements LoggerInterface
 
     /**
      * Write log on file.
+     *
+     * @return void
      */
-    private function writeLogs()
+    private function writeLogs(): void
     {
         // Write logs
         $fileName = $this->getApp()->getConfig()->getDirectory(ConfigInterface::DIR_VAR_LOGS) . '/Berlioz.log';
@@ -170,7 +172,7 @@ class Logger extends AbstractLogger implements LoggerInterface
      *
      * @return bool
      */
-    private function needToLog(string $level)
+    private function needToLog(string $level): bool
     {
         $logLevels = [LogLevel::EMERGENCY => 0,
                       LogLevel::ALERT     => 1,

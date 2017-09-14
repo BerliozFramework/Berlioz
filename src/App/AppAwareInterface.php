@@ -20,14 +20,16 @@ interface AppAwareInterface
     /**
      * Get application.
      *
-     * @return \Berlioz\Core\App
+     * @return \Berlioz\Core\App|null
      */
-    public function getApp(): App;
+    public function getApp(): ?App;
 
     /**
      * Set application.
      *
      * @param \Berlioz\Core\App $app
+     *
+     * @return static
      */
     public function setApp(App $app);
 
@@ -36,5 +38,5 @@ interface AppAwareInterface
      *
      * @return bool
      */
-    public function hasApp();
+    public function hasApp(): bool;
 }

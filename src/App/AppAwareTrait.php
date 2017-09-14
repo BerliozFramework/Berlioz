@@ -12,9 +12,9 @@
 
 namespace Berlioz\Core\App;
 
+
 use Berlioz\Core\App;
 use Berlioz\Core\Exception\RuntimeException;
-
 
 /**
  * Describes a app-aware instance.
@@ -27,10 +27,10 @@ trait AppAwareTrait
     /**
      * Get application.
      *
-     * @return \Berlioz\Core\App
+     * @return \Berlioz\Core\App|null
      * @throws \Berlioz\Core\Exception\RuntimeException if no app defined
      */
-    public function getApp(): App
+    public function getApp(): ?App
     {
         if (is_null($this->app)) {
             throw new RuntimeException('No app defined');
@@ -43,10 +43,14 @@ trait AppAwareTrait
      * Set application.
      *
      * @param \Berlioz\Core\App $app
+     *
+     * @return static
      */
     public function setApp(App $app)
     {
         $this->app = $app;
+
+        return $this;
     }
 
     /**
@@ -54,7 +58,7 @@ trait AppAwareTrait
      *
      * @return bool
      */
-    public function hasApp()
+    public function hasApp(): bool
     {
         return !is_null($this->app);
     }

@@ -19,7 +19,7 @@ use Berlioz\Core\App\AppAwareInterface;
 interface TemplateInterface extends AppAwareInterface
 {
     /**
-     * TemplateInterface constructor
+     * TemplateInterface constructor.
      *
      * @param \Berlioz\Core\App $app        Application
      * @param array             $extensions Extensions
@@ -27,7 +27,7 @@ interface TemplateInterface extends AppAwareInterface
     public function __construct(App $app, array $extensions = []);
 
     /**
-     * Register a new path for template engine
+     * Register a new path for template engine.
      *
      * @param string      $path      Path
      * @param string|null $namespace Namespace
@@ -37,7 +37,7 @@ interface TemplateInterface extends AppAwareInterface
     public function registerPath(string $path, string $namespace = null): void;
 
     /**
-     * Render a template
+     * Render a template.
      *
      * @param string $name      Template filename
      * @param array  $variables Variables
@@ -57,7 +57,7 @@ interface TemplateInterface extends AppAwareInterface
     public function hasBlock(string $tplName, string $blockName): bool;
 
     /**
-     * Render a block in template
+     * Render a block in template.
      *
      * @param string $tplName   Template filename
      * @param string $blockName Block name

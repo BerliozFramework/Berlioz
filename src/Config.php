@@ -18,7 +18,7 @@ use Berlioz\Core\Exception\InvalidArgumentException;
 use Psr\Log\LogLevel;
 
 /**
- * Class Config
+ * Class Config.
  *
  * Offer basic configuration class to manage JSON configuration files.
  * Access to the values with get() method, uses 'key.subkey.something' for example.
@@ -51,13 +51,14 @@ class Config implements ConfigInterface
     }
 
     /**
-     * Set configuration directory
+     * Set configuration directory.
      *
      * @param string $dirName Path of directory
      *
+     * @return void
      * @throws \Berlioz\Core\Exception\BerliozException If directory doesn't exists
      */
-    private function setConfigDirectory(string $dirName)
+    private function setConfigDirectory(string $dirName): void
     {
         $dirName = realpath($this->getDirectory(Config::DIR_ROOT) . $dirName);
 
@@ -73,14 +74,14 @@ class Config implements ConfigInterface
     }
 
     /**
-     * Load configuration
+     * Load configuration.
      *
      * @param string $file File name
      *
      * @return array
      * @throws \Berlioz\Core\Exception\BerliozException If unable to load configuration file
      */
-    private function load(string $file)
+    private function load(string $file): array
     {
         $file = basename($file);
         $fileName = realpath($this->configDirectory . '/' . $file);
@@ -126,7 +127,7 @@ class Config implements ConfigInterface
     /**
      * @inheritdoc
      */
-    public function has(string $key = null)
+    public function has(string $key = null): bool
     {
         try {
             $key = explode('.', $key);
@@ -141,7 +142,7 @@ class Config implements ConfigInterface
     /**
      * @inheritdoc
      */
-    public function hasDebugEnabled()
+    public function hasDebugEnabled(): bool
     {
         return $this->get('app.debug') == true;
     }
@@ -149,7 +150,7 @@ class Config implements ConfigInterface
     /**
      * @inheritdoc
      */
-    public function hasCacheEnabled()
+    public function hasCacheEnabled(): bool
     {
         return $this->get('app.cache') == true;
     }

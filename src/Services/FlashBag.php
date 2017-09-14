@@ -66,7 +66,7 @@ class FlashBag implements Countable
      *
      * @return static
      */
-    public static function getInstance()
+    public static function getInstance(): FlashBag
     {
         if (is_null(self::$_instance)) {
             new FlashBag;
@@ -80,7 +80,7 @@ class FlashBag implements Countable
      *
      * @return int
      */
-    public function count()
+    public function count(): int
     {
         return count($this->messages, COUNT_RECURSIVE);
     }
@@ -90,7 +90,7 @@ class FlashBag implements Countable
      *
      * @return string[] List of messages
      */
-    public function all()
+    public function all(): array
     {
         $messages = $this->messages;
 
@@ -107,7 +107,7 @@ class FlashBag implements Countable
      *
      * @return string[] List of messages
      */
-    public function get($type)
+    public function get(string $type): array
     {
         if (isset($this->messages[$type])) {
             $messages = $this->messages[$type];
@@ -126,8 +126,10 @@ class FlashBag implements Countable
      *
      * @param string $type    Type of message
      * @param string $message Message
+     *
+     * @return static
      */
-    public function add($type, $message)
+    public function add(string $type, string $message): FlashBag
     {
         if (is_string($type) && is_string($message)) {
             $this->messages[$type][] = $message;
@@ -137,14 +139,18 @@ class FlashBag implements Countable
         } else {
             trigger_error('FlashBag::add() accept only string parameters', E_USER_ERROR);
         }
+
+        return $this;
     }
 
     /**
      * Clear messages in flash bag.
      *
      * @param string $type Type of message
+     *
+     * @return static
      */
-    public function clear($type = null)
+    public function clear(string $type = null): FlashBag
     {
         if (is_null($type)) {
             $this->messages = [];
@@ -156,14 +162,20 @@ class FlashBag implements Countable
 
         // Save into session
         $this->saveToSession();
+
+        return $this;
     }
 
     /**
      * Save flash bag in PHP session.
+     *
+     * @return static
      */
-    private function saveToSession()
+    private function saveToSession(): FlashBag
     {
         // Save into sessions
         $_SESSION[self::SESSION_KEY] = $this->messages;
+
+        return $this;
     }
 }

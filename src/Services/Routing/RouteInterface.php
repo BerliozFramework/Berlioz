@@ -39,9 +39,9 @@ interface RouteInterface
     /**
      * Get route.
      *
-     * @return string
+     * @return string|null
      */
-    public function getRoute(): string;
+    public function getRoute(): ?string;
 
     /**
      * Set route.
@@ -91,7 +91,7 @@ interface RouteInterface
      *
      * @return \Berlioz\Core\Services\Routing\Parameter|null
      */
-    public function getParameter(string $name);
+    public function getParameter(string $name): ?Parameter;
 
     /**
      * Add parameter.
@@ -105,9 +105,9 @@ interface RouteInterface
     /**
      * Get summary.
      *
-     * @return mixed
+     * @return string
      */
-    public function getSummary();
+    public function getSummary(): ?string;
 
     /**
      * Set summary.
@@ -121,9 +121,9 @@ interface RouteInterface
     /**
      * Get description.
      *
-     * @return string
+     * @return string|null
      */
-    public function getDescription(): string;
+    public function getDescription(): ?string;
 
     /**
      * Set description.

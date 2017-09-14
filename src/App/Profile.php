@@ -14,6 +14,8 @@ namespace Berlioz\Core\App;
 
 
 use Berlioz\Core\App;
+use Berlioz\Core\ConfigInterface;
+use Berlioz\Core\Services\FlashBag;
 use Berlioz\Core\Services\Routing\RouteInterface;
 
 class Profile
@@ -38,9 +40,9 @@ class Profile
     /**
      * Get configuration.
      *
-     * @return \Berlioz\Core\ConfigInterface
+     * @return \Berlioz\Core\ConfigInterface|null
      */
-    public function getConfig()
+    public function getConfig(): ?ConfigInterface
     {
         return $this->app->getConfig();
     }
@@ -50,7 +52,7 @@ class Profile
      *
      * @return \Berlioz\Core\Services\FlashBag
      */
-    public function getFlashBag()
+    public function getFlashBag(): FlashBag
     {
         return $this->app->getService('flashbag');
     }
@@ -82,9 +84,9 @@ class Profile
     /**
      * Get current route.
      *
-     * @return \Berlioz\Core\Services\Routing\RouteInterface
+     * @return \Berlioz\Core\Services\Routing\RouteInterface|null
      */
-    public function getRoute()
+    public function getRoute(): ?RouteInterface
     {
         return $this->route;
     }

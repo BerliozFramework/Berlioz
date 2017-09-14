@@ -78,8 +78,10 @@ interface RouterInterface extends AppAwareInterface
      * Set route set.
      *
      * @param \Berlioz\Core\Services\Routing\RouteSetInterface $routeSet
+     *
+     * @return static
      */
-    public function setRouteSet(RouteSetInterface $routeSet);
+    public function setRouteSet(RouteSetInterface $routeSet): RouterInterface;
 
     /**
      * Add a controller class in routing system.
@@ -87,9 +89,10 @@ interface RouterInterface extends AppAwareInterface
      * @param string $controllerClass Controller class
      * @param string $basePath        Base of path for all routes in controller
      *
+     * @return static
      * @throws \Berlioz\Core\Exception\BerliozException If controller class doesn't exists
      */
-    public function addController(string $controllerClass, string $basePath = '');
+    public function addController(string $controllerClass, string $basePath = ''): RouterInterface;
 
     /**
      * Add an exception controller in routing system.
@@ -97,11 +100,12 @@ interface RouterInterface extends AppAwareInterface
      * @param string $exceptionControllerClass Exception controller class
      * @param string $path                     Path
      *
+     * @return static
      * @throws \Berlioz\Core\Exception\BerliozException If exception controller class doesn't exists
      * @throws \Berlioz\Core\Exception\BerliozException If exception controller do not implement
      *                                                  \Berlioz\Core\Controller\ExceptionControllerInterface interface
      */
-    public function addExceptionController(string $exceptionControllerClass, string $path = null);
+    public function addExceptionController(string $exceptionControllerClass, string $path = null): RouterInterface;
 
     /**
      * Get server request.
@@ -121,10 +125,12 @@ interface RouterInterface extends AppAwareInterface
      *
      * @return \Berlioz\Core\Services\Routing\RouteInterface|null
      */
-    public function getCurrentRoute();
+    public function getCurrentRoute(): ?RouteInterface;
 
     /**
      * Handle.
+     *
+     * @return \Berlioz\Core\Http\Response|string
      */
     public function handle();
 

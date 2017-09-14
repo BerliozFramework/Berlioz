@@ -21,7 +21,7 @@ class TwigExtension extends \Twig_Extension
     private $templateEngine;
 
     /**
-     * TwigExtension constructor
+     * TwigExtension constructor.
      *
      * @param \Berlioz\Core\Services\Template\TemplateInterface $templateEngine Template engine
      */
@@ -32,7 +32,7 @@ class TwigExtension extends \Twig_Extension
     }
 
     /**
-     * Get application
+     * Get application.
      *
      * @return \Berlioz\Core\App
      */
@@ -42,7 +42,7 @@ class TwigExtension extends \Twig_Extension
     }
 
     /**
-     * Get template engine
+     * Get template engine.
      *
      * @return \Berlioz\Core\Services\Template\TemplateInterface
      */
@@ -70,7 +70,7 @@ class TwigExtension extends \Twig_Extension
     }
 
     /**
-     * Filter to format date
+     * Filter to format date.
      *
      * @param \DateTime|int $datetime DateTime object or timestamp
      * @param string        $pattern  Pattern of date result waiting
@@ -109,7 +109,7 @@ class TwigExtension extends \Twig_Extension
      *
      * @return bool
      */
-    public function testInstanceOf($object, $class_name): bool
+    public function testInstanceOf($object, string $class_name): bool
     {
         return is_a($object, $class_name, true);
     }
@@ -130,7 +130,7 @@ class TwigExtension extends \Twig_Extension
     }
 
     /**
-     * Function path to generate path
+     * Function path to generate path.
      *
      * @param string $name
      * @param array  $parameters

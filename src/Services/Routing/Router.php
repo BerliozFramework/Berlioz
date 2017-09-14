@@ -50,7 +50,7 @@ class Router implements RouterInterface
     /**
      * @inheritdoc
      */
-    public function __sleep()
+    public function __sleep(): array
     {
         return ['routeSet', 'exceptionControllers'];
     }
@@ -70,15 +70,17 @@ class Router implements RouterInterface
     /**
      * @inheritdoc
      */
-    public function setRouteSet(RouteSetInterface $routeSet)
+    public function setRouteSet(RouteSetInterface $routeSet): RouterInterface
     {
         $this->routeSet = $routeSet;
+
+        return $this;
     }
 
     /**
      * @inheritdoc
      */
-    public function addController(string $controllerClass, string $basePath = '')
+    public function addController(string $controllerClass, string $basePath = ''): RouterInterface
     {
         // Do the reflection of class, create the object and do the mapping
         if (class_exists($controllerClass)) {
@@ -95,14 +97,18 @@ class Router implements RouterInterface
         } else {
             throw new BerliozException(sprintf('Class "%s" doesn\'t exists', $controllerClass));
         }
+
+        return $this;
     }
 
     /**
      * @inheritdoc
      */
-    public function addExceptionController(string $exceptionControllerClass, string $path = null)
+    public function addExceptionController(string $exceptionControllerClass, string $path = null): RouterInterface
     {
         $this->getRouteSet()->addException($exceptionControllerClass, $path);
+
+        return $this;
     }
 
     /**
@@ -110,7 +116,7 @@ class Router implements RouterInterface
      *
      * @return \phpDocumentor\Reflection\DocBlockFactory
      */
-    public static function getDocBlockFactory()
+    public static function getDocBlockFactory(): DocBlockFactory
     {
         if (is_null(self::$docBlockFactory)) {
             self::$docBlockFactory = DocBlockFactory::createInstance();
@@ -159,7 +165,7 @@ class Router implements RouterInterface
      *
      * @return string|null
      */
-    private function getHttpPath()
+    private function getHttpPath(): ?string
     {
         $path = null;
 
@@ -179,7 +185,7 @@ class Router implements RouterInterface
      *
      * @return string
      */
-    private function getHttpQueryString()
+    private function getHttpQueryString(): string
     {
         if (isset($_SERVER['REDIRECT_QUERY_STRING'])) {
             return $_SERVER['REDIRECT_QUERY_STRING'];
@@ -240,7 +246,7 @@ class Router implements RouterInterface
     /**
      * @inheritdoc
      */
-    public function getCurrentRoute()
+    public function getCurrentRoute(): ?RouteInterface
     {
         return $this->current_route;
     }

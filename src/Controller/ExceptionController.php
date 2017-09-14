@@ -21,7 +21,7 @@ class ExceptionController extends Controller implements ExceptionControllerInter
     /**
      * @inheritdoc
      */
-    public function catchException(\Exception $e)
+    public function catchException(\Exception $e): string
     {
         if (!($e instanceof RoutingException)) {
             $e = new RoutingException(RouterInterface::HTTP_STATUS_INTERNAL_SERVER_ERROR, '', $e);

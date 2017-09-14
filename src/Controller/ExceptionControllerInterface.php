@@ -28,5 +28,5 @@ interface ExceptionControllerInterface extends ControllerInterface
      *
      * @return string
      */
-    public function catchException(\Exception $e);
+    public function catchException(\Exception $e): string;
 }

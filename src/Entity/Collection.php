@@ -111,7 +111,7 @@ abstract class Collection implements \IteratorAggregate, \ArrayAccess, \Countabl
      *
      * @return mixed
      */
-    public function end(): mixed
+    public function end()
     {
         return end($this->list);
     }

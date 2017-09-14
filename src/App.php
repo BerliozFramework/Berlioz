@@ -20,7 +20,7 @@ use Berlioz\Core\Exception\RuntimeException;
 use Psr\Http\Message\ResponseInterface;
 
 /**
- * App class manage global application with controllers
+ * App class manage global application with controllers.
  *
  * This class manage controllers and routes.
  * All controllers of the application with routes must be included
@@ -63,7 +63,7 @@ class App
      *
      * @throws \Berlioz\Core\Exception\BerliozException
      */
-    public function __sleep()
+    public function __sleep(): array
     {
         throw new BerliozException(sprintf('"%s" can not be serialized', get_class()));
     }
@@ -73,7 +73,7 @@ class App
      *
      * @throws \Berlioz\Core\Exception\BerliozException
      */
-    public function __wakeup()
+    public function __wakeup(): void
     {
         throw new BerliozException(sprintf('"%s" can not be serialized', get_class()));
     }
@@ -97,10 +97,14 @@ class App
      * Set configuration.
      *
      * @param \Berlioz\Core\ConfigInterface $config
+     *
+     * @return static
      */
-    public function setConfig(ConfigInterface $config)
+    public function setConfig(ConfigInterface $config): App
     {
         $this->config = $config;
+
+        return $this;
     }
 
     /**
@@ -122,10 +126,14 @@ class App
      * Set service container.
      *
      * @param \Berlioz\Core\App\ServiceContainer $services
+     *
+     * @return static
      */
-    public function setServices(ServiceContainer $services)
+    public function setServices(ServiceContainer $services): App
     {
         $this->services = $services;
+
+        return $this;
     }
 
     /**
@@ -147,7 +155,7 @@ class App
      *
      * @return bool
      */
-    public function hasService(string $name)
+    public function hasService(string $name): bool
     {
         return $this->getServices()->has($name);
     }
@@ -171,9 +179,10 @@ class App
      *
      * @param \Berlioz\Core\ExtensionInterface $extension
      *
+     * @return \Berlioz\Core\App
      * @throws \Berlioz\Core\Exception\RuntimeException If unable to load extension
      */
-    public function addExtension(ExtensionInterface $extension)
+    public function addExtension(ExtensionInterface $extension): App
     {
         try {
             if (!$extension->isInitialized()) {
@@ -182,21 +191,27 @@ class App
         } catch (\Exception $e) {
             throw new RuntimeException(sprintf('Unable to load extension "%s"', get_class($extension)));
         }
+
+        return $this;
     }
 
     /**
      * Register routes and routing exceptions.
      *
      * Controllers and functions should be declared in this method for the good work of cache system.
+     *
+     * @return void
      */
-    protected function register()
+    protected function register(): void
     {
     }
 
     /**
      * Handle.
+     *
+     * @return void
      */
-    public function handle()
+    public function handle(): void
     {
         // Log
         $this->getService('logging')->debug(sprintf('%s / Initialization', __METHOD__));

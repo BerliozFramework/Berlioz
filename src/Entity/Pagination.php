@@ -17,7 +17,7 @@ use Berlioz\Core\Http\ServerRequest;
 use Berlioz\Core\OptionList;
 
 /**
- * Pagination class to manage pagination
+ * Pagination class to manage pagination.
  *
  * Can be used with Collection objects or arrays.
  *
@@ -75,9 +75,9 @@ class Pagination
     /**
      * Get the current page of pagination navigation.
      *
-     * @return int Current page
+     * @return int|null Current page
      */
-    public function getCurrentPage()
+    public function getCurrentPage(): ?int
     {
         return $this->page;
     }
@@ -87,7 +87,7 @@ class Pagination
      *
      * @return int|null Previous page
      */
-    public function getPreviousPage()
+    public function getPreviousPage(): ?int
     {
         return max($this->page - 1, 1);
     }
@@ -95,9 +95,9 @@ class Pagination
     /**
      * Get the next page of pagination navigation.
      *
-     * @return int Next page
+     * @return int|null Next page
      */
-    public function getNextPage()
+    public function getNextPage(): ?int
     {
         return min($this->page + 1, $this->nb_pages);
     }
@@ -105,9 +105,9 @@ class Pagination
     /**
      * Get the number of pages in pagination navigation.
      *
-     * @return int Number of pages
+     * @return int|null Number of pages
      */
-    public function getNbPages()
+    public function getNbPages(): ?int
     {
         return $this->nb_pages;
     }
@@ -115,9 +115,9 @@ class Pagination
     /**
      * Get the number of elements per page.
      *
-     * @return int
+     * @return int|null
      */
-    public function getNbPerPage()
+    public function getNbPerPage(): int
     {
         return $this->nb_per_page;
     }
@@ -134,7 +134,7 @@ class Pagination
      *
      * @return OptionList OptionList given in param completed
      */
-    public function prepare(OptionList $objOptions = null)
+    public function prepare(OptionList $objOptions = null): OptionList
     {
         if (is_null($objOptions)) {
             $objOptions = new OptionList;
@@ -182,7 +182,7 @@ class Pagination
      *
      * @return static
      */
-    public function handle($mixed)
+    public function handle($mixed): Pagination
     {
         if ($mixed instanceof Collection || is_int($mixed)) {
             $this->mixed = $mixed;
@@ -209,7 +209,7 @@ class Pagination
      *
      * @return bool
      */
-    public function canBeShowed()
+    public function canBeShowed(): bool
     {
         return ($this->mixed instanceof Collection || $this->mixed instanceof \Countable || is_int($this->mixed));
     }
@@ -219,7 +219,7 @@ class Pagination
      *
      * @return string
      */
-    public function getParam()
+    public function getParam(): string
     {
         if ($this->options->is_null('param')) {
             $this->options->set('param', 'page' . (1 == self::$iPagination ? '' : self::$iPagination));
@@ -235,7 +235,7 @@ class Pagination
      *
      * @return string Query string part of URL
      */
-    public function getHttpQueryString(array $moreQuery = null)
+    public function getHttpQueryString(array $moreQuery = null): string
     {
         $queries = [];
 

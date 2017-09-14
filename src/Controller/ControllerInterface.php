@@ -47,6 +47,8 @@ interface ControllerInterface extends AppAwareInterface
      * Magic Berlioz method, called after initialization and authentication.
      *
      * @param \Berlioz\Core\Http\ServerRequest $request Server request
+     *
+     * @return void
      */
-    public function _b_init(ServerRequest $request);
+    public function _b_init(ServerRequest $request): void;
 }

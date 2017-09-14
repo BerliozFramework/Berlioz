@@ -24,7 +24,7 @@ const B_TRUNCATE_MIDDLE = 3;
 // DATES
 
 /**
- * Return the number of seconds since midnight with hour param in format (H:m:i)
+ * Return the number of seconds since midnight with hour param in format (H:m:i).
  *
  * @param  string $hour Hour, minutes and second in string format (23:12:54)
  *
@@ -49,7 +49,7 @@ function b_time_to_sec(string $hour): int
 }
 
 /**
- * Format time with timestamp in entry
+ * Format time with timestamp in entry.
  *
  * @param  int     $time    Timestamp
  * @param  boolean $withSec Format @return with seconds or not
@@ -72,7 +72,7 @@ function b_sec_to_time(int $time, bool $withSec = true, string $sepHour = ":", s
 }
 
 /**
- * Format date/time object or timestamp to the given pattern
+ * Format date/time object or timestamp to the given pattern.
  *
  * @param  \DateTime|int $datetime DateTime object or timestamp
  * @param  string        $pattern  Pattern of date result waiting
@@ -97,7 +97,7 @@ function b_date_format($datetime, string $pattern = 'dd/MM/yyyy', string $locale
 }
 
 /**
- * Calculation of age with birthday
+ * Calculation of age with birthday.
  *
  * @param  string $birthday Date to the computer format (2016-05-19)
  * @param  int    $today    Timestamp of comparison (default now)
@@ -128,7 +128,7 @@ function b_age(string $birthday, int $today = null): int
 }
 
 /**
- * Convert date in entry to the database format (computer format)
+ * Convert date in entry to the database format (computer format).
  *
  * @param  string $date   Date
  * @param  string $format Format of the date
@@ -176,7 +176,7 @@ function b_db_date($date, $format = "d/m/Y")
 // FORMS
 
 /**
- * Protect data passed into form values
+ * Protect data passed into form values.
  *
  * @param mixed $str String to protect
  *
@@ -190,7 +190,7 @@ function b_form_protect(mixed $str): string
 }
 
 /**
- * Control form input data (from $_GET or $_POST)
+ * Control form input data (from $_GET or $_POST).
  *
  * @param string   $varName   Variable name
  * @param int      $type      Type: "B_FORM_TYPE_GET" or "B_FORM_TYPE_POST" constant
@@ -251,7 +251,7 @@ function b_form_control(string $varName, int $type, int $options = null, int $mi
 }
 
 /**
- * Control form input data from $_GET
+ * Control form input data from $_GET.
  *
  * @param string   $varName   Variable name
  * @param int|null $options   Control _b_options: "B_FORM_MUST_BE_DEFINED", "B_FORM_CANNOT_BE_EMPTY" or
@@ -268,7 +268,7 @@ function b_form_control_get(string $varName, int $options = null, int $minLength
 }
 
 /**
- * Control form input data from $_POST
+ * Control form input data from $_POST.
  *
  * @param string   $varName   Variable name
  * @param int|null $options   Control _b_options: "B_FORM_MUST_BE_DEFINED", "B_FORM_CANNOT_BE_EMPTY" or
@@ -306,7 +306,7 @@ function b_is_secured_page(): bool
 }
 
 /**
- * Get secured page of given url
+ * Get secured page of given url.
  *
  * @param string $url Url to parse (default: null = current)
  *
@@ -377,7 +377,7 @@ function b_mb_detect_encoding(string $str, $encoding_list = null, bool $strict =
  *
  * @return string|null
  */
-function b_detect_utf_encoding(string $data, bool $dataIsFile = true)
+function b_detect_utf_encoding(string $data, bool $dataIsFile = true): ?string
 {
     // Unicode BOM is U+FEFF, but after encoded, it will look like this.
     $UTF32_BIG_ENDIAN_BOM = chr(0x00) . chr(0x00) . chr(0xFE) . chr(0xFF);
@@ -469,7 +469,7 @@ function b_remove_bom(string $data, string &$encoding = null, bool $dataIsFile =
  *
  * @return string
  */
-function b_truncate(string $str, int $nbCharacters = 128, int $where = B_TRUNCATE_RIGHT, string $separator = '...')
+function b_truncate(string $str, int $nbCharacters = 128, int $where = B_TRUNCATE_RIGHT, string $separator = '...'): string
 {
     $str = html_entity_decode($str);
 
@@ -491,7 +491,7 @@ function b_truncate(string $str, int $nbCharacters = 128, int $where = B_TRUNCAT
 }
 
 /**
- * Remove entities from string
+ * Remove entities from string.
  *
  * @param string $str
  *
@@ -560,7 +560,7 @@ EOT;
 }
 
 /**
- * Treat string for url
+ * Treat string for url.
  *
  * @param string $str
  *
@@ -592,7 +592,7 @@ function b_strtouri(string $str): string
 }
 
 /**
- * Generate an hazard string
+ * Generate an hazard string.
  *
  * @param int  $length                    Length of string
  * @param bool $withNumber                String with numbers (default: true)
@@ -679,7 +679,7 @@ function b_valid_email(string $email): bool
 }
 
 /**
- * Extract account part of email
+ * Extract account part of email.
  *
  * @param string $email
  *
@@ -699,7 +699,7 @@ function b_email_account(string $email): string
 }
 
 /**
- * Extract domain of email
+ * Extract domain of email.
  *
  * @param string $email
  *
@@ -719,7 +719,7 @@ function b_email_domain(string $email): string
 }
 
 /**
- * Surrounds paragraphs with "P" HTML tag and inserts HTML line breaks before all newlines; in a string
+ * Surrounds paragraphs with "P" HTML tag and inserts HTML line breaks before all newlines; in a string.
  *
  * @param string $str
  *
@@ -741,7 +741,7 @@ function b_nl2p(string $str): string
 // OBJECTS
 
 /**
- * Get property value to an object when we don't know getter format
+ * Get property value to an object when we don't know getter format.
  *
  * @param mixed  $object   Object
  * @param string $property Property name
@@ -793,7 +793,7 @@ function b_property_get($object, string $property, &$exists = null)
 }
 
 /**
- * Set property value to an object when we don't know setter format
+ * Set property value to an object when we don't know setter format.
  *
  * @param mixed  $object   Object
  * @param string $property Property name
@@ -842,7 +842,7 @@ function b_property_set($object, string $property, $value = null): bool
 // ARRAYS
 
 /**
- * Traverse array with keys
+ * Traverse array with keys.
  *
  * @param mixed         $mixed    Source
  * @param array         $keys     Keys
@@ -910,7 +910,7 @@ function b_array_traverse($mixed, array $keys, &$exists = null, callable $callba
 }
 
 /**
- * Merge two or more arrays recursively
+ * Merge two or more arrays recursively.
  *
  * Difference between native array_merge_recursive() is that b_array_merge_recursive() do not merge strings values into
  * an array.
@@ -920,7 +920,7 @@ function b_array_traverse($mixed, array $keys, &$exists = null, callable $callba
  *
  * @return array
  */
-function b_array_merge_recursive(array $arraySrc, array ...$arrays)
+function b_array_merge_recursive(array $arraySrc, array ...$arrays): array
 {
     foreach ($arrays as $array) {
         foreach ($array as $key => $value) {
@@ -943,7 +943,7 @@ function b_array_merge_recursive(array $arraySrc, array ...$arrays)
 // IMAGE
 
 /**
- * Calculate a gradient destination color
+ * Calculate a gradient destination color.
  *
  * @param string $color        Source color (hex)
  * @param string $colorToAdd   Color to add (hex)
@@ -951,7 +951,7 @@ function b_array_merge_recursive(array $arraySrc, array ...$arrays)
  *
  * @return string
  */
-function b_gradient_color(string $color, string $colorToAdd, float $percentToAdd)
+function b_gradient_color(string $color, string $colorToAdd, float $percentToAdd): string
 {
     $cColor = $color;
 
@@ -983,7 +983,7 @@ function b_gradient_color(string $color, string $colorToAdd, float $percentToAdd
 }
 
 /**
- * Calculate sizes with new given width and height
+ * Calculate sizes with new given width and height.
  *
  * @param int  $newWidth       New width
  * @param int  $newHeight      New height
@@ -994,7 +994,7 @@ function b_gradient_color(string $color, string $colorToAdd, float $percentToAdd
  *
  * @return array
  */
-function b_img_size(int $newWidth = null, int $newHeight = null, int $originalWidth, int $originalHeight, bool $evenIfMoreBig = false, bool $fillSpace = false)
+function b_img_size(int $newWidth = null, int $newHeight = null, int $originalWidth, int $originalHeight, bool $evenIfMoreBig = false, bool $fillSpace = false): array
 {
     $size = [];
     $calculateSize =
@@ -1039,7 +1039,7 @@ function b_img_size(int $newWidth = null, int $newHeight = null, int $originalWi
 }
 
 /**
- * Resize image
+ * Resize image.
  *
  * @param string|resource $img       File name or image resource
  * @param int             $newWidth  New width
@@ -1099,7 +1099,7 @@ function b_img_resize($img, int $newWidth = null, int $newHeight = null, bool $f
 }
 
 /**
- * Resize support of image
+ * Resize support of image.
  *
  * @param string|resource $img       File name or image resource
  * @param int             $newWidth  New width

@@ -48,7 +48,7 @@ abstract class RestController extends Controller
      * @throws \Berlioz\Core\Exception\BerliozException If parameter object does'nt implement \JsonSerializable
      *                                                  interface to be converted
      */
-    protected function response($mixed)
+    protected function response($mixed): Response
     {
         $statusCode = 200;
         $reasonPhrase = '';

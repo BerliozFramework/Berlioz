@@ -27,12 +27,7 @@ class DefaultEngine implements TemplateInterface
     private $twig;
 
     /**
-     * DefaultEngine constructor
-     *
-     * @param \Berlioz\Core\App $app
-     * @param string[]          $extensions Extensions
-     *
-     * @throws \Berlioz\Core\Exception\InvalidArgumentException if extension does'nt exists
+     * @inheritdoc
      */
     public function __construct(App $app, array $extensions = [])
     {
@@ -76,12 +71,7 @@ class DefaultEngine implements TemplateInterface
     }
 
     /**
-     * Register a new path for template engine
-     *
-     * @param string      $path      Path
-     * @param string|null $namespace Namespace
-     *
-     * @return void
+     * @inheritdoc
      */
     public function registerPath(string $path, string $namespace = null): void
     {
@@ -93,12 +83,7 @@ class DefaultEngine implements TemplateInterface
     }
 
     /**
-     * Render a template
-     *
-     * @param string $name      Template filename
-     * @param array  $variables Variables
-     *
-     * @return string
+     * @inheritdoc
      */
     public function render(string $name, array $variables = []): string
     {
@@ -114,12 +99,7 @@ class DefaultEngine implements TemplateInterface
     }
 
     /**
-     * Has block in template ?
-     *
-     * @param string $tplName   Template filename
-     * @param string $blockName Block name
-     *
-     * @return bool
+     * @inheritdoc
      */
     public function hasBlock(string $tplName, string $blockName): bool
     {
@@ -129,13 +109,7 @@ class DefaultEngine implements TemplateInterface
     }
 
     /**
-     * Render a block in template
-     *
-     * @param string $tplName   Template filename
-     * @param string $blockName Block name
-     * @param array  $variables Variables
-     *
-     * @return string
+     * @inheritdoc
      */
     public function renderBlock(string $tplName, string $blockName, array $variables = []): string
     {

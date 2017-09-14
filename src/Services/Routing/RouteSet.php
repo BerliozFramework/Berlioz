@@ -17,7 +17,7 @@ use Berlioz\Core\Exception\BerliozException;
 use Psr\Http\Message\UriInterface;
 
 /**
- * Class RouteSet
+ * Class RouteSet.
  *
  * @package Berlioz\Core\Services\Routing\Router
  * @see     \Berlioz\Core\Services\Routing\RouteSetInterface
@@ -41,9 +41,11 @@ class RouteSet implements RouteSetInterface
     /**
      * @inheritdoc
      */
-    public function addRoute(RouteInterface $route)
+    public function addRoute(RouteInterface $route): RouteSetInterface
     {
         $this->routes[] = $route;
+
+        return $this;
     }
 
     /**
@@ -65,7 +67,7 @@ class RouteSet implements RouteSetInterface
     /**
      * @inheritdoc
      */
-    public function searchRoute(UriInterface $uri, string $method = null)
+    public function searchRoute(UriInterface $uri, string $method = null): ?RouteInterface
     {
         $httpPath = $uri->getPath();
         $routes = $this->routes;
@@ -97,7 +99,7 @@ class RouteSet implements RouteSetInterface
      *
      * @return int
      */
-    public function count()
+    public function count(): int
     {
         return count($this->routes);
     }
@@ -105,7 +107,7 @@ class RouteSet implements RouteSetInterface
     /**
      * @inheritdoc
      */
-    public function addException(string $exceptionControllerClass, string $path = null)
+    public function addException(string $exceptionControllerClass, string $path = null): RouteSetInterface
     {
         if (class_exists($exceptionControllerClass)) {
             if (is_subclass_of($exceptionControllerClass, '\Berlioz\Core\Controller\ExceptionControllerInterface')) {
@@ -116,12 +118,14 @@ class RouteSet implements RouteSetInterface
         } else {
             throw new BerliozException(sprintf('Exception controller class "%s" doesn\'t exists', $exceptionControllerClass));
         }
+
+        return $this;
     }
 
     /**
      * @inheritdoc
      */
-    public function getException(UriInterface $uri)
+    public function getException(UriInterface $uri): string
     {
         $exceptionController = '\Berlioz\Core\Controller\ExceptionController';
 

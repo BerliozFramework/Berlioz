@@ -53,17 +53,17 @@ class ServiceContainer implements ContainerInterface, AppAwareInterface
     }
 
     /**
-     * __sleep() magic method
+     * __sleep() magic method.
      */
-    public function __sleep()
+    public function __sleep(): array
     {
         return ['servicesConfiguration'];
     }
 
     /**
-     * __wakeup() magic method
+     * __wakeup() magic method.
      */
-    public function __wakeup()
+    public function __wakeup(): void
     {
         $this->initialized = false;
         $this->servicesObjects = [];
@@ -72,9 +72,10 @@ class ServiceContainer implements ContainerInterface, AppAwareInterface
     /**
      * Register services.
      *
+     * @return void
      * @throws \Berlioz\Core\Exception\ContainerException if an error occurred
      */
-    private function registerServices()
+    private function registerServices(): void
     {
         if (!$this->initialized) {
             if ($this->hasApp()) {
@@ -119,9 +120,10 @@ class ServiceContainer implements ContainerInterface, AppAwareInterface
      * @param string $name  Name of service
      * @param string $class Class name of service
      *
+     * @return void
      * @throws \Berlioz\Core\Exception\ContainerException
      */
-    private function checkConstraints($name, $class)
+    private function checkConstraints(string $name, string $class): void
     {
         // Check constraint
         if (isset(static::$constraints[$name])) {
@@ -138,9 +140,10 @@ class ServiceContainer implements ContainerInterface, AppAwareInterface
      * @param string|object $object
      * @param array         $arguments
      *
+     * @return \Berlioz\Core\App\ServiceContainer
      * @throws \Berlioz\Core\Exception\InvalidArgumentException if invalid "object" argument
      */
-    public function set(string $name, $object, array $arguments = [])
+    public function set(string $name, $object, array $arguments = []): ServiceContainer
     {
         // Register services
         $this->registerServices();
@@ -163,6 +166,8 @@ class ServiceContainer implements ContainerInterface, AppAwareInterface
                 throw new InvalidArgumentException('Invalid "object" argument, must be an object or a valid class name');
             }
         }
+
+        return $this;
     }
 
     /**
@@ -249,7 +254,7 @@ class ServiceContainer implements ContainerInterface, AppAwareInterface
      *
      * @return bool
      */
-    public function has($name)
+    public function has($name): bool
     {
         // Not already instanced ?
         if (!isset($this->servicesObjects[$name])) {

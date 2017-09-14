@@ -30,11 +30,11 @@ class Event implements EventInterface
     /**
      * Valid event name.
      *
-     * @param $event
+     * @param string $event
      *
      * @return bool
      */
-    public static function validEventName($event)
+    public static function validEventName(string $event): bool
     {
         return preg_match('/^[\w_]+(?:\.[\w_]+)*$/', $event) == 1;
     }
@@ -72,7 +72,7 @@ class Event implements EventInterface
     /**
      * @inheritdoc
      */
-    public function getParams()
+    public function getParams(): array
     {
         return $this->params;
     }

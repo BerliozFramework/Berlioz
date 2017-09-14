@@ -14,7 +14,7 @@ namespace Berlioz\Core;
 
 
 /**
- * Class OptionList
+ * Class OptionList.
  *
  * @package Berlioz\Core
  */
@@ -53,7 +53,7 @@ class OptionList
      *
      * @return string
      */
-    public function __toString()
+    public function __toString(): string
     {
         return var_export(array_merge($this->options, self::$globalOptions), true);
     }
@@ -84,14 +84,18 @@ class OptionList
      * @param string $name  Option name
      * @param mixed  $value Option value
      * @param int    $type  Type of option (TYPE_LOCAL|TYPE_GLOBAL)
+     *
+     * @return static
      */
-    public function set($name, $value, $type = self::TYPE_LOCAL)
+    public function set(string $name, $value, int $type = self::TYPE_LOCAL): OptionList
     {
         if ($type == self::TYPE_GLOBAL) {
             self::$globalOptions[$name] = $value;
         } else {
             $this->options[$name] = $value;
         }
+
+        return $this;
     }
 
     /**
@@ -99,14 +103,18 @@ class OptionList
      *
      * @param string $name Option name
      * @param int    $type Type of option (TYPE_LOCAL|TYPE_GLOBAL)
+     *
+     * @return static
      */
-    public function unset($name, $type = self::TYPE_LOCAL)
+    public function unset(string $name, int $type = self::TYPE_LOCAL): OptionList
     {
         if ($type == self::TYPE_GLOBAL) {
             unset(self::$globalOptions[$name]);
         } else {
             unset($this->options[$name]);
         }
+
+        return $this;
     }
 
     /**
@@ -117,7 +125,7 @@ class OptionList
      *
      * @return bool
      */
-    public function isset($name, $type = null)
+    public function isset(string $name, int $type = null): bool
     {
         if (is_null($type)) {
             return array_key_exists($name, $this->options) || array_key_exists($name, self::$globalOptions);
@@ -174,7 +182,7 @@ class OptionList
      *
      * @return bool
      */
-    public static function issetGlobal(string $name)
+    public static function issetGlobal(string $name): bool
     {
         return array_key_exists($name, self::$globalOptions);
     }
@@ -187,7 +195,7 @@ class OptionList
      *
      * @return bool
      */
-    public function is_null($name, $type = null)
+    public function is_null(string $name, int $type = null): bool
     {
         if (isset(self::$globalOptions[$name]) && (is_null($type) || $type == self::TYPE_GLOBAL)) {
             return is_null(self::$globalOptions[$name]);
@@ -208,7 +216,7 @@ class OptionList
      *
      * @return bool
      */
-    public function is_empty($name, $type = null)
+    public function is_empty(string $name, int $type = null): bool
     {
         if (isset(self::$globalOptions[$name]) && (is_null($type) || $type == self::TYPE_GLOBAL)) {
             return empty(self::$globalOptions[$name]);
@@ -229,7 +237,7 @@ class OptionList
      *
      * @return bool
      */
-    public function is_bool($name, $type = null)
+    public function is_bool(string $name, int $type = null): bool
     {
         if (isset(self::$globalOptions[$name]) && (is_null($type) || $type == self::TYPE_GLOBAL)) {
             return is_bool(self::$globalOptions[$name]);
@@ -250,7 +258,7 @@ class OptionList
      *
      * @return bool
      */
-    public function is_numeric($name, $type = null)
+    public function is_numeric(string $name, int $type = null): bool
     {
         if (isset(self::$globalOptions[$name]) && (is_null($type) || $type == self::TYPE_GLOBAL)) {
             return is_numeric(self::$globalOptions[$name]);
@@ -271,7 +279,7 @@ class OptionList
      *
      * @return bool
      */
-    public function is_int($name, $type = null)
+    public function is_int(string $name, int $type = null): bool
     {
         if (isset(self::$globalOptions[$name]) && (is_null($type) || $type == self::TYPE_GLOBAL)) {
             return (preg_match("/^-?[0-9]+$/", self::$globalOptions[$name]) == 1);
@@ -292,7 +300,7 @@ class OptionList
      *
      * @return bool
      */
-    public function is_string($name, $type = null)
+    public function is_string(string $name, int $type = null): bool
     {
         if (isset(self::$globalOptions[$name]) && (is_null($type) || $type == self::TYPE_GLOBAL)) {
             return is_string(self::$globalOptions[$name]);
@@ -313,7 +321,7 @@ class OptionList
      *
      * @return bool
      */
-    public function is_array($name, $type = null)
+    public function is_array(string $name, int $type = null): bool
     {
         if (isset(self::$globalOptions[$name]) && (is_null($type) || $type == self::TYPE_GLOBAL)) {
             return is_array(self::$globalOptions[$name]);
@@ -334,7 +342,7 @@ class OptionList
      *
      * @return bool
      */
-    public function is_callable($name, $type = null)
+    public function is_callable(string $name, int $type = null): bool
     {
         if (isset(self::$globalOptions[$name]) && (is_null($type) || $type == self::TYPE_GLOBAL)) {
             return is_callable(self::$globalOptions[$name]);
@@ -356,7 +364,7 @@ class OptionList
      *
      * @return bool
      */
-    public function is_a($name, $class, $type = null)
+    public function is_a(string $name, string $class, int $type = null): bool
     {
         if (isset(self::$globalOptions[$name]) && (is_null($type) || $type == self::TYPE_GLOBAL)) {
             return is_a(self::$globalOptions[$name], $class, true);
@@ -387,7 +395,7 @@ class OptionList
      *
      * @return static
      */
-    public function setOptions()
+    public function setOptions(): OptionList
     {
         $args = func_get_args();
 
@@ -417,9 +425,9 @@ class OptionList
      *
      * @param OptionList|null $optionList
      *
-     * @return OptionList|$this
+     * @return static
      */
-    public function mergeWith(OptionList $optionList = null)
+    public function mergeWith(OptionList $optionList = null): OptionList
     {
         if (!is_null($optionList)) {
             return $this->setOptions($optionList->getOptions());

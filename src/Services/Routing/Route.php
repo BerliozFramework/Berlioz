@@ -140,7 +140,7 @@ class Route implements RouteInterface
     /**
      * @inheritdoc
      */
-    public function getRoute(): string
+    public function getRoute(): ?string
     {
         return $this->route;
     }
@@ -167,7 +167,7 @@ class Route implements RouteInterface
      * @return Route
      * @throws \Berlioz\Core\Exception\BerliozException If a parameter is declared more than one time
      */
-    public function setRouteDeclaration(string $doc, string $basePath = '')
+    public function setRouteDeclaration(string $doc, string $basePath = ''): Route
     {
         $regex_define = <<<'EOD'
 (?(DEFINE)
@@ -338,7 +338,7 @@ EOD;
     /**
      * @inheritdoc
      */
-    public function getParameter(string $name)
+    public function getParameter(string $name): ?Parameter
     {
         if (isset($this->parameters[$name])) {
             return $this->parameters[$name];
@@ -363,7 +363,7 @@ EOD;
     /**
      * @inheritdoc
      */
-    public function getSummary()
+    public function getSummary(): ?string
     {
         return $this->summary;
     }
@@ -381,7 +381,7 @@ EOD;
     /**
      * @inheritdoc
      */
-    public function getDescription(): string
+    public function getDescription(): ?string
     {
         return $this->description;
     }

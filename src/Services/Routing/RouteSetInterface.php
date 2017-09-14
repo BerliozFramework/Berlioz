@@ -27,9 +27,10 @@ interface RouteSetInterface extends \Countable
      *
      * @param \Berlioz\Core\Services\Routing\RouteInterface $route Route to add
      *
+     * @return \Berlioz\Core\Services\Routing\RouteSetInterface
      * @throws \Berlioz\Core\Exception\BerliozException If route already exists
      */
-    public function addRoute(RouteInterface $route);
+    public function addRoute(RouteInterface $route): RouteSetInterface;
 
     /**
      * Get routes by name.
@@ -48,22 +49,24 @@ interface RouteSetInterface extends \Countable
      *
      * @return \Berlioz\Core\Services\Routing\RouteInterface|null
      */
-    public function searchRoute(UriInterface $uri, string $method = null);
+    public function searchRoute(UriInterface $uri, string $method = null): ?RouteInterface;
 
     /**
      * Add exception controller to router.
      *
      * @param string $exceptionControllerClass
      * @param string $path
+     *
+     * @return static
      */
-    public function addException(string $exceptionControllerClass, string $path = null);
+    public function addException(string $exceptionControllerClass, string $path = null): RouteSetInterface;
 
     /**
      * Get exception for given uri.
      *
      * @param \Psr\Http\Message\UriInterface $uri
      *
-     * @return string|null Exception controller
+     * @return string Exception controller
      */
-    public function getException(UriInterface $uri);
+    public function getException(UriInterface $uri): string;
 }

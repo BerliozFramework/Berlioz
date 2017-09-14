@@ -49,7 +49,7 @@ class Parameter
      *
      * @return static
      */
-    public function setName(string $name)
+    public function setName(string $name): Parameter
     {
         $this->name = $name;
 
@@ -73,7 +73,7 @@ class Parameter
      *
      * @return static
      */
-    public function setHasDefaultValue(bool $hasDefaultValue)
+    public function setHasDefaultValue(bool $hasDefaultValue): Parameter
     {
         $this->hasDefaultValue = $hasDefaultValue;
 
@@ -97,7 +97,7 @@ class Parameter
      *
      * @return static
      */
-    public function setDefaultValue($defaultValue)
+    public function setDefaultValue($defaultValue): Parameter
     {
         $this->defaultValue = $defaultValue;
 
@@ -118,9 +118,13 @@ class Parameter
      * Set regex validation.
      *
      * @param string $regexValidation
+     *
+     * @return static
      */
-    public function setRegexValidation(string $regexValidation)
+    public function setRegexValidation(string $regexValidation): Parameter
     {
         $this->regexValidation = $regexValidation;
+
+        return $this;
     }
 }
