@@ -21,6 +21,7 @@
   },
   "require": {
     "php": ">=7.1",
+    "ext-intl": "*",
     "phpdocumentor/reflection-docblock": "~3.2",
     "twig/twig": "~2.4",
     "psr/container": "~1.0",
