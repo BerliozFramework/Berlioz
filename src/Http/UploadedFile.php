@@ -38,7 +38,7 @@ class UploadedFile implements UploadedFileInterface
      *
      * @param array $uploadedFiles $_FILES value
      *
-     * @return \Berlioz\Core\Http\UploadedFile[]
+     * @return array Multi dimensional \Berlioz\Core\Http\UploadedFile array
      *
      * @todo Refactoring ?!
      */
