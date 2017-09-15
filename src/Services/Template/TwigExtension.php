@@ -14,6 +14,7 @@ namespace Berlioz\Core\Services\Template;
 
 
 use Berlioz\Core\App;
+use Berlioz\Core\Exception\RuntimeException;
 
 class TwigExtension extends \Twig_Extension
 {
@@ -35,10 +36,15 @@ class TwigExtension extends \Twig_Extension
      * Get application.
      *
      * @return \Berlioz\Core\App
+     * @throws \Berlioz\Core\Exception\RuntimeException if template engine is not initialized with application
      */
     public function getApp(): App
     {
-        return $this->getTemplateEngine()->getApp();
+        if (!is_null($this->getTemplateEngine()->getApp())) {
+            return $this->getTemplateEngine()->getApp();
+        } else {
+            throw new RuntimeException('Template engine is not initialized with application');
+        }
     }
 
     /**
@@ -90,7 +96,7 @@ class TwigExtension extends \Twig_Extension
     /**
      * Returns a list of tests to add to the existing list.
      *
-     * @return \Twig_Filter[]
+     * @return \Twig_Test[]
      */
     public function getTests()
     {

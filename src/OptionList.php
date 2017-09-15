@@ -55,7 +55,7 @@ class OptionList
      */
     public function __toString(): string
     {
-        return var_export(array_merge($this->options, self::$globalOptions), true);
+        return var_export(array_merge($this->options, self::$globalOptions), true) ?? '*** EMPTY OPTIONLIST ***';
     }
 
     /**

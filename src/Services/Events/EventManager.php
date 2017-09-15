@@ -83,9 +83,9 @@ class EventManager implements AppAwareInterface, EventManagerInterface
      *
      * Can accept an EventInterface or will create one if not passed
      *
-     * @param  string|EventInterface $event
-     * @param  object|string         $target
-     * @param  array|object          $argv
+     * @param string|EventInterface $event
+     * @param object|string         $target
+     * @param array|object          $argv
      *
      * @return mixed
      */

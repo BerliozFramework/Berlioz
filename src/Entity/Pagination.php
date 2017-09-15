@@ -130,7 +130,7 @@ class Pagination
      * This _b_options must be implemented in DB queries in Collection
      * get methods.
      *
-     * @param  OptionList $objOptions OptionList object with _b_options for Collection object
+     * @param OptionList $objOptions OptionList object with _b_options for Collection object
      *
      * @return OptionList OptionList given in param completed
      */
@@ -177,7 +177,7 @@ class Pagination
      * If no Collection method used, need to pass an integer with value of number
      * of elements.
      *
-     * @param  \Berlioz\Core\Entity\Collection|\Countable|int $mixed Collection with nbTotal property completed or
+     * @param \Berlioz\Core\Entity\Collection|\Countable|int $mixed Collection with nbTotal property completed or
      *                                                               integer
      *
      * @return static

@@ -26,7 +26,7 @@ const B_TRUNCATE_MIDDLE = 3;
 /**
  * Return the number of seconds since midnight with hour param in format (H:m:i).
  *
- * @param  string $hour Hour, minutes and second in string format (23:12:54)
+ * @param string $hour Hour, minutes and second in string format (23:12:54)
  *
  * @return int Number of seconds
  */
@@ -51,10 +51,10 @@ function b_time_to_sec(string $hour): int
 /**
  * Format time with timestamp in entry.
  *
- * @param  int     $time    Timestamp
- * @param  boolean $withSec Format @return with seconds or not
- * @param  string  $sepHour Separator between hours and minutes
- * @param  string  $sepMin  Separator between minutes and seconds
+ * @param int    $time    Timestamp
+ * @param bool   $withSec Format return with seconds or not
+ * @param string $sepHour Separator between hours and minutes
+ * @param string $sepMin  Separator between minutes and seconds
  *
  * @return string Formatted time
  */
@@ -64,7 +64,7 @@ function b_sec_to_time(int $time, bool $withSec = true, string $sepHour = ":", s
     $minutes = floor($time % 3600 / 60);
     $seconds = $time % 60;
 
-    if ($withSec) {
+    if ($withSec === true) {
         return sprintf("%02d{$sepHour}%02d{$sepMin}%02d", $hours, $minutes, $seconds);
     } else {
         return sprintf("%02d{$sepHour}%02d", $hours, $minutes);
@@ -74,9 +74,9 @@ function b_sec_to_time(int $time, bool $withSec = true, string $sepHour = ":", s
 /**
  * Format date/time object or timestamp to the given pattern.
  *
- * @param  \DateTime|int $datetime DateTime object or timestamp
- * @param  string        $pattern  Pattern of date result waiting
- * @param  string        $locale   Locale for pattern translation
+ * @param \DateTime|int $datetime DateTime object or timestamp
+ * @param string        $pattern  Pattern of date result waiting
+ * @param string        $locale   Locale for pattern translation
  *
  * @return string Formatted date with pattern given in param
  */
@@ -99,8 +99,8 @@ function b_date_format($datetime, string $pattern = 'dd/MM/yyyy', string $locale
 /**
  * Calculation of age with birthday.
  *
- * @param  string $birthday Date to the computer format (2016-05-19)
- * @param  int    $today    Timestamp of comparison (default now)
+ * @param string $birthday Date to the computer format (2016-05-19)
+ * @param int    $today    Timestamp of comparison (default now)
  *
  * @return int Age
  */
@@ -130,8 +130,8 @@ function b_age(string $birthday, int $today = null): int
 /**
  * Convert date in entry to the database format (computer format).
  *
- * @param  string $date   Date
- * @param  string $format Format of the date
+ * @param string $date   Date
+ * @param string $format Format of the date
  *
  * @return string|null Formatted date for database (computer format)
  */
@@ -182,7 +182,7 @@ function b_db_date($date, $format = "d/m/Y")
  *
  * @return string Data protected for inputs
  */
-function b_form_protect(mixed $str): string
+function b_form_protect($str): string
 {
     $str = str_replace('"', '&quot;', $str);
 
@@ -1126,6 +1126,7 @@ function b_img_support($img, int $newWidth = null, int $newHeight = null)
     // Treatment
     switch ($type) {
         case 'RESOURCE':
+            /** @var resource $source */
             $source = $img;
             break;
         case \IMAGETYPE_PNG:

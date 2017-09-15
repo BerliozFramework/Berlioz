@@ -100,7 +100,13 @@ class UploadedFile implements UploadedFileInterface
             }
         }
 
-        return createUploadedFileObj($normalized);
+        // Result
+        $result = createUploadedFileObj($normalized);
+        if (is_array($result)) {
+            return $result;
+        } else {
+            return [];
+        }
     }
 
     /**

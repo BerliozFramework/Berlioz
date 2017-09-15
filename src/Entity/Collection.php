@@ -285,9 +285,9 @@ abstract class Collection implements \IteratorAggregate, \ArrayAccess, \Countabl
     /**
      * Find an element.
      *
-     * @param  mixed   $value    Value to found
-     * @param  string  $property Property to check
-     * @param  boolean $strict   Strict result
+     * @param mixed  $value    Value to found
+     * @param string $property Property to check
+     * @param bool   $strict   Strict result
      *
      * @return Entity[]
      */

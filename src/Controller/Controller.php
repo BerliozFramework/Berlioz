@@ -109,8 +109,8 @@ abstract class Controller implements ControllerInterface
     /**
      * Redirection to a specific URL.
      *
-     * @param  string $url              URL of redirection
-     * @param  int    $httpResponseCode HTTP Redirection code (301, 302...)
+     * @param string $url              URL of redirection
+     * @param int    $httpResponseCode HTTP Redirection code (301, 302...)
      *
      * @return void
      */
@@ -165,8 +165,8 @@ abstract class Controller implements ControllerInterface
     /**
      * Do render of templates.
      *
-     * @param  string  $name      Filename of template
-     * @param  mixed[] $variables Variables for template
+     * @param string  $name      Filename of template
+     * @param mixed[] $variables Variables for template
      *
      * @return string Output content
      * @see \Berlioz\Core\Services\Template\TemplateInterface

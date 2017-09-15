@@ -26,7 +26,7 @@ class RouteSet implements RouteSetInterface
 {
     /** @var \Berlioz\Core\Services\Routing\RouteInterface[] */
     private $routes;
-    /** @var \Berlioz\Core\Controller\ExceptionController[] */
+    /** @var string[] */
     private $exceptionControllers;
 
     /**

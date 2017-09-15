@@ -99,7 +99,11 @@ class Route implements RouteInterface
      */
     public function getName(): string
     {
-        return !empty($this->route_options['name']) ? $this->route_options['name'] : implode('::', $this->invoke);
+        if (!empty($this->route_options['name']) && is_string($this->route_options['name'])) {
+            return $this->route_options['name'];
+        } else {
+            return implode('::', $this->invoke);
+        }
     }
 
     /**
