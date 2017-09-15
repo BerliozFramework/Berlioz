@@ -126,9 +126,9 @@ class ServiceContainer implements ContainerInterface, AppAwareInterface
     private function checkConstraints(string $name, string $class): void
     {
         // Check constraint
-        if (isset(static::$constraints[$name])) {
-            if (!is_a($class, static::$constraints[$name], true)) {
-                throw new ContainerException(sprintf('Service "%s" must implements "%s" class', $name, static::$constraints[$name]));
+        if (isset(self::$constraints[$name])) {
+            if (!is_a($class, self::$constraints[$name], true)) {
+                throw new ContainerException(sprintf('Service "%s" must implements "%s" class', $name, self::$constraints[$name]));
             }
         }
     }
