@@ -763,7 +763,7 @@ function b_property_get($object, string $property, &$exists = null)
                                preg_replace_callback(
                                    '/(?:^|_)(.?)/',
                                    function ($matches) {
-                                       return mb_strtoupper($matches[0]);
+                                       return mb_strtoupper($matches[1]);
                                    }, $property);
 
             if (method_exists($object, $getterCamelCase)) {
@@ -815,7 +815,7 @@ function b_property_set($object, string $property, $value = null): bool
                                preg_replace_callback(
                                    '/(?:^|_)(.?)/',
                                    function ($matches) {
-                                       return mb_strtoupper($matches[0]);
+                                       return mb_strtoupper($matches[1]);
                                    }, $property);
 
             if (method_exists($object, $setterCamelCase)) {
