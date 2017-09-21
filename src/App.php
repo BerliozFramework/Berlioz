@@ -65,7 +65,7 @@ class App
      */
     public function __sleep(): array
     {
-        throw new BerliozException(sprintf('"%s" can not be serialized', get_class()));
+        throw new BerliozException(sprintf('"%s" can not be serialized', static::class));
     }
 
     /**
@@ -75,7 +75,7 @@ class App
      */
     public function __wakeup(): void
     {
-        throw new BerliozException(sprintf('"%s" can not be serialized', get_class()));
+        throw new BerliozException(sprintf('"%s" can not be serialized', static::class));
     }
 
     /**
