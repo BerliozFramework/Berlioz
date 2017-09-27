@@ -758,30 +758,42 @@ function b_property_get($object, string $property, &$exists = null)
 
             return $object->$property;
         } else {
-            // Format Camel Case : getMyProperty(...)
-            $getterCamelCase = 'get' .
-                               preg_replace_callback(
-                                   '/(?:^|_)(.?)/',
-                                   function ($matches) {
-                                       return mb_strtoupper($matches[1]);
-                                   }, $property);
+            // Format Camel Case : getMyProperty(...) | isMyProperty(...)
+            $getterCamelCase = preg_replace_callback(
+                '/(?:^|_)(.?)/',
+                function ($matches) {
+                    return mb_strtoupper($matches[1]);
+                }, $property);
 
-            if (method_exists($object, $getterCamelCase)) {
+            // Format : getMyProperty(...)
+            if (method_exists($object, 'get' . $getterCamelCase)) {
                 $exists = true;
 
-                return call_user_func([$object, $getterCamelCase]);
+                return call_user_func([$object, 'get' . $getterCamelCase]);
             } else {
-                // Format : get_myproperty(...)
-                $setter = 'get_' . $property;
-
-                if (method_exists($object, $setter)) {
+                // Format : isMyProperty(...)
+                if (method_exists($object, 'is' . $getterCamelCase)) {
                     $exists = true;
 
-                    return call_user_func([$object, $setter]);
+                    return call_user_func([$object, 'is' . $getterCamelCase]);
                 } else {
-                    $exists = false;
+                    // Format : get_myproperty(...)
+                    if (method_exists($object, 'get_' . $property)) {
+                        $exists = true;
 
-                    return null;
+                        return call_user_func([$object, 'get_' . $property]);
+                    } else {
+                        // Format : is_myproperty(...)
+                        if (method_exists($object, 'is_' . $property)) {
+                            $exists = true;
+
+                            return call_user_func([$object, 'is_' . $property]);
+                        } else {
+                            $exists = false;
+
+                            return null;
+                        }
+                    }
                 }
             }
         }
