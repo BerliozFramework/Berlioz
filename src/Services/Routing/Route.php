@@ -176,7 +176,7 @@ class Route implements RouteInterface
         $regex_define = <<<'EOD'
 (?(DEFINE)
     (?<d_quotes> \'(?>[^'\\]++|\\.)*\' | "(?>[^"\\]++|\\.)*" )
-    (?<d_json_element> \g<d_quotes> \s* : \s* \g<d_quotes> )
+    (?<d_json_element> (?: \g<d_quotes> | [\w_]+ ) \s* : \s* \g<d_quotes> )
     (?<d_json> { \s* \g<d_json_element> (?: \s* , \s* \g<d_json_element> )* \s* } )
     (?<d_bool> true | false )
     (?<d_option> [\w_]+\s*=\s*(?: \g<d_json> | \g<d_quotes> | \g<d_bool> ) )
@@ -449,10 +449,10 @@ EOD;
         $parametersFound = [];
         foreach ($this->parameters as $parameter) {
             if (!empty($parameters[$parameter->getName()])) {
-                $value = $parameters[$parameter->getName()];
+                $value = (string) $parameters[$parameter->getName()];
             } else {
                 if ($parameter->hasDefaultValue()) {
-                    $value = $parameter->getDefaultValue();
+                    $value = (string) $parameter->getDefaultValue();
                 } else {
                     return false;
                 }
@@ -466,7 +466,7 @@ EOD;
         $getParameters = [];
         foreach ($parameters as $parameterName => $parameterValue) {
             if (!in_array($parameterName, $parametersFound)) {
-                $getParameters[$parameterName] = $parameterValue;
+                $getParameters[$parameterName] = (string) $parameterValue;
             }
         }
 
