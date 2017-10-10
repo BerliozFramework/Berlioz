@@ -17,6 +17,7 @@ use Berlioz\Core\App;
 use Berlioz\Core\ConfigInterface;
 use Berlioz\Core\Services\FlashBag;
 use Berlioz\Core\Services\Routing\RouteInterface;
+use Psr\Http\Message\ServerRequestInterface;
 
 class Profile
 {
@@ -26,6 +27,8 @@ class Profile
     private $locale;
     /** @var \Berlioz\Core\Services\Routing\RouteInterface Current route */
     private $route;
+    /** @var \Psr\Http\Message\ServerRequestInterface Server request */
+    private $request;
 
     /**
      * Profile constructor.
@@ -79,6 +82,26 @@ class Profile
     public function setLocale(string $locale)
     {
         $this->locale = $locale;
+    }
+
+    /**
+     * Get server request.
+     *
+     * @return \Psr\Http\Message\ServerRequestInterface|null
+     */
+    public function getRequest(): ?ServerRequestInterface
+    {
+        return $this->request;
+    }
+
+    /**
+     * Set server request.
+     *
+     * @param \Psr\Http\Message\ServerRequestInterface $serverRequest Server request
+     */
+    public function setRequest(ServerRequestInterface $serverRequest)
+    {
+        $this->request = $serverRequest;
     }
 
     /**

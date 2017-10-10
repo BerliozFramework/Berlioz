@@ -301,6 +301,7 @@ class Router implements RouterInterface
                         // Order invocation parameters
                         $parameters = $route->extractParameters($requestUri->getPath());
                         $this->server_request = $this->server_request->withAttributes($parameters);
+                        $this->getApp()->getProfile()->setRequest($this->server_request);
                     }
 
                     // Set current route
