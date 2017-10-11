@@ -34,7 +34,7 @@ abstract class RestController extends Controller
      *
      * @param \Berlioz\Core\App $app Application
      */
-    public function __construct(App $app = null)
+    public function __construct(App $app)
     {
         parent::__construct($app);
     }

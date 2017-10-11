@@ -29,7 +29,7 @@ interface ControllerInterface extends AppAwareInterface
      *
      * @param \Berlioz\Core\App $app Application
      */
-    public function __construct(App $app = null);
+    public function __construct(App $app);
 
     /**
      * Magic Berlioz method, called to control access.

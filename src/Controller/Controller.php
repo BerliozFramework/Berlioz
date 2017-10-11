@@ -34,7 +34,7 @@ abstract class Controller implements ControllerInterface
     /**
      * @inheritdoc
      */
-    public function __construct(App $app = null)
+    public function __construct(App $app)
     {
         $this->setApp($app);
     }
