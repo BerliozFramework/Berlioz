@@ -970,11 +970,13 @@ function b_gradient_color(string $color, string $colorToAdd, float $percentToAdd
     if (mb_strlen($color) == 7 && substr($color, 0, 1) == "#"
         && mb_strlen($colorToAdd) == 7 && substr($colorToAdd, 0, 1) == "#") {
         // RGB of color
+        $rgb1 = [];
         $rgb1[0] = hexdec(substr($color, 1, 2));
         $rgb1[1] = hexdec(substr($color, 3, 2));
         $rgb1[2] = hexdec(substr($color, 5, 2));
         $rgb_final = $rgb1;
         // RGB of color to add
+        $rgb2 = [];
         $rgb2[0] = hexdec(substr($colorToAdd, 1, 2));
         $rgb2[1] = hexdec(substr($colorToAdd, 3, 2));
         $rgb2[2] = hexdec(substr($colorToAdd, 5, 2));
