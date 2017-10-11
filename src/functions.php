@@ -482,7 +482,7 @@ function b_truncate(string $str, int $nbCharacters = 128, int $where = B_TRUNCAT
                 $str = mb_substr($str, 0, $nbCharacters) . ' ' . $separator;
                 break;
             case B_TRUNCATE_MIDDLE:
-                $str = mb_substr($str, 0, ceil($nbCharacters / 2)) . ' ' . $separator . ' ' . mb_substr($str, mb_strlen($str) - floor($nbCharacters / 2), mb_strlen($str));
+                $str = mb_substr($str, 0, ceil($nbCharacters / 2)) . ' ' . $separator . ' ' . mb_substr($str, intval(mb_strlen($str) - floor($nbCharacters / 2)), mb_strlen($str));
                 break;
         }
     }
