@@ -145,18 +145,18 @@ function b_db_date($date, $format = "d/m/Y")
             $time = mktime(0,
                            0,
                            0,
-                           substr($date, 3, 2),
-                           substr($date, 0, 2),
-                           substr($date, 6, 4));
+                           intval(substr($date, 3, 2)),
+                           intval(substr($date, 0, 2)),
+                           intval(substr($date, 6, 4)));
             break;
         }
         case 'd/m/Y H:i:s': {
-            $time = mktime(substr($date, 11, 2),
-                           substr($date, 14, 2),
-                           substr($date, 17, 2),
-                           substr($date, 3, 2),
-                           substr($date, 0, 2),
-                           substr($date, 6, 4));
+            $time = mktime(intval(substr($date, 11, 2)),
+                           intval(substr($date, 14, 2)),
+                           intval(substr($date, 17, 2)),
+                           intval(substr($date, 3, 2)),
+                           intval(substr($date, 0, 2)),
+                           intval(substr($date, 6, 4)));
             $withTime = true;
             break;
         }
