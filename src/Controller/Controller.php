@@ -114,7 +114,7 @@ abstract class Controller implements ControllerInterface
      *
      * @return void
      */
-    protected function redirect($url, $httpResponseCode = 302): void
+    protected function redirect(string $url, int $httpResponseCode = 302): void
     {
         header('Location: ' . $url, true, $httpResponseCode);
         exit;
@@ -129,7 +129,7 @@ abstract class Controller implements ControllerInterface
      * @return void
      * @uses Controller::redirect()
      */
-    protected function reload($get = [], $merge = false): void
+    protected function reload(array $get = [], bool $merge = false): void
     {
         $path = parse_url($_SERVER["REQUEST_URI"], PHP_URL_PATH);
 
@@ -157,7 +157,7 @@ abstract class Controller implements ControllerInterface
      * @return void
      * @see \Berlioz\Core\Services\FlashBag FlashBag class whose manage all flash messages
      */
-    protected function addFlash($type, $message): void
+    protected function addFlash(string $type, string $message): void
     {
         $this->getApp()->getService('flashbag')->add($type, $message);
     }
