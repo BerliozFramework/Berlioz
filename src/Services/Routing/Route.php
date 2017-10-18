@@ -466,7 +466,7 @@ EOD;
         $getParameters = [];
         foreach ($parameters as $parameterName => $parameterValue) {
             if (!in_array($parameterName, $parametersFound)) {
-                $getParameters[$parameterName] = (string) $parameterValue;
+                $getParameters[$parameterName] = $parameterValue;
             }
         }
 
