@@ -14,6 +14,8 @@ namespace Berlioz\Core\Controller;
 
 
 use Berlioz\Core\Exception\RoutingException;
+use Berlioz\Core\Http\Response;
+use Berlioz\Core\Http\Stream;
 use Berlioz\Core\Services\Routing\RouterInterface;
 
 class ExceptionController extends Controller implements ExceptionControllerInterface
@@ -21,13 +23,20 @@ class ExceptionController extends Controller implements ExceptionControllerInter
     /**
      * @inheritdoc
      */
-    public function catchException(\Exception $e): string
+    public function catchException(\Exception $e)
     {
         if (!($e instanceof RoutingException)) {
             $e = new RoutingException(RouterInterface::HTTP_STATUS_INTERNAL_SERVER_ERROR, '', $e);
         }
 
-        return $this->render('@Berlioz-Core/Controller/ExceptionController.twig',
-                             ['exception' => $e]);
+        $rendering = $this->render('@Berlioz-Core/Controller/ExceptionController.twig',
+                                   ['exception' => $e]);
+
+        // Make response
+        $body = new Stream;
+        $body->write($rendering);
+        $response = new Response($e->getCode(), [], $body, $e->getMessage());
+
+        return $response;
     }
 }

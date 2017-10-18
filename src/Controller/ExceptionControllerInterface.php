@@ -26,7 +26,7 @@ interface ExceptionControllerInterface extends ControllerInterface
      *
      * @param \Exception $e
      *
-     * @return string
+     * @return string|\Psr\Http\Message\ResponseInterface
      */
-    public function catchException(\Exception $e): string;
+    public function catchException(\Exception $e);
 }
