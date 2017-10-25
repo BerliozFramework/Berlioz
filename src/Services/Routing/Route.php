@@ -472,6 +472,11 @@ EOD;
 
         // Construct query string
         if (!empty($getParameters)) {
+            array_walk_recursive(
+                $getParameters,
+                function (&$value) {
+                    $value = (string) $value;
+                });
             $httpBuildQuery = http_build_query($getParameters);
 
             if (!empty($httpBuildQuery)) {
