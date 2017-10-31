@@ -120,16 +120,24 @@ class Response extends Message implements ResponseInterface
     /**
      * Response constructor.
      *
-     * @param int                                    $statusCode   Status code
-     * @param array                                  $headers      Headers
-     * @param \Psr\Http\Message\StreamInterface|null $body         Body
-     * @param string                                 $reasonPhrase Reason phrase
+     * @param \Psr\Http\Message\StreamInterface|string|null $body         Body
+     * @param int                                           $statusCode   Status code
+     * @param array                                         $headers      Headers
+     * @param string                                        $reasonPhrase Reason phrase
      */
-    public function __construct(int $statusCode = 200, array $headers = [], StreamInterface $body = null, string $reasonPhrase = '')
+    public function __construct($body = null, int $statusCode = 200, array $headers = [], string $reasonPhrase = '')
     {
+        if ($body instanceof StreamInterface) {
+            $this->body = $body;
+        } elseif (!is_null($body)) {
+            $this->body = new Stream;
+            $this->body->write($body);
+        } elseif (is_null($body)) {
+            $this->body = new Stream;
+        }
+
         $this->statusCode = $statusCode;
         $this->reasonPhrase = $reasonPhrase;
-        $this->body = $body ?? new Stream;
 
         $this->headers = [];
         foreach ($headers as $name => $value) {

@@ -15,7 +15,6 @@ namespace Berlioz\Core\Controller;
 
 use Berlioz\Core\Exception\RoutingException;
 use Berlioz\Core\Http\Response;
-use Berlioz\Core\Http\Stream;
 use Berlioz\Core\Services\Routing\RouterInterface;
 
 class ExceptionController extends Controller implements ExceptionControllerInterface
@@ -32,11 +31,6 @@ class ExceptionController extends Controller implements ExceptionControllerInter
         $rendering = $this->render('@Berlioz-Core/Controller/ExceptionController.twig',
                                    ['exception' => $e]);
 
-        // Make response
-        $body = new Stream;
-        $body->write($rendering);
-        $response = new Response($e->getCode(), [], $body, $e->getMessage());
-
-        return $response;
+        return new Response($rendering, $e->getCode(), [], $e->getMessage());
     }
 }

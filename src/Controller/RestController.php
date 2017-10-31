@@ -53,7 +53,7 @@ abstract class RestController extends Controller
         $statusCode = 200;
         $reasonPhrase = '';
         $headers['Content-Type'] = ['application/json'];
-        $stream = new Stream;
+        $body = new Stream;
 
         // Booleans
         if (is_bool($mixed)) {
@@ -63,7 +63,7 @@ abstract class RestController extends Controller
         } else {
             // Array
             if (is_array($mixed)) {
-                $stream->write(json_encode($mixed));
+                $body->write(json_encode($mixed));
             } else {
                 // Exception
                 if ($mixed instanceof \Exception) {
@@ -74,12 +74,12 @@ abstract class RestController extends Controller
                         $statusCode = 500;
                     }
 
-                    $stream->write(json_encode(['errno' => $mixed->getCode(), 'error' => $mixed->getMessage()]));
+                    $body->write(json_encode(['errno' => $mixed->getCode(), 'error' => $mixed->getMessage()]));
                 } else {
                     // Object
                     if (is_object($mixed)) {
                         if ($mixed instanceof \JsonSerializable) {
-                            $stream->write(json_encode($mixed));
+                            $body->write(json_encode($mixed));
                         } else {
                             throw new BerliozException('Parameter object must implement \JsonSerializable interface to be converted');
                         }
@@ -91,6 +91,6 @@ abstract class RestController extends Controller
         }
 
         // Response
-        return new Response($statusCode, $headers, $stream, $reasonPhrase);
+        return new Response($body, $statusCode, $headers, $reasonPhrase);
     }
 }
