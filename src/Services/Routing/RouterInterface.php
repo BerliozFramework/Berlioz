@@ -118,6 +118,15 @@ interface RouterInterface extends AppAwareInterface
     public function getServerRequest(): ServerRequestInterface;
 
     /**
+     * Set server request.
+     *
+     * @param \Psr\Http\Message\ServerRequestInterface $serverRequest
+     *
+     * @return \Berlioz\Core\Services\Routing\RouterInterface
+     */
+    public function setServerRequest(ServerRequestInterface $serverRequest): RouterInterface;
+
+    /**
      * Get current route.
      *
      * Can called after RouterInterface::handle() method.

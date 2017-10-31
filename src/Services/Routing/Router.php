@@ -246,6 +246,16 @@ class Router implements RouterInterface
     /**
      * @inheritdoc
      */
+    public function setServerRequest(ServerRequestInterface $serverRequest): RouterInterface
+    {
+        $this->server_request = $serverRequest;
+
+        return $this;
+    }
+
+    /**
+     * @inheritdoc
+     */
     public function getCurrentRoute(): ?RouteInterface
     {
         return $this->current_route;
