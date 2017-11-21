@@ -19,6 +19,9 @@ const B_FORM_LENGTH_CANNOT_BE_0 = 4;
 const B_TRUNCATE_LEFT = 1;
 const B_TRUNCATE_RIGHT = 2;
 const B_TRUNCATE_MIDDLE = 3;
+const B_IMG_SIZE_RATIO = 1;
+const B_IMG_SIZE_LARGER_EDGE = 2;
+const B_IMG_RESIZE_COVER = 1;
 
 
 // DATES
@@ -999,54 +1002,52 @@ function b_gradient_color(string $color, string $colorToAdd, float $percentToAdd
 /**
  * Calculate sizes with new given width and height.
  *
- * @param int  $newWidth       New width
- * @param int  $newHeight      New height
- * @param int  $originalWidth  Original width
- * @param int  $originalHeight Original height
- * @param bool $evenIfMoreBig  Even if new sizes is more big than original sizes (default: true)
- * @param bool $fillSpace      Fill space (default: false)
+ * @param int $originalWidth  Original width
+ * @param int $originalHeight Original height
+ * @param int $newWidth       New width
+ * @param int $newHeight      New height
+ * @param int $mode           Mode (default: B_IMG_SIZE_RATIO)
  *
  * @return array
  */
-function b_img_size(int $newWidth = null, int $newHeight = null, int $originalWidth, int $originalHeight, bool $evenIfMoreBig = false, bool $fillSpace = false): array
+function b_img_size(int $originalWidth, int $originalHeight, int $newWidth = null, int $newHeight = null, int $mode = B_IMG_SIZE_RATIO): array
 {
-    $size = [];
-    $calculateSize =
-        function ($newWidth, $newHeight, $originalWidth, $originalHeight) {
-            $size = ["width" => 0, "height" => 0];
+    // All sizes are given
+    if (!is_null($newWidth) && !is_null($newHeight)) {
+        // We keep ratio
+        if ($mode | B_IMG_SIZE_RATIO == B_IMG_SIZE_RATIO) {
+            $ratio = $originalWidth / $originalHeight;
+            $newRatio = $newWidth / $newHeight;
 
-            if (is_null($newWidth)) {
-                $size["height"] = $newHeight;
-                $size["width"] = \ceil($newHeight * $originalWidth / $originalHeight);
+            if (($newRatio >= $ratio && $mode | B_IMG_SIZE_LARGER_EDGE == B_IMG_SIZE_LARGER_EDGE) ||
+                ($newRatio <= $ratio && $mode | B_IMG_SIZE_LARGER_EDGE != B_IMG_SIZE_LARGER_EDGE)) {
+                $size = ['width'  => $newWidth,
+                         'height' => ceil($newWidth * $originalHeight / $originalWidth)];
             } else {
-                $size["width"] = $newWidth;
-                $size["height"] = \ceil($newWidth * $originalHeight / $originalWidth);
+                $size = ['width'  => ceil($newHeight * $originalWidth / $originalHeight),
+                         'height' => $newHeight];
             }
-
-            return $size;
-        };
-
-    if ((!is_null($newWidth) && $newWidth < $originalWidth)
-        || (!is_null($newHeight) && $newHeight < $originalHeight)
-        || $evenIfMoreBig === true) {
-        if (!is_null($newWidth) && !is_null($newHeight)) {
-            $size = $calculateSize($newWidth, null, $originalWidth, $originalHeight);
-
-            if (($fillSpace === true && ($size["height"] < $newHeight || $size["width"] < $newWidth))
-                || ($fillSpace === false && ($size["height"] > $newHeight || $size["width"] > $newWidth))) {
-                $size = $calculateSize(null, $newHeight, $originalWidth, $originalHeight);
-            }
-        } else {
-            if (is_null($newWidth)) {
-                $size = $calculateSize(null, $newHeight, $originalWidth, $originalHeight);
-            } else {
-                if (is_null($newHeight)) {
-                    $size = $calculateSize($newWidth, null, $originalWidth, $originalHeight);
-                }
-            }
+        } // We don't keep ratio, and all sizes are given, so we force new size !
+        else {
+            $size = ['width'  => $newWidth,
+                     'height' => $newHeight];
         }
     } else {
-        $size = ["width" => $originalWidth, "height" => $originalHeight];
+        // Only width given, keep ratio so...
+        if (!is_null($newWidth)) {
+            $size = ['width'  => $newWidth,
+                     'height' => ceil($newWidth * $originalHeight / $originalWidth)];
+        } else {
+            // Only height given, keep ratio so...
+            if (!is_null($newHeight)) {
+                $size = ['width'  => ceil($newHeight * $originalWidth / $originalHeight),
+                         'height' => $newHeight];
+            } // No size given, we keep original sizes !
+            else {
+                $size = ['width'  => $originalWidth,
+                         'height' => $originalHeight];
+            }
+        }
     }
 
     return $size;
@@ -1058,12 +1059,12 @@ function b_img_size(int $newWidth = null, int $newHeight = null, int $originalWi
  * @param string|resource $img       File name or image resource
  * @param int             $newWidth  New width
  * @param int             $newHeight New height
- * @param bool            $force     Force resizing (default: false)
+ * @param int             $mode      Mode (default: B_IMG_SIZE_RATIO)
  *
  * @return resource
  * @throws \Berlioz\Core\Exception\BerliozException if not valid input resource or file name
  */
-function b_img_resize($img, int $newWidth = null, int $newHeight = null, bool $force = false)
+function b_img_resize($img, int $newWidth = null, int $newHeight = null, int $mode = B_IMG_SIZE_RATIO)
 {
     // Get current size
     if (is_string($img)) {
@@ -1078,15 +1079,32 @@ function b_img_resize($img, int $newWidth = null, int $newHeight = null, bool $f
         }
     }
 
-    // Calculate new size
-    if ($force === false) {
-        $newSize = b_img_size($newWidth, $newHeight, $width, $height);
-        $newWidth = $newSize["width"];
-        $newHeight = $newSize["height"];
+    // Definitions
+    $dstWidth = $newWidth;
+    $dstHeight = $newHeight;
+    $posX = 0;
+    $posY = 0;
+
+    // We calculate cover sizes
+    if ($mode === B_IMG_RESIZE_COVER && !is_null($newWidth) && !is_null($newHeight)) {
+        $newSize = b_img_size($width,
+                              $height,
+                              $newWidth,
+                              $newHeight,
+                              $mode | B_IMG_RESIZE_COVER == B_IMG_RESIZE_COVER ? $mode & B_IMG_SIZE_LARGER_EDGE : $mode);
+        $newWidth = $newSize['width'];
+        $newHeight = $newSize['height'];
+        $posX = ceil(($dstWidth - $newWidth) / 2);
+        $posY = ceil(($dstHeight - $newHeight) / 2);
+    } else {
+        // We calculate size
+        $newSize = b_img_size($width, $height, $newWidth, $newHeight, $mode);
+        $dstWidth = $newWidth = $newSize['width'];
+        $dstHeight = $newHeight = $newSize['height'];
     }
 
     // Create image thumb
-    $thumb = imagecreatetruecolor($newWidth, $newHeight);
+    $thumb = imagecreatetruecolor($dstWidth, $dstHeight);
     switch ($type) {
         case 'RESOURCE':
             $source = $img;
@@ -1104,7 +1122,7 @@ function b_img_resize($img, int $newWidth = null, int $newHeight = null, bool $f
     }
 
     // Resizing
-    imagecopyresampled($thumb, $source, 0, 0, 0, 0, $newWidth, $newHeight, $width, $height);
+    imagecopyresampled($thumb, $source, $posX, $posY, 0, 0, $newWidth, $newHeight, $width, $height);
 
     // Erase source resource
     imagedestroy($source);
