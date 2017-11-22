@@ -144,7 +144,7 @@ class Pagination
         if ('post' == $this->options->get('method')) {
             $requestBody = $this->serverRequest->getParsedBody();
 
-            if (is_array($requestBody) && isset($requestBody[$this->getParam()])) {
+            if (is_array($requestBody) && !empty($requestBody[$this->getParam()])) {
                 $this->page = intval($requestBody[$this->getParam()]);
             } else {
                 $this->page = 1;
@@ -152,7 +152,7 @@ class Pagination
         } else {
             $queryParams = $this->serverRequest->getQueryParams();
 
-            if (is_array($queryParams) && isset($queryParams[$this->getParam()])) {
+            if (is_array($queryParams) && !empty($queryParams[$this->getParam()])) {
                 $this->page = intval($queryParams[$this->getParam()]);
             } else {
                 $this->page = 1;
