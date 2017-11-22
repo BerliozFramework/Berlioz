@@ -472,6 +472,7 @@ EOD;
 
         // Construct query string
         if (!empty($getParameters)) {
+            $getParameters = $this->filterParameters($getParameters);
             array_walk_recursive(
                 $getParameters,
                 function (&$value) {
@@ -485,6 +486,30 @@ EOD;
         }
 
         return $route;
+    }
+
+    /**
+     * Filter parameters, and remove null parameters.
+     *
+     * @param array $params Parameters
+     *
+     * @return array
+     */
+    private function filterParameters(array $params): array
+    {
+        return
+            array_filter(
+                $params,
+                function (&$value) {
+                    if (is_array($value)) {
+                        $value = $this->filterParameters($value);
+
+                        return count($value) > 0;
+                    } else {
+                        return !is_null($value);
+                    }
+                }
+            );
     }
 
     /**
