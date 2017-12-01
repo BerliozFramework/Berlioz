@@ -18,8 +18,11 @@ use Berlioz\Core\Exception\RuntimeException;
 
 class TwigExtension extends \Twig_Extension
 {
+    const H2PUSH_CACHE_COOKIE = 'h2pushes';
     /** @var \Berlioz\Core\Services\Template\TemplateInterface Template engine */
     private $templateEngine;
+    /** @var array Cache for HTTP2 push */
+    private $h2pushCache = [];
 
     /**
      * TwigExtension constructor.
@@ -30,6 +33,11 @@ class TwigExtension extends \Twig_Extension
     {
         $this->templateEngine = $templateEngine;
         $this->getTemplateEngine()->registerPath(__DIR__ . '/../..', 'Berlioz-Core');
+
+        // Get cache from cookies
+        if (isset($_COOKIE[self::H2PUSH_CACHE_COOKIE]) && is_array($_COOKIE[self::H2PUSH_CACHE_COOKIE])) {
+            $this->h2pushCache = array_keys($_COOKIE[self::H2PUSH_CACHE_COOKIE]);
+        }
     }
 
     /**
@@ -83,6 +91,7 @@ class TwigExtension extends \Twig_Extension
      * @param string        $locale   Locale for pattern translation
      *
      * @return string
+     * @throws \Berlioz\Core\Exception\RuntimeException if application not accessible
      */
     public function filterDateFormat($datetime, string $pattern = 'dd/MM/yyyy', string $locale = null): string
     {
@@ -129,8 +138,8 @@ class TwigExtension extends \Twig_Extension
     {
         $functions = [];
 
-        // Routing
         $functions[] = new \Twig_Function('path', [$this, 'functionPath']);
+        $functions[] = new \Twig_Function('preload', [$this, 'functionPreload']);
 
         return $functions;
     }
@@ -142,9 +151,54 @@ class TwigExtension extends \Twig_Extension
      * @param array  $parameters
      *
      * @return string
+     * @throws \Berlioz\Core\Exception\RuntimeException if application not accessible
      */
     public function functionPath(string $name, array $parameters = []): string
     {
         return $this->getApp()->getService('routing')->generate($name, $parameters);
+    }
+
+    /**
+     * Function preload to pre loading of request for HTTP 2 protocol.
+     *
+     * @param string $link
+     * @param array  $parameters
+     *
+     * @return string Link
+     */
+    public function functionPreload(string $link, array $parameters = []): string
+    {
+        $push = !(!empty($parameters['nopush']) && $parameters['nopush'] == true);
+
+        if (!$push || !in_array(md5($link), $this->h2pushCache)) {
+            $header = sprintf('Link: <%s>; rel=preload', $link);
+
+            // as
+            if (!empty($parameters['as'])) {
+                $header = sprintf('%s; as=%s', $header, $parameters['as']);
+            }
+            // type
+            if (!empty($parameters['type'])) {
+                $header = sprintf('%s; type=%s', $header, $parameters['as']);
+            }
+            // crossorigin
+            if (!empty($parameters['crossorigin']) && $parameters['crossorigin'] == true) {
+                $header .= '; crossorigin';
+            }
+            // nopush
+            if (!$push) {
+                $header .= '; nopush';
+            }
+
+            header($header, false);
+
+            // Cache
+            if ($push) {
+                $this->h2pushCache[] = md5($link);
+                setcookie(sprintf('%s[%s]', self::H2PUSH_CACHE_COOKIE, md5($link)), 1, 0, '/', '', false, true);
+            }
+        }
+
+        return $link;
     }
 }
