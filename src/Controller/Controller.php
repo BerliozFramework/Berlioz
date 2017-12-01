@@ -15,9 +15,12 @@ namespace Berlioz\Core\Controller;
 
 use Berlioz\Core\App;
 use Berlioz\Core\App\AppAwareTrait;
+use Berlioz\Core\Http\Response;
 use Berlioz\Core\Http\ServerRequest;
+use Berlioz\Core\Http\Stream;
 use Berlioz\Core\Services\Routing\RouteInterface;
 use Berlioz\Core\Services\Routing\RouterInterface;
+use Psr\Http\Message\ResponseInterface;
 
 /**
  * Controller class, it's the parent controller class.
@@ -67,6 +70,7 @@ abstract class Controller implements ControllerInterface
      * Get router.
      *
      * @return \Berlioz\Core\Services\Routing\RouterInterface|null
+     * @throws \Berlioz\Core\Exception\RuntimeException if application not accessible
      */
     final public function getRouter(): ?RouterInterface
     {
@@ -96,6 +100,7 @@ abstract class Controller implements ControllerInterface
      * Get the Route object of the current path.
      *
      * @return \Berlioz\Core\Services\Routing\RouteInterface|null
+     * @throws \Berlioz\Core\Exception\RuntimeException if application not accessible
      */
     public function getRoute(): ?RouteInterface
     {
@@ -155,6 +160,7 @@ abstract class Controller implements ControllerInterface
      * @param string $message Message
      *
      * @return void
+     * @throws \Berlioz\Core\Exception\RuntimeException if application not accessible
      * @see \Berlioz\Core\Services\FlashBag FlashBag class whose manage all flash messages
      */
     protected function addFlash(string $type, string $message): void
@@ -169,6 +175,7 @@ abstract class Controller implements ControllerInterface
      * @param mixed[] $variables Variables for template
      *
      * @return string Output content
+     * @throws \Berlioz\Core\Exception\RuntimeException if application not accessible
      * @see \Berlioz\Core\Services\Template\TemplateInterface
      */
     protected function render(string $name, array $variables = []): string
@@ -176,5 +183,47 @@ abstract class Controller implements ControllerInterface
         $templateEngine = $this->getApp()->getService('templating');
 
         return $templateEngine->render($name, $variables);
+    }
+
+    /**
+     * Do render of templates in Response object.
+     *
+     * @param string                                   $name      Filename of template
+     * @param mixed[]                                  $variables Variables for template
+     * @param \Psr\Http\Message\ResponseInterface|null $response  Response object to complete
+     *
+     * @return \Psr\Http\Message\ResponseInterface
+     * @throws \Berlioz\Core\Exception\RuntimeException if application not accessible
+     */
+    protected function renderResponse(string $name, array $variables = [], ResponseInterface $response = null): ResponseInterface
+    {
+        // Create new Response object if not given in parameter
+        if (is_null($response)) {
+            $response = new Response;
+        }
+
+        // Remove all headers
+        header_remove();
+
+        // Rendering
+        $rendering = $this->render($name, $variables);
+
+        // Get all headers defined in template engine and add to response
+        foreach (headers_list() as $header) {
+            $header = explode(':', $header, 2);
+            $response = $response->withAddedHeader($header[0], $header[1] ?? '');
+        }
+
+        // Get body of response
+        if ($response->getBody()->isWritable()) {
+            $response->getBody()->write($rendering);
+        } else {
+            $body = new Stream;
+            $body->write($rendering);
+
+            $response = $response->withBody($body);
+        }
+
+        return $response;
     }
 }
