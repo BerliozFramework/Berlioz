@@ -224,7 +224,7 @@ class App
         $router = $this->getService('routing');
 
         // Get route set from cache
-        if ($this->hasService('caching') && $this->getService('caching')->has(self::CACHE_KEY_ROUTING)) {
+        if ($this->getConfig()->hasCacheEnabled() && $this->hasService('caching') && $this->getService('caching')->has(self::CACHE_KEY_ROUTING)) {
             /** @var \Berlioz\Core\Services\Routing\RouteSetInterface $routeSet */
             $routeSet = $this->getService('caching')->get(self::CACHE_KEY_ROUTING);
 
@@ -240,7 +240,7 @@ class App
             // Log
             $this->getService('logging')->debug(sprintf('%s / Routes and exceptions declared', __METHOD__));
 
-            if ($this->hasService('caching')) {
+            if ($this->getConfig()->hasCacheEnabled() && $this->hasService('caching')) {
                 $this->getService('caching')->set(self::CACHE_KEY_ROUTING, $router->getRouteSet());
 
                 // Log
