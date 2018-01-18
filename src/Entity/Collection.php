@@ -13,48 +13,31 @@
 namespace Berlioz\Core\Entity;
 
 
-use Berlioz\Core\OptionList;
+use Berlioz\Core\Exception\InvalidArgumentException;
 
 /**
  * Class Collection.
  *
  * @package Berlioz\Core\Entity
  */
-abstract class Collection implements \IteratorAggregate, \ArrayAccess, \Countable, \JsonSerializable
+class Collection implements \IteratorAggregate, \ArrayAccess, \Countable, \JsonSerializable
 {
     /** @var mixed[] List of elements */
     protected $list;
     /** @var string[] Types of accepted objects in the list */
-    private $entityClass;
-    /** @var \Berlioz\Core\OptionList Options for list */
-    protected $options;
-    /** @var int Number of elements in list */
-    public $nb;
-    /** @var int Total number of elements */
-    public $nbTotal;
-    /** @var int Number of elements remaining */
-    public $nbRemaining;
+    private $entityClasses;
 
     /**
      * Collection constructor.
      *
-     * @param string|string[] $entityClass List of class accepted in collection
-     * @param OptionList|null $options     Options for collection
+     * @param string|string[] $entityClasses List of class accepted in collection
      */
-    public function __construct($entityClass, OptionList $options = null)
+    public function __construct($entityClasses = null)
     {
         $this->list = [];
-        $this->entityClass = (array) $entityClass;
-
-        if (is_null($options)) {
-            $this->options = new OptionList;
-        } else {
-            $this->options = $options;
+        if (!empty($entityClass)) {
+            $this->entityClasses = (array) $entityClasses;
         }
-
-        $this->nb = 0;
-        $this->nbTotal = 0;
-        $this->nbRemaining = 0;
     }
 
     /**
@@ -74,8 +57,6 @@ abstract class Collection implements \IteratorAggregate, \ArrayAccess, \Countabl
                 $this->list[$key] = clone $value;
             }
         }
-
-        $this->options = clone $this->options;
     }
 
     /**
@@ -199,10 +180,6 @@ abstract class Collection implements \IteratorAggregate, \ArrayAccess, \Countabl
     public function empty(): void
     {
         $this->list = [];
-
-        $this->nb = 0;
-        $this->nbTotal = 0;
-        $this->nbRemaining = 0;
     }
 
     /**
@@ -250,15 +227,18 @@ abstract class Collection implements \IteratorAggregate, \ArrayAccess, \Countabl
      * @param mixed $value  The value to set
      *
      * @see \ArrayAccess
+     * @throws \Berlioz\Core\Exception\InvalidArgumentException if entity isn't accepted
      */
     public function offsetSet($offset, $value): void
     {
-        if ($this->isValidElement($value)) {
+        if ($this->isValidEntity($value)) {
             if (is_null($offset) || mb_strlen($offset) == 0) {
                 $this->list[] = $value;
             } else {
                 $this->list[$offset] = $value;
             }
+        } else {
+            throw new InvalidArgumentException(sprintf('This collection does\'t accept this entity "%s"', gettype($value)));
         }
     }
 
@@ -297,9 +277,12 @@ abstract class Collection implements \IteratorAggregate, \ArrayAccess, \Countabl
 
         foreach ($this as $key => $obj) {
             if (!is_null($property)) {
-                if (isset($obj->$property)) {
-                    if ((true === $strict && $obj->$property === $value)
-                        || (false === $strict && $obj->$property == $value)
+                $exists = false;
+                $value = b_property_get($obj, $property, $exists);
+
+                if ($exists === true) {
+                    if ((true === $strict && $value === $value)
+                        || (false === $strict && $value == $value)
                     ) {
                         $found[] = $obj;
                     }
@@ -317,17 +300,13 @@ abstract class Collection implements \IteratorAggregate, \ArrayAccess, \Countabl
     }
 
     /**
-     * Get options of Collection.
+     * Get accepted entities classes, null if all.
      *
-     * @return \Berlioz\Core\OptionList
+     * @return array|null
      */
-    public function getOptions(): OptionList
+    public function getAcceptedEntities(): ?array
     {
-        if (is_null($this->options)) {
-            $this->options = new OptionList;
-        }
-
-        return $this->options;
+        return $this->entityClasses;
     }
 
     /**
@@ -337,19 +316,21 @@ abstract class Collection implements \IteratorAggregate, \ArrayAccess, \Countabl
      *
      * @return bool
      */
-    public function isValidElement($mixed): bool
+    public function isValidEntity($mixed): bool
     {
-        $bReturn = false;
-
-        if (is_object($mixed)) {
-            foreach ($this->entityClass as $entityClass) {
-                if (is_a($mixed, $entityClass)) {
-                    $bReturn = true;
+        if (empty($this->entityClasses)) {
+            return true;
+        } else {
+            if (is_object($mixed)) {
+                foreach ($this->entityClasses as $entityClass) {
+                    if (is_a($mixed, $entityClass, true)) {
+                        return true;
+                    }
                 }
             }
         }
 
-        return $bReturn;
+        return false;
     }
 
     /**
@@ -358,6 +339,7 @@ abstract class Collection implements \IteratorAggregate, \ArrayAccess, \Countabl
      * @param \Berlioz\Core\Entity\Collection $collection Collection to merge
      *
      * @return static
+     * @throws \Berlioz\Core\Exception\InvalidArgumentException if not the same Collection class
      */
     public function mergeWith(Collection $collection): Collection
     {
@@ -368,7 +350,7 @@ abstract class Collection implements \IteratorAggregate, \ArrayAccess, \Countabl
                 $this[$key] = $object;
             }
         } else {
-            trigger_error("mergeWith() method require an same type of Collection.", E_USER_ERROR);
+            throw new InvalidArgumentException(sprintf('%s::mergeWith() method require an same type of Collection.', get_class($this)));
         }
 
         return $this;
