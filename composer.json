@@ -14,14 +14,12 @@
     "psr-4": {
       "Berlioz\\Core\\": "src/",
       "Psr\\EventManager\\": "lib/Psr/EventManager"
-    },
-    "files": [
-      "src/functions.php"
-    ]
+    }
   },
   "require": {
     "php": ">=7.1",
     "ext-intl": "*",
+    "berlioz/utils": "@dev",
     "phpdocumentor/reflection-docblock": "~3.2",
     "twig/twig": "~2.4",
     "psr/container": "~1.0",
