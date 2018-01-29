@@ -24,6 +24,10 @@ abstract class Message implements MessageInterface
     protected $headers;
     /** @var \Psr\Http\Message\StreamInterface Body */
     protected $body;
+    /** @var null|array|object Parsed body */
+    protected $parsedBody;
+    /** @var callable[] Body parser */
+    protected static $bodyParser = [];
 
     /**
      * Retrieves the HTTP protocol version as a string.
@@ -261,5 +265,111 @@ abstract class Message implements MessageInterface
         $clone->body = $body;
 
         return $clone;
+    }
+
+    /**
+     * Retrieve any parameters provided in the request body.
+     *
+     * If the request Content-Type is either application/x-www-form-urlencoded
+     * or multipart/form-data, and the request method is POST, this method MUST
+     * return the contents of $_POST.
+     *
+     * Otherwise, this method may return any results of deserializing
+     * the request body content; as parsing returns structured content, the
+     * potential types MUST be arrays or objects only. A null value indicates
+     * the absence of body content.
+     *
+     * @return null|array|object The deserialized body parameters, if any.
+     *     These will typically be an array or object.
+     */
+    public function getParsedBody()
+    {
+        $contentType = $this->getHeader('Content-Type');
+
+        if (!empty($contentType)) {
+            $contentType = explode(';', reset($contentType));
+            $contentType = $contentType[0];
+            $contentType = explode('/', $contentType, 2);
+            $contentType[1] = explode('+', $contentType[1]);
+            $contentType = $contentType[0] . '/' . $contentType[1][count($contentType[1]) - 1];
+
+            if (isset(self::$bodyParser[$contentType]) && is_callable(self::$bodyParser[$contentType])) {
+                $bodyParser = self::$bodyParser[$contentType];
+                $parsedBody = $bodyParser((string) $this->getBody());
+            } else {
+                switch ($contentType) {
+                    case 'application/x-www-form-urlencoded':
+                        $parsedBody = [];
+                        parse_str((string) $this->getBody(), $parsedBody);
+                        break;
+                    case 'multipart/form-data':
+                        $parsedBody = $_POST;
+                        break;
+                    case 'application/json':
+                        $parsedBody = json_decode((string) $this->getBody());
+                        break;
+                    default:
+                        $parsedBody = null;
+                }
+            }
+
+            if (!is_null($parsedBody) && !is_array($parsedBody) && !is_object($parsedBody)) {
+                throw new \RuntimeException('Parsed body must be an array or an object or must be null.');
+            } else {
+                $this->parsedBody = $parsedBody;
+            }
+        }
+
+        return $this->parsedBody;
+    }
+
+    /**
+     * Return an instance with the specified body parameters.
+     *
+     * These MAY be injected during instantiation.
+     *
+     * If the request Content-Type is either application/x-www-form-urlencoded
+     * or multipart/form-data, and the request method is POST, use this method
+     * ONLY to inject the contents of $_POST.
+     *
+     * The data IS NOT REQUIRED to come from $_POST, but MUST be the results of
+     * deserializing the request body content. Deserialization/parsing returns
+     * structured data, and, as such, this method ONLY accepts arrays or objects,
+     * or a null value if nothing was available to parse.
+     *
+     * As an example, if content negotiation determines that the request data
+     * is a JSON payload, this method could be used to create a request
+     * instance with the deserialized parameters.
+     *
+     * This method MUST be implemented in such a way as to retain the
+     * immutability of the message, and MUST return an instance that has the
+     * updated body parameters.
+     *
+     * @param null|array|object $data The deserialized body data. This will
+     *                                typically be in an array or object.
+     *
+     * @return static
+     * @throws \InvalidArgumentException if an unsupported argument type is
+     *     provided.
+     */
+    public function withParsedBody($data)
+    {
+        $clone = clone $this;
+        $clone->parsedBody = $data;
+
+        return $clone;
+    }
+
+    /**
+     * Add body parser
+     *
+     * @param string|string[] $mime     Body     parser
+     * @param callable        $callable Callable parser
+     */
+    public static function addBodyParser($mime, callable $callable)
+    {
+        foreach ((array) $mime as $aMime) {
+            self::$bodyParser[$aMime] = $callable;
+        }
     }
 }
