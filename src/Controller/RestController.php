@@ -14,10 +14,11 @@ namespace Berlioz\Core\Controller;
 
 
 use Berlioz\Core\App;
-use Berlioz\Core\Http\Response;
-use Berlioz\Core\Http\Stream;
 use Berlioz\Core\Exception\BerliozException;
 use Berlioz\Core\Exception\RoutingException;
+use Berlioz\Http\Message\Response;
+use Berlioz\Http\Message\Stream;
+use Psr\Http\Message\ResponseInterface;
 
 /**
  * REST controller class, it's the parent REST controller class.
@@ -44,16 +45,16 @@ abstract class RestController extends Controller
      *
      * @param bool|object|array|\Exception $mixed Data
      *
-     * @return \Berlioz\Core\Http\Response
+     * @return \Psr\Http\Message\ResponseInterface
      * @throws \Berlioz\Core\Exception\BerliozException If parameter object does'nt implement \JsonSerializable
      *                                                  interface to be converted
      */
-    protected function response($mixed): Response
+    protected function response($mixed): ResponseInterface
     {
         $statusCode = 200;
         $reasonPhrase = '';
         $headers['Content-Type'] = ['application/json'];
-        $body = new Stream;
+        $body = new Stream();
 
         // Booleans
         if (is_bool($mixed)) {

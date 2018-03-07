@@ -15,7 +15,7 @@ namespace Berlioz\Core\Controller;
 
 use Berlioz\Core\App;
 use Berlioz\Core\App\AppAwareInterface;
-use Berlioz\Core\Http\ServerRequest;
+use Psr\Http\Message\ServerRequestInterface;
 
 /**
  * Interface ControllerInterface.
@@ -37,18 +37,18 @@ interface ControllerInterface extends AppAwareInterface
      * Called after creation of instance and before _b_init calling.
      * It's used to control access to a controller or application.
      *
-     * @param \Berlioz\Core\Http\ServerRequest $request Server request
+     * @param \Psr\Http\Message\ServerRequestInterface $request Server request
      *
-     * @return \Berlioz\Core\Http\Response|bool
+     * @return \Psr\Http\Message\ResponseInterface|bool
      */
-    public function _b_authentication(ServerRequest $request);
+    public function _b_authentication(ServerRequestInterface $request);
 
     /**
      * Magic Berlioz method, called after initialization and authentication.
      *
-     * @param \Berlioz\Core\Http\ServerRequest $request Server request
+     * @param \Psr\Http\Message\ServerRequestInterface $request Server request
      *
      * @return void
      */
-    public function _b_init(ServerRequest $request): void;
+    public function _b_init(ServerRequestInterface $request): void;
 }

@@ -15,13 +15,13 @@ namespace Berlioz\Core\Services\Routing;
 
 use Berlioz\Core\App;
 use Berlioz\Core\App\AppAwareTrait;
-use Berlioz\Core\Http\Response;
-use Berlioz\Core\Http\ServerRequest;
-use Berlioz\Core\Http\Stream;
-use Berlioz\Core\Http\UploadedFile;
-use Berlioz\Core\Http\Uri;
 use Berlioz\Core\Exception\BerliozException;
 use Berlioz\Core\Exception\RoutingException;
+use Berlioz\Http\Message\Response;
+use Berlioz\Http\Message\ServerRequest;
+use Berlioz\Http\Message\Stream;
+use Berlioz\Http\Message\UploadedFile;
+use Berlioz\Http\Message\Uri;
 use phpDocumentor\Reflection\DocBlockFactory;
 use Psr\Http\Message\ServerRequestInterface;
 
@@ -30,7 +30,7 @@ class Router implements RouterInterface
     use AppAwareTrait;
     /** @var \Berlioz\Core\Services\Routing\RouteSetInterface Route set */
     private $routeSet;
-    /** @var \Berlioz\Core\Http\ServerRequest Server request */
+    /** @var \Psr\Http\Message\ServerRequestInterface Server request */
     private $server_request;
     /** @var \Berlioz\Core\Services\Routing\RouteInterface Current route */
     private $current_route;

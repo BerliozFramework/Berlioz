@@ -139,7 +139,7 @@ interface RouterInterface extends AppAwareInterface
     /**
      * Handle.
      *
-     * @return \Berlioz\Core\Http\Response|string
+     * @return \Psr\Http\Message\ResponseInterface|string
      */
     public function handle();
 

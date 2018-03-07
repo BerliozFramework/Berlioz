@@ -13,8 +13,8 @@
 namespace Berlioz\Core\Entity;
 
 
-use Berlioz\Core\Http\ServerRequest;
 use Berlioz\Core\OptionList;
+use Psr\Http\Message\ServerRequestInterface;
 
 /**
  * Pagination class to manage pagination.
@@ -27,7 +27,7 @@ class Pagination
 {
     /** @var int Number of Pagination instance */
     private static $iPagination = 0;
-    /** @var \Berlioz\Core\Http\ServerRequest Server request */
+    /** @var \Psr\Http\Message\ServerRequestInterface Server request */
     private $serverRequest;
     /** @var int Current page */
     private $page;
@@ -43,16 +43,16 @@ class Pagination
     /**
      * Pagination constructor.
      *
-     * @param \Berlioz\Core\Http\ServerRequest $serverRequest Server request
-     * @param OptionList                       $options       {
+     * @param \Psr\Http\Message\ServerRequestInterface $serverRequest Server request
+     * @param OptionList                               $options       {
      *
-     * @var string                             $method        HTTP method for parameter transmission between
+     * @var string                                     $method        HTTP method for parameter transmission between
      *      pages
-     * @var string                             $param         Name of GET or POST parameter
-     * @var int                                $nb_per_page   Number of elements per page
+     * @var string                                     $param         Name of GET or POST parameter
+     * @var int                                        $nb_per_page   Number of elements per page
      * }
      */
-    public function __construct(ServerRequest $serverRequest, OptionList $options = null)
+    public function __construct(ServerRequestInterface $serverRequest, OptionList $options = null)
     {
         $this->serverRequest = $serverRequest;
 
@@ -177,7 +177,7 @@ class Pagination
      * If no Collection method used, need to pass an integer with value of number
      * of elements.
      *
-     * @param \Berlioz\Core\Entity\Collection|\Countable|int $mixed Collection with nbTotal property completed or
+     * @param \Berlioz\Core\Entity\Collection|\Countable|int $mixed  Collection with nbTotal property completed or
      *                                                               integer
      *
      * @return static
@@ -186,7 +186,7 @@ class Pagination
     {
         if ($mixed instanceof Collection) {
             $this->mixed = $mixed;
-            $this->nb_pages = ceil(max($mixed->nbTotal, 1) / max($this->nb_per_page, 1));
+            $this->nb_pages = ceil(max(count($mixed), 1) / max($this->nb_per_page, 1));
         } else {
             if ($mixed instanceof \Countable) {
                 $this->mixed = $mixed;

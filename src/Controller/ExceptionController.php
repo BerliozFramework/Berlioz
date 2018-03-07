@@ -14,8 +14,8 @@ namespace Berlioz\Core\Controller;
 
 
 use Berlioz\Core\Exception\RoutingException;
-use Berlioz\Core\Http\Response;
 use Berlioz\Core\Services\Routing\RouterInterface;
+use Berlioz\Http\Message\Response;
 
 class ExceptionController extends Controller implements ExceptionControllerInterface
 {

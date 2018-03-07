@@ -15,12 +15,12 @@ namespace Berlioz\Core\Controller;
 
 use Berlioz\Core\App;
 use Berlioz\Core\App\AppAwareTrait;
-use Berlioz\Core\Http\Response;
-use Berlioz\Core\Http\ServerRequest;
-use Berlioz\Core\Http\Stream;
 use Berlioz\Core\Services\Routing\RouteInterface;
 use Berlioz\Core\Services\Routing\RouterInterface;
+use Berlioz\Http\Message\Response;
+use Berlioz\Http\Message\Stream;
 use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\ServerRequestInterface;
 
 /**
  * Controller class, it's the parent controller class.
@@ -84,7 +84,7 @@ abstract class Controller implements ControllerInterface
     /**
      * @inheritdoc
      */
-    public function _b_authentication(ServerRequest $request)
+    public function _b_authentication(ServerRequestInterface $request)
     {
         return true;
     }
@@ -92,7 +92,7 @@ abstract class Controller implements ControllerInterface
     /**
      * @inheritdoc
      */
-    public function _b_init(ServerRequest $request): void
+    public function _b_init(ServerRequestInterface $request): void
     {
     }
 
@@ -147,10 +147,10 @@ abstract class Controller implements ControllerInterface
             }
 
             $query = array_merge($query, $get);
-            $querystring = http_build_query($query);
+            $queryString = http_build_query($query);
         }
 
-        $this->redirect($path . (!empty($querystring) ? '?' . $querystring : ''));
+        $this->redirect($path . (!empty($queryString) ? '?' . $queryString : ''));
     }
 
     /**
