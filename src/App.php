@@ -14,9 +14,10 @@ namespace Berlioz\Core;
 
 
 use Berlioz\Core\App\Profile;
-use Berlioz\Core\App\ServiceContainer;
 use Berlioz\Core\Exception\BerliozException;
 use Berlioz\Core\Exception\RuntimeException;
+use Berlioz\ServiceContainer\ServiceContainer;
+use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ResponseInterface;
 
 /**
@@ -36,7 +37,7 @@ class App
     const CACHE_KEY_DEBUG = '_BERLIOZ_DEBUG';
     /** @var \Berlioz\Core\ConfigInterface Configuration */
     private $config;
-    /** @var \Berlioz\Core\App\ServiceContainer Service container */
+    /** @var \Berlioz\ServiceContainer\ServiceContainer Service container */
     private $services;
     /** @var \Berlioz\Core\App\Profile Profile */
     private $profile;
@@ -110,13 +111,26 @@ class App
     /**
      * Get service container.
      *
-     * @return \Berlioz\Core\App\ServiceContainer
+     * @return \Berlioz\ServiceContainer\ServiceContainer
+     * @throws \Psr\Container\ContainerExceptionInterface
+     * @throws \Berlioz\Core\Exception\BerliozException
      */
     public function getServices(): ServiceContainer
     {
         if (is_null($this->services)) {
-            $this->services = new ServiceContainer();
-            $this->services->setApp($this);
+            $this->services = new ServiceContainer($this->getConfig()->get('app.services'));
+            $this->services->registerServices(['events'     => '\Berlioz\Core\Services\Events\EventManager',
+                                               'flashbag'   => '\Berlioz\Core\Services\FlashBag',
+                                               'logging'    => '\Berlioz\Core\Services\Logger',
+                                               'routing'    => '\Berlioz\Core\Services\Routing\Router',
+                                               'templating' => '\Berlioz\Core\Services\Template\DefaultEngine']);
+            $this->services->setConstraints(['caching'    => '\Psr\SimpleCache\CacheInterface',
+                                             'events'     => '\Psr\EventManager\EventManagerInterface',
+                                             'flashbag'   => '\Berlioz\Core\Services\FlashBag',
+                                             'logging'    => '\Psr\Log\LoggerInterface',
+                                             'routing'    => '\Berlioz\Core\Services\Routing\RouterInterface',
+                                             'templating' => '\Berlioz\Core\Services\Template\TemplateInterface']);
+            $this->services->registerObjectAsService($this, 'app');
         }
 
         return $this->services;
@@ -125,11 +139,11 @@ class App
     /**
      * Set service container.
      *
-     * @param \Berlioz\Core\App\ServiceContainer $services
+     * @param \Psr\Container\ContainerInterface $services
      *
      * @return static
      */
-    public function setServices(ServiceContainer $services): App
+    public function setServices(ContainerInterface $services): App
     {
         $this->services = $services;
 
@@ -142,6 +156,8 @@ class App
      * @param string $name Name of service
      *
      * @return mixed
+     * @throws \Psr\Container\ContainerExceptionInterface
+     * @throws \Berlioz\Core\Exception\BerliozException
      */
     public function getService(string $name)
     {
@@ -154,6 +170,8 @@ class App
      * @param string $name Name of service
      *
      * @return bool
+     * @throws \Psr\Container\ContainerExceptionInterface
+     * @throws \Berlioz\Core\Exception\BerliozException
      */
     public function hasService(string $name): bool
     {
@@ -210,6 +228,8 @@ class App
      * Handle.
      *
      * @return void
+     * @throws \Psr\Container\ContainerExceptionInterface
+     * @throws \Berlioz\Core\Exception\BerliozException
      */
     public function handle(): void
     {

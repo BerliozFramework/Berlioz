@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "content-hash": "ac2ce7ddcaa974453757de21e322c074",
+    "content-hash": "d8d6e889ab0e893202419c4b6bf0b8a9",
     "packages": [
         {
             "name": "berlioz/http-message",
@@ -12,16 +12,17 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/BerliozFramework/HttpMessage.git",
-                "reference": "8117ba74e2a458644a2b5fa8bf118d1b1982fc0b"
+                "reference": "0c697b90d095ae130ad33200b7ca9fe13200fe5a"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/BerliozFramework/HttpMessage/zipball/8117ba74e2a458644a2b5fa8bf118d1b1982fc0b",
-                "reference": "8117ba74e2a458644a2b5fa8bf118d1b1982fc0b",
+                "url": "https://api.github.com/repos/BerliozFramework/HttpMessage/zipball/0c697b90d095ae130ad33200b7ca9fe13200fe5a",
+                "reference": "0c697b90d095ae130ad33200b7ca9fe13200fe5a",
                 "shasum": ""
             },
             "require": {
                 "php": ">=7.1",
+                "php-http/message-factory": "~1.0",
                 "psr/http-message": "~1.0"
             },
             "require-dev": {
@@ -45,7 +46,48 @@
             ],
             "description": "Berlioz HTTP Message",
             "homepage": "http://www.berlioz-framework.com",
-            "time": "2018-03-07 17:41:37"
+            "time": "2018-03-20 19:54:18"
+        },
+        {
+            "name": "berlioz/service-container",
+            "version": "dev-develop",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/BerliozFramework/ServiceContainer.git",
+                "reference": "dd096e886da4f7b005f9a1bdd6240b5516af6408"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/BerliozFramework/ServiceContainer/zipball/dd096e886da4f7b005f9a1bdd6240b5516af6408",
+                "reference": "dd096e886da4f7b005f9a1bdd6240b5516af6408",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=7.1",
+                "psr/container": "1.0.0"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "~6.5"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Berlioz\\ServiceContainer\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Ronan Giron",
+                    "email": "ronan.giron@berlioz-framework.com"
+                }
+            ],
+            "description": "Berlioz Service Container",
+            "homepage": "http://www.berlioz-framework.com",
+            "time": "2018-03-23 17:22:20"
         },
         {
             "name": "berlioz/utils",
@@ -89,6 +131,56 @@
             "description": "Additional functions for PHP",
             "homepage": "http://www.berlioz-framework.com",
             "time": "2018-01-30 15:30:59"
+        },
+        {
+            "name": "php-http/message-factory",
+            "version": "v1.0.2",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/php-http/message-factory.git",
+                "reference": "a478cb11f66a6ac48d8954216cfed9aa06a501a1"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/php-http/message-factory/zipball/a478cb11f66a6ac48d8954216cfed9aa06a501a1",
+                "reference": "a478cb11f66a6ac48d8954216cfed9aa06a501a1",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=5.4",
+                "psr/http-message": "^1.0"
+            },
+            "type": "library",
+            "extra": {
+                "branch-alias": {
+                    "dev-master": "1.0-dev"
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Http\\Message\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Márk Sági-Kazár",
+                    "email": "mark.sagikazar@gmail.com"
+                }
+            ],
+            "description": "Factory interfaces for PSR-7 HTTP Message",
+            "homepage": "http://php-http.org",
+            "keywords": [
+                "factory",
+                "http",
+                "message",
+                "stream",
+                "uri"
+            ],
+            "time": "2015-12-19T14:08:53+00:00"
         },
         {
             "name": "phpdocumentor/reflection-common",
@@ -491,16 +583,16 @@
         },
         {
             "name": "twig/twig",
-            "version": "v2.4.6",
+            "version": "v2.4.7",
             "source": {
                 "type": "git",
                 "url": "https://github.com/twigphp/Twig.git",
-                "reference": "d2117ec118c1ff3d28ccddca8212d82787a4809f"
+                "reference": "69aacd44dbbaa3199d5afb68605c996d577896fc"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/twigphp/Twig/zipball/d2117ec118c1ff3d28ccddca8212d82787a4809f",
-                "reference": "d2117ec118c1ff3d28ccddca8212d82787a4809f",
+                "url": "https://api.github.com/repos/twigphp/Twig/zipball/69aacd44dbbaa3199d5afb68605c996d577896fc",
+                "reference": "69aacd44dbbaa3199d5afb68605c996d577896fc",
                 "shasum": ""
             },
             "require": {
@@ -509,8 +601,8 @@
             },
             "require-dev": {
                 "psr/container": "^1.0",
-                "symfony/debug": "~2.7",
-                "symfony/phpunit-bridge": "~3.3@dev"
+                "symfony/debug": "^2.7",
+                "symfony/phpunit-bridge": "^3.3"
             },
             "type": "library",
             "extra": {
@@ -553,7 +645,7 @@
             "keywords": [
                 "templating"
             ],
-            "time": "2018-03-03T16:23:01+00:00"
+            "time": "2018-03-20T04:31:17+00:00"
         },
         {
             "name": "webmozart/assert",
@@ -810,16 +902,16 @@
         },
         {
             "name": "phpfastcache/phpfastcache",
-            "version": "6.1.1",
+            "version": "6.1.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/PHPSocialNetwork/phpfastcache.git",
-                "reference": "75af62255ea43caec38e376c53734f06885a7b6e"
+                "reference": "0a8acb7d6e80b84a6bfdd7f8fb011097b0ce2a15"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/PHPSocialNetwork/phpfastcache/zipball/75af62255ea43caec38e376c53734f06885a7b6e",
-                "reference": "75af62255ea43caec38e376c53734f06885a7b6e",
+                "url": "https://api.github.com/repos/PHPSocialNetwork/phpfastcache/zipball/0a8acb7d6e80b84a6bfdd7f8fb011097b0ce2a15",
+                "reference": "0a8acb7d6e80b84a6bfdd7f8fb011097b0ce2a15",
                 "shasum": ""
             },
             "require": {
@@ -902,7 +994,7 @@
                 "zend memory cache",
                 "zend server"
             ],
-            "time": "2018-03-01T22:15:40+00:00"
+            "time": "2018-03-23T20:31:49+00:00"
         },
         {
             "name": "phpspec/prophecy",
@@ -2009,7 +2101,8 @@
     "minimum-stability": "stable",
     "stability-flags": {
         "berlioz/utils": 20,
-        "berlioz/http-message": 20
+        "berlioz/http-message": 20,
+        "berlioz/service-container": 20
     },
     "prefer-stable": false,
     "prefer-lowest": false,
