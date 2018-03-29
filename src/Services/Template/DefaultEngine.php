@@ -16,7 +16,6 @@ namespace Berlioz\Core\Services\Template;
 use Berlioz\Core\App;
 use Berlioz\Core\App\AppAwareTrait;
 use Berlioz\Core\ConfigInterface;
-use Berlioz\Core\Exception\InvalidArgumentException;
 
 class DefaultEngine implements TemplateInterface
 {
@@ -49,7 +48,7 @@ class DefaultEngine implements TemplateInterface
             if (is_string($extension) && class_exists($extension)) {
                 $this->getTwig()->addExtension(new $extension);
             } else {
-                throw new InvalidArgumentException(sprintf('Extension "%s" does\'nt exists', $extension));
+                throw new \InvalidArgumentException(sprintf('Extension "%s" does\'nt exists', $extension));
             }
         }
     }

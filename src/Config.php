@@ -14,7 +14,6 @@ namespace Berlioz\Core;
 
 
 use Berlioz\Core\Exception\BerliozException;
-use Berlioz\Core\Exception\InvalidArgumentException;
 use Psr\Log\LogLevel;
 
 /**
@@ -46,7 +45,7 @@ class Config implements ConfigInterface
             // Load configuration
             $this->configuration = $this->load(basename($fileName));
         } else {
-            throw new InvalidArgumentException(sprintf('Directory "%s" does not exists', $rootDir));
+            throw new \InvalidArgumentException(sprintf('Directory "%s" does not exists', $rootDir));
         }
     }
 
@@ -56,7 +55,7 @@ class Config implements ConfigInterface
      * @param string $dirName Path of directory
      *
      * @return void
-     * @throws \Berlioz\Core\Exception\BerliozException If directory doesn't exists
+     * @throws \InvalidArgumentException If directory doesn't exists
      */
     private function setConfigDirectory(string $dirName): void
     {
@@ -66,9 +65,9 @@ class Config implements ConfigInterface
             $this->configDirectory = $dirName;
         } else {
             if ($dirName !== false) {
-                throw new InvalidArgumentException(sprintf('Directory "%s" does not exists', $dirName));
+                throw new \InvalidArgumentException(sprintf('Directory "%s" does not exists', $dirName));
             } else {
-                throw new InvalidArgumentException(sprintf('Config directory does not exists', $dirName));
+                throw new \InvalidArgumentException(sprintf('Config directory does not exists', $dirName));
             }
         }
     }

@@ -13,8 +13,6 @@
 namespace Berlioz\Core\Entity;
 
 
-use Berlioz\Core\Exception\InvalidArgumentException;
-
 /**
  * Class Collection.
  *
@@ -227,7 +225,7 @@ class Collection implements \IteratorAggregate, \ArrayAccess, \Countable, \JsonS
      * @param mixed $value  The value to set
      *
      * @see \ArrayAccess
-     * @throws \Berlioz\Core\Exception\InvalidArgumentException if entity isn't accepted
+     * @throws \InvalidArgumentException if entity isn't accepted
      */
     public function offsetSet($offset, $value): void
     {
@@ -238,7 +236,7 @@ class Collection implements \IteratorAggregate, \ArrayAccess, \Countable, \JsonS
                 $this->list[$offset] = $value;
             }
         } else {
-            throw new InvalidArgumentException(sprintf('This collection does\'t accept this entity "%s"', gettype($value)));
+            throw new \InvalidArgumentException(sprintf('This collection does\'t accept this entity "%s"', gettype($value)));
         }
     }
 
@@ -339,7 +337,7 @@ class Collection implements \IteratorAggregate, \ArrayAccess, \Countable, \JsonS
      * @param \Berlioz\Core\Entity\Collection $collection Collection to merge
      *
      * @return static
-     * @throws \Berlioz\Core\Exception\InvalidArgumentException if not the same Collection class
+     * @throws \InvalidArgumentException if not the same Collection class
      */
     public function mergeWith(Collection $collection): Collection
     {
@@ -350,7 +348,7 @@ class Collection implements \IteratorAggregate, \ArrayAccess, \Countable, \JsonS
                 $this[$key] = $object;
             }
         } else {
-            throw new InvalidArgumentException(sprintf('%s::mergeWith() method require an same type of Collection.', get_class($this)));
+            throw new \InvalidArgumentException(sprintf('%s::mergeWith() method require an same type of Collection.', get_class($this)));
         }
 
         return $this;
