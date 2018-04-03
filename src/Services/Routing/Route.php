@@ -405,7 +405,7 @@ EOD;
      */
     public function getPriority(): int
     {
-        return $this->route_options['priority'] ?? -1;
+        return intval($this->route_options['options']['priority'] ?? -1);
     }
 
     /**
