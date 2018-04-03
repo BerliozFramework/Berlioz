@@ -135,6 +135,13 @@ interface RouteInterface
     public function setDescription(string $description): RouteInterface;
 
     /**
+     * Get priority.
+     *
+     * @return int
+     */
+    public function getPriority(): int;
+
+    /**
      * No authentication requirement ?
      *
      * @return bool

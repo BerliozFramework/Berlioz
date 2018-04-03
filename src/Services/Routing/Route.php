@@ -403,6 +403,14 @@ EOD;
     /**
      * @inheritdoc
      */
+    public function getPriority(): int
+    {
+        return $this->route_options['priority'] ?? -1;
+    }
+
+    /**
+     * @inheritdoc
+     */
     public function noAuthentication(): bool
     {
         return !(!isset($this->route_options['authentication']) || $this->route_options['authentication'] === false);

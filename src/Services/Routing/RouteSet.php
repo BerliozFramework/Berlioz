@@ -76,10 +76,14 @@ class RouteSet implements RouteSetInterface
         usort(
             $routes,
             function (RouteInterface $a, RouteInterface $b) {
-                if ($a->getNumberOfParameters() == $b->getNumberOfParameters()) {
-                    return 0;
+                if ($a->getPriority() == $b->getPriority()) {
+                    if ($a->getNumberOfParameters() == $b->getNumberOfParameters()) {
+                        return 0;
+                    } else {
+                        return ($a->getNumberOfParameters() > $b->getNumberOfParameters()) ? -1 : 1;
+                    }
                 } else {
-                    return ($a->getNumberOfParameters() > $b->getNumberOfParameters()) ? -1 : 1;
+                    return ($a->getPriority() > $b->getPriority()) ? -1 : 1;
                 }
             });
 
