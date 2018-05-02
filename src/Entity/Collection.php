@@ -265,26 +265,35 @@ class Collection implements \IteratorAggregate, \ArrayAccess, \Countable, \JsonS
     /**
      * Find an element.
      *
-     * @param mixed  $value    Value to found
-     * @param string $property Property to check
-     * @param bool   $strict   Strict result
+     * @param mixed   $value           Value to found
+     * @param string  $property        Property to check
+     * @param bool    $strict          Strict result
+     * @param mixed[] $callableOptions Options for callable function
      *
      * @return Entity[]
      */
-    public function find($value, $property = null, $strict = false): array
+    public function find($value, $property = null, $strict = false, $callableOptions = []): array
     {
         $found = [];
 
         foreach ($this as $key => $obj) {
             if (!is_null($property)) {
-                $exists = false;
-                $value = b_property_get($obj, $property, $exists);
-
-                if ($exists === true) {
-                    if ((true === $strict && $value === $value)
-                        || (false === $strict && $value == $value)
+                if (is_callable([$obj, $property])) {
+                    if ((true === $strict && call_user_func([$obj, $property], ...$callableOptions) === $value)
+                        || (false === $strict && call_user_func([$obj, $property], ...$callableOptions) == $value)
                     ) {
                         $found[] = $obj;
+                    }
+                } else {
+                    $exists = false;
+                    $value = b_property_get($obj, $property, $exists);
+    
+                    if ($exists === true) {
+                        if ((true === $strict && $value === $value)
+                            || (false === $strict && $value == $value)
+                        ) {
+                            $found[] = $obj;
+                        }
                     }
                 }
             } else {
