@@ -1,6 +1,6 @@
 {
-  "name": "berlioz/core",
-  "description": "Berlioz Framework Core",
+  "name": "berlioz/berlioz",
+  "description": "Berlioz Framework",
   "minimum-stability": "stable",
   "license": "MIT",
   "homepage": "http://www.berlioz-framework.com",
