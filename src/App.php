@@ -130,7 +130,7 @@ class App
                                              'logging'    => '\Psr\Log\LoggerInterface',
                                              'routing'    => '\Berlioz\Core\Services\Routing\RouterInterface',
                                              'templating' => '\Berlioz\Core\Services\Template\TemplateInterface']);
-            $this->services->registerObjectAsService($this, 'app');
+            $this->services->register('app', $this);
         }
 
         return $this->services;
