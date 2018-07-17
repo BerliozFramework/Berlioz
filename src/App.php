@@ -119,11 +119,11 @@ class App
     {
         if (is_null($this->services)) {
             $this->services = new ServiceContainer($this->getConfig()->get('app.services'));
-            $this->services->registerServices(['events'     => '\Berlioz\Core\Services\Events\EventManager',
-                                               'flashbag'   => '\Berlioz\Core\Services\FlashBag',
-                                               'logging'    => '\Berlioz\Core\Services\Logger',
-                                               'routing'    => '\Berlioz\Core\Services\Routing\Router',
-                                               'templating' => '\Berlioz\Core\Services\Template\DefaultEngine']);
+            $this->services->registerServices(['events'     => ['class' => '\Berlioz\Core\Services\Events\EventManager'],
+                                               'flashbag'   => ['class' => '\Berlioz\Core\Services\FlashBag'],
+                                               'logging'    => ['class' => '\Berlioz\Core\Services\Logger'],
+                                               'routing'    => ['class' => '\Berlioz\Core\Services\Routing\Router'],
+                                               'templating' => ['class' => '\Berlioz\Core\Services\Template\DefaultEngine']]);
             $this->services->setConstraints(['caching'    => '\Psr\SimpleCache\CacheInterface',
                                              'events'     => '\Psr\EventManager\EventManagerInterface',
                                              'flashbag'   => '\Berlioz\Core\Services\FlashBag',
