@@ -1,0 +1,36 @@
+{
+  "name": "berlioz/event-manager",
+  "description": "PHP event manager/dispatcher, respecting PSR-14 (Event Dispatcher) standard.",
+  "license": "MIT",
+  "homepage": "https://getberlioz.com",
+  "support": {
+    "issues": "https://github.com/BerliozFramework/Berlioz/issues",
+    "source": "https://github.com/BerliozFramework/Berlioz"
+  },
+  "authors": [
+    {
+      "name": "Ronan Giron",
+      "email": "ronan@getberlioz.com"
+    }
+  ],
+  "autoload": {
+    "psr-4": {
+      "Berlioz\\EventManager\\": ""
+    }
+  },
+  "require": {
+    "php": "^8.2",
+    "psr/event-dispatcher": "^1.0"
+  },
+  "provide": {
+    "psr/event-dispatcher-implementation": "^1.0"
+  },
+  "extra": {
+    "branch-alias": {
+      "dev-main": "3.x-dev"
+    }
+  },
+  "config": {
+    "sort-packages": true
+  }
+}

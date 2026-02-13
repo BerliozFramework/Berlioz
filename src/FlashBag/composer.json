@@ -1,0 +1,32 @@
+{
+  "name": "berlioz/flash-bag",
+  "description": "Berlioz FlashBag is a PHP library to manage flash messages to showed to the user.",
+  "license": "MIT",
+  "homepage": "https://getberlioz.com",
+  "support": {
+    "issues": "https://github.com/BerliozFramework/Berlioz/issues",
+    "source": "https://github.com/BerliozFramework/Berlioz"
+  },
+  "authors": [
+    {
+      "name": "Ronan Giron",
+      "email": "ronan@getberlioz.com"
+    }
+  ],
+  "autoload": {
+    "psr-4": {
+      "Berlioz\\FlashBag\\": ""
+    }
+  },
+  "require": {
+    "php": "^8.2"
+  },
+  "extra": {
+    "branch-alias": {
+      "dev-main": "3.x-dev"
+    }
+  },
+  "config": {
+    "sort-packages": true
+  }
+}

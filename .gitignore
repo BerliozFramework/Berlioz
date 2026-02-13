@@ -1,0 +1,12 @@
+/.phpunit.cache
+/vendor
+composer.lock
+phpunit.xml
+
+# Tests
+/tests/**/tests_env/var/*
+
+# Dev environment
+/.idea
+/.vscode
+/.fleet

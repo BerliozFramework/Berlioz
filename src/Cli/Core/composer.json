@@ -1,0 +1,47 @@
+{
+  "name": "berlioz/cli-core",
+  "description": "Berlioz Framework CLI Core",
+  "type": "berlioz-package",
+  "license": "MIT",
+  "homepage": "https://getberlioz.com",
+  "support": {
+    "issues": "https://github.com/BerliozFramework/Berlioz/issues",
+    "source": "https://github.com/BerliozFramework/Berlioz"
+  },
+  "authors": [
+    {
+      "name": "Ronan Giron",
+      "email": "ronan@getberlioz.com"
+    }
+  ],
+  "autoload": {
+    "psr-4": {
+      "Berlioz\\Cli\\Core\\": ""
+    }
+  },
+  "require": {
+    "php": "^8.2",
+    "ext-mbstring": "*",
+    "berlioz/core": "self.version",
+    "league/climate": "^3.7"
+  },
+  "provide": {
+    "psr/container-implementation": "^1.0",
+    "psr/event-dispatcher-implementation": "^1.0",
+    "psr/simple-cache-implementation": "^1.0"
+  },
+  "extra": {
+    "branch-alias": {
+      "dev-main": "3.x-dev"
+    }
+  },
+  "bin": [
+    "berlioz"
+  ],
+  "config": {
+    "sort-packages": true,
+    "berlioz": {
+      "package": "Berlioz\\Cli\\Core\\BerliozPackage"
+    }
+  }
+}

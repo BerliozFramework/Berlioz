@@ -1,0 +1,43 @@
+{
+  "name": "berlioz/queue-manager",
+  "description": "Queue manager",
+  "license": "MIT",
+  "homepage": "https://getberlioz.com",
+  "support": {
+    "issues": "https://github.com/BerliozFramework/Berlioz/issues",
+    "source": "https://github.com/BerliozFramework/Berlioz"
+  },
+  "authors": [
+    {
+      "name": "Ronan Giron",
+      "email": "ronan@getberlioz.com"
+    }
+  ],
+  "autoload": {
+    "psr-4": {
+      "Berlioz\\QueueManager\\": ""
+    }
+  },
+  "require": {
+    "php": "^8.2",
+    "berlioz/helpers": "^1.0",
+    "psr/clock": "^1.0",
+    "psr/container": "^1.0 || ^2.0",
+    "psr/log": "^1.0 || ^2.0 || ^3.0"
+  },
+  "suggest": {
+    "ext-pcntl": "To use signals to exit worker",
+    "ext-redis": "To use Redis queue",
+    "ext-amqp": "To use AMQP queue",
+    "aws/aws-sdk-php": "To use AWS SQS service",
+    "hectororm/query": "To use database queue"
+  },
+  "extra": {
+    "branch-alias": {
+      "dev-main": "3.x-dev"
+    }
+  },
+  "config": {
+    "sort-packages": true
+  }
+}

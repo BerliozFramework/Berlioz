@@ -1,0 +1,89 @@
+{
+  "sub-splits": [
+    {
+      "name": "cli-core",
+      "directory": "src/Cli/Core",
+      "target": "git@github.com:BerliozFramework/CliCore.git"
+    },
+    {
+      "name": "config",
+      "directory": "src/Config",
+      "target": "git@github.com:BerliozFramework/Config.git"
+    },
+    {
+      "name": "core",
+      "directory": "src/Core",
+      "target": "git@github.com:BerliozFramework/Core.git"
+    },
+    {
+      "name": "event-manager",
+      "directory": "src/EventManager",
+      "target": "git@github.com:BerliozFramework/EventManager.git"
+    },
+    {
+      "name": "flash-bag",
+      "directory": "src/FlashBag",
+      "target": "git@github.com:BerliozFramework/FlashBag.git"
+    },
+    {
+      "name": "form",
+      "directory": "src/Form",
+      "target": "git@github.com:BerliozFramework/Form.git"
+    },
+    {
+      "name": "hector-package",
+      "directory": "src/Package/Hector",
+      "target": "git@github.com:BerliozFramework/HectorPackage.git"
+    },
+    {
+      "name": "html-selector",
+      "directory": "src/HtmlSelector",
+      "target": "git@github.com:BerliozFramework/HtmlSelector.git"
+    },
+    {
+      "name": "http-client",
+      "directory": "src/Http/Client",
+      "target": "git@github.com:BerliozFramework/HttpClient.git"
+    },
+    {
+      "name": "http-core",
+      "directory": "src/Http/Core",
+      "target": "git@github.com:BerliozFramework/HttpCore.git"
+    },
+    {
+      "name": "http-message",
+      "directory": "src/Http/Message",
+      "target": "git@github.com:BerliozFramework/HttpMessage.git"
+    },
+    {
+      "name": "mailer",
+      "directory": "src/Mailer",
+      "target": "git@github.com:BerliozFramework/Mailer.git"
+    },
+    {
+      "name": "queue-manager",
+      "directory": "src/QueueManager",
+      "target": "git@github.com:BerliozFramework/QueueManager.git"
+    },
+    {
+      "name": "queue-manager-package",
+      "directory": "src/Package/QueueManager",
+      "target": "git@github.com:BerliozFramework/QueueManagerPackage.git"
+    },
+    {
+      "name": "router",
+      "directory": "src/Router",
+      "target": "git@github.com:BerliozFramework/Router.git"
+    },
+    {
+      "name": "service-container",
+      "directory": "src/ServiceContainer",
+      "target": "git@github.com:BerliozFramework/ServiceContainer.git"
+    },
+    {
+      "name": "twig-package",
+      "directory": "src/Package/Twig",
+      "target": "git@github.com:BerliozFramework/TwigPackage.git"
+    }
+  ]
+}

@@ -1,0 +1,172 @@
+{
+  "name": "berlioz/berlioz",
+  "description": "Berlioz Framework",
+  "type": "berlioz-package",
+  "version": "3.0",
+  "license": "MIT",
+  "homepage": "https://getberlioz.com",
+  "support": {
+    "issues": "https://github.com/BerliozFramework/Berlioz/issues",
+    "source": "https://github.com/BerliozFramework/Berlioz"
+  },
+  "authors": [
+    {
+      "name": "Ronan Giron",
+      "email": "ronan@getberlioz.com"
+    }
+  ],
+  "autoload": {
+    "psr-4": {
+      "Berlioz\\Cli\\Core\\": "src/Cli/Core/",
+      "Berlioz\\Config\\": "src/Config/",
+      "Berlioz\\Core\\": "src/Core/",
+      "Berlioz\\EventManager\\": "src/EventManager/",
+      "Berlioz\\FlashBag\\": "src/FlashBag/",
+      "Berlioz\\Form\\": "src/Form/",
+      "Berlioz\\HtmlSelector\\": "src/HtmlSelector/",
+      "Berlioz\\Http\\Client\\": "src/Http/Client/",
+      "Berlioz\\Http\\Core\\": "src/Http/Core/",
+      "Berlioz\\Http\\Message\\": "src/Http/Message/",
+      "Berlioz\\Mailer\\": "src/Mailer/",
+      "Berlioz\\Package\\Hector\\": "src/Package/Hector/",
+      "Berlioz\\Package\\QueueManager\\": "src/Package/QueueManager/",
+      "Berlioz\\Package\\Twig\\": "src/Package/Twig/",
+      "Berlioz\\QueueManager\\": "src/QueueManager/",
+      "Berlioz\\Router\\": "src/Router/",
+      "Berlioz\\ServiceContainer\\": "src/ServiceContainer/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Berlioz\\Cli\\Core\\Tests\\": "tests/Cli/Core/",
+      "Berlioz\\Cli\\Core\\TestProject\\": "tests/Cli/Core/tests_env/src/",
+      "Berlioz\\Config\\Tests\\": "tests/Config/",
+      "Berlioz\\Core\\Tests\\": "tests/Core/",
+      "Berlioz\\Core\\TestProject\\": "tests/Core/tests_env/src/",
+      "Berlioz\\EventManager\\Tests\\": "tests/EventManager/",
+      "Berlioz\\FlashBag\\Tests\\": "tests/FlashBag/",
+      "Berlioz\\Form\\Tests\\": "tests/Form/",
+      "Berlioz\\HtmlSelector\\Tests\\": "tests/HtmlSelector/",
+      "Berlioz\\Http\\Client\\Tests\\": "tests/Http/Client/",
+      "Berlioz\\Http\\Core\\Tests\\": "tests/Http/Core/",
+      "Berlioz\\Http\\Core\\TestProject\\": "tests/Http/Core/tests_env/src/",
+      "Berlioz\\Http\\Message\\Tests\\": "tests/Http/Message/",
+      "Berlioz\\Mailer\\Tests\\": "tests/Mailer/",
+      "Berlioz\\Package\\Hector\\Tests\\": "tests/Package/Hector/",
+      "Berlioz\\Package\\Hector\\TestProject\\": "tests/Package/Hector/tests_env/src/",
+      "Berlioz\\Package\\QueueManager\\Tests\\": "tests/Package/QueueManager/",
+      "Berlioz\\Package\\QueueManager\\TestProject\\": "tests/Package/QueueManager/tests_env/src/",
+      "Berlioz\\Package\\Twig\\Tests\\": "tests/Package/Twig/",
+      "Berlioz\\Package\\Twig\\TestProject\\": "tests/Package/Twig/tests_env/src/",
+      "Berlioz\\QueueManager\\Tests\\": "tests/QueueManager/",
+      "Berlioz\\Router\\Tests\\": "tests/Router/",
+      "Berlioz\\ServiceContainer\\Tests\\": "tests/ServiceContainer/"
+    },
+    "exclude-from-classmap": [
+      "tests/Cli/Core/tests_env/",
+      "tests/Core/tests_env/"
+    ]
+  },
+  "replace": {
+    "berlioz/cli-core": "self.version",
+    "berlioz/config": "self.version",
+    "berlioz/core": "self.version",
+    "berlioz/event-manager": "self.version",
+    "berlioz/flash-bag": "self.version",
+    "berlioz/form": "self.version",
+    "berlioz/hector-package": "self.version",
+    "berlioz/html-selector": "self.version",
+    "berlioz/http-client": "self.version",
+    "berlioz/http-core": "self.version",
+    "berlioz/http-message": "self.version",
+    "berlioz/mailer": "self.version",
+    "berlioz/queue-manager": "self.version",
+    "berlioz/queue-manager-package": "self.version",
+    "berlioz/router": "self.version",
+    "berlioz/service-container": "self.version",
+    "berlioz/twig-package": "self.version"
+  },
+  "require": {
+    "php": "^8.2",
+    "ext-fileinfo": "*",
+    "ext-intl": "*",
+    "ext-mbstring": "*",
+    "ext-xml": "*",
+    "berlioz/helpers": "^1.0",
+    "colinodell/json5": "^2.2",
+    "doctrine/sql-formatter": "^1.1",
+    "elgigi/har-parser": "^1.0",
+    "hectororm/hectororm": "^1.0",
+    "league/climate": "^3.7",
+    "league/flysystem": "^2.1 || ^3.0",
+    "league/mime-type-detection": "^1.0",
+    "psr/clock": "^1.0",
+    "psr/container": "^1.0 || ^2.0",
+    "psr/event-dispatcher": "^1.0",
+    "psr/http-client": "^1.0",
+    "psr/http-factory": "^1.0 || ^2.0",
+    "psr/http-message": "^1.0 || ^2.0",
+    "psr/http-server-handler": "^1.0",
+    "psr/http-server-middleware": "^1.0",
+    "psr/log": "^1.0 || ^2.0 || ^3.0",
+    "psr/simple-cache": "^1.0 || ^2.0 || ^3.0",
+    "twig/twig": "^3.0"
+  },
+  "require-dev": {
+    "ext-yaml": "*",
+    "ext-amqp": "*",
+    "ext-redis": "*",
+    "aws/aws-sdk-php": "^3.0",
+    "hectororm/query": "^1.0",
+    "php-http/discovery": "^1.20",
+    "phpstan/phpstan": "^2.0",
+    "phpunit/phpunit": "^10.0",
+    "rector/rector": "^2.2",
+    "symfony/process": "^5.0 || ^6.0 || ^7.0 || ^8.0",
+    "symfony/yaml": "^5.0 || ^6.0 || ^7.0 || ^8.0"
+  },
+  "suggest": {
+    "ext-curl": "To use CURL adapter with HttpClient",
+    "ext-gd": "Allows to use image helpers functions",
+    "ext-simplexml": "Allows to use XML helpers functions",
+    "ext-yaml": "To use YamlAdapter with Config",
+    "ext-zlib": "To use GzStream in HttpMessage",
+    "symfony/yaml": "To use YamlAdapter with Config",
+    "ext-amqp": "To use AMQP queue in QueueManager",
+    "ext-pcntl": "Tu use signals to exit worker in QueueManager",
+    "ext-redis": "To use Redis queue in QueueManager",
+    "aws/aws-sdk-php": "To use AWS SQS service in QueueManager",
+    "hectororm/query": "To use database queue in QueueManager"
+  },
+  "provide": {
+    "psr/container-implementation": "^1.0",
+    "psr/event-dispatcher-implementation": "^1.0",
+    "psr/http-message-implementation": "^1.0",
+    "psr/http-server-handler-implementation": "^1.0",
+    "psr/http-server-middleware-implementation": "^1.0",
+    "psr/simple-cache-implementation": "^1.0"
+  },
+  "extra": {
+    "branch-alias": {
+      "dev-main": "3.x-dev"
+    }
+  },
+  "bin": [
+    "src/Cli/Core/berlioz"
+  ],
+  "config": {
+    "allow-plugins": {
+      "php-http/discovery": false
+    },
+    "sort-packages": true,
+    "berlioz": {
+      "package": [
+        "Berlioz\\Cli\\Core\\BerliozPackage",
+        "Berlioz\\Http\\Core\\BerliozPackage",
+        "Berlioz\\Package\\Hector\\BerliozPackage",
+        "Berlioz\\Package\\QueueManager\\BerliozPackage",
+        "Berlioz\\Package\\Twig\\BerliozPackage"
+      ]
+    }
+  }
+}

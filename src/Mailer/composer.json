@@ -1,0 +1,35 @@
+{
+  "name": "berlioz/mailer",
+  "description": "Berlioz Mailer is a PHP library for sending mail, with or without local server.",
+  "license": "MIT",
+  "homepage": "https://getberlioz.com",
+  "support": {
+    "issues": "https://github.com/BerliozFramework/Berlioz/issues",
+    "source": "https://github.com/BerliozFramework/Berlioz"
+  },
+  "authors": [
+    {
+      "name": "Ronan Giron",
+      "email": "ronan@getberlioz.com"
+    }
+  ],
+  "autoload": {
+    "psr-4": {
+      "Berlioz\\Mailer\\": ""
+    }
+  },
+  "require": {
+    "php": "^8.2",
+    "ext-mbstring": "*",
+    "ext-fileinfo": "*",
+    "psr/log": "^1.0 || ^2.0 || ^3.0"
+  },
+  "extra": {
+    "branch-alias": {
+      "dev-main": "3.x-dev"
+    }
+  },
+  "config": {
+    "sort-packages": true
+  }
+}
