@@ -1,0 +1,45 @@
+{
+  "name": "berlioz/core",
+  "description": "Berlioz Framework Core",
+  "minimum-stability": "dev",
+  "prefer-stable": true,
+  "license": "MIT",
+  "homepage": "http://getberlioz.com",
+  "authors": [
+    {
+      "name": "Ronan Giron",
+      "email": "ronan@getberlioz.com"
+    }
+  ],
+  "autoload": {
+    "psr-4": {
+      "Berlioz\\Core\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Berlioz\\Core\\Tests\\": "tests/",
+      "Berlioz\\Core\\TestsEnv\\": "tests_env/src/"
+    }
+  },
+  "require": {
+    "php": "^7.1",
+    "ext-intl": "*",
+    "ext-json": "*",
+    "ext-mbstring": "*",
+    "ext-zlib": "*",
+    "../../../../vendor/berlioz/config": "@dev",
+    "../../../../vendor/berlioz/service-container": "@dev",
+    "berlioz/utils": "@dev",
+    "psr/log": "^1.0.0",
+    "../../../../vendor/psr/simple-cache": "^1.0.0"
+  },
+  "require-dev": {
+    "../../../../vendor/phpunit/phpunit": "^7.5"
+  },
+  "provide": {
+    "psr/container-implementation": "^1.0",
+    "psr/log-implementation": "^1.0",
+    "psr/simple-cache-implementation": "^1.0"
+  }
+}

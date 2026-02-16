@@ -1,0 +1,16 @@
+{
+  "foo": [
+    "ARRAY",
+  ],
+  "bar": "STRING",
+  "qux": "value1",
+  "section": {
+    "foo": "value",
+    "qux": []
+  },
+  "section2": {
+    // Comment
+    "bar": "value3",
+    "baz": null
+  },
+}

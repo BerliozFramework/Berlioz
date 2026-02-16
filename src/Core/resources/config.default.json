@@ -1,0 +1,34 @@
+{
+  "berlioz": {
+    "environment": "prod",
+    "locale": null,
+    "debug": {
+      "enable": false,
+      "ip": []
+    },
+    "directories": {
+      "app": "{var: berlioz.directories.app}",
+      "cache": "{var: berlioz.directories.cache}",
+      "config": "{var: berlioz.directories.config}",
+      "debug": "{var: berlioz.directories.debug}",
+      "log": "{var: berlioz.directories.log}",
+      "tmp": "{config: berlioz.directories.var}/tmp",
+      "var": "{var: berlioz.directories.var}",
+      "vendor": "{var: berlioz.directories.vendor}",
+      "working": "{var: berlioz.directories.working}"
+    },
+    "assets": {
+      "manifest": null,
+      "entrypoints": null,
+      "entrypoints_key": null
+    }
+  },
+  "events": {
+    "listeners": {},
+    "subscribers": []
+  },
+  "container": {
+    "services": {},
+    "providers": []
+  }
+}

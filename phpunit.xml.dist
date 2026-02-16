@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/11.5/phpunit.xsd"
+         bootstrap="vendor/autoload.php"
+         cacheDirectory=".phpunit.cache"
+         colors="true"
+         displayDetailsOnAllIssues="true"
+         failOnDeprecation="true"
+         failOnRisky="true"
+         failOnWarning="true"
+>
+  <php>
+    <ini name="error_reporting" value="-1"/>
+    <ini name="intl.default_locale" value="en"/>
+    <ini name="intl.error_level" value="0"/>
+    <ini name="memory_limit" value="-1"/>
+  </php>
+  <testsuites>
+    <testsuite name="Berlioz CliCore test suite">
+      <directory suffix="Test.php">./tests/Cli/Core</directory>
+    </testsuite>
+    <testsuite name="Berlioz Config test suite">
+      <directory suffix="Test.php">./tests/Config</directory>
+    </testsuite>
+    <testsuite name="Berlioz Core test suite">
+      <directory suffix="Test.php">./tests/Core</directory>
+    </testsuite>
+    <testsuite name="Berlioz EventManager test suite">
+      <directory suffix="Test.php">./tests/EventManager</directory>
+    </testsuite>
+    <testsuite name="Berlioz FlashBag test suite">
+      <directory suffix="Test.php">./tests/FlashBag</directory>
+    </testsuite>
+    <testsuite name="Berlioz Form test suite">
+      <directory suffix="Test.php">./tests/Form</directory>
+    </testsuite>
+    <testsuite name="Berlioz HtmlSelector test suite">
+      <directory suffix="Test.php">./tests/HtmlSelector</directory>
+    </testsuite>
+    <testsuite name="Berlioz HttpClient test suite">
+      <directory suffix="Test.php">./tests/Http/Client</directory>
+    </testsuite>
+    <testsuite name="Berlioz HttpCore test suite">
+      <directory suffix="Test.php">./tests/Http/Core</directory>
+    </testsuite>
+    <testsuite name="Berlioz HttpMessage test suite">
+      <directory suffix="Test.php">./tests/Http/Message</directory>
+    </testsuite>
+    <testsuite name="Berlioz Mailer test suite">
+      <directory suffix="Test.php">./tests/Mailer</directory>
+    </testsuite>
+    <testsuite name="Berlioz HectorPackage test suite">
+      <directory suffix="Test.php">./tests/Package/Hector</directory>
+    </testsuite>
+    <testsuite name="Berlioz QueueManagerPackage test suite">
+      <directory suffix="Test.php">./tests/Package/QueueManager</directory>
+    </testsuite>
+    <testsuite name="Berlioz TwigPackage test suite">
+      <directory suffix="Test.php">./tests/Package/Twig</directory>
+    </testsuite>
+    <testsuite name="Berlioz QueueManager test suite">
+      <directory suffix="Test.php">./tests/QueueManager</directory>
+    </testsuite>
+    <testsuite name="Berlioz Router test suite">
+      <directory suffix="Test.php">./tests/Router</directory>
+    </testsuite>
+    <testsuite name="Berlioz ServiceContainer test suite">
+      <directory suffix="Test.php">./tests/ServiceContainer</directory>
+    </testsuite>
+  </testsuites>
+  <source>
+    <include>
+      <directory suffix=".php">src</directory>
+    </include>
+    <exclude>
+      <directory suffix="Interface.php">src</directory>
+    </exclude>
+  </source>
+</phpunit>

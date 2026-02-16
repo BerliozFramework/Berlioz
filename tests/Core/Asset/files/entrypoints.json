@@ -1,0 +1,17 @@
+{
+  "test": {
+    "js": [
+      "/assets/js/test.12345678.js",
+      "/assets/js/test2.12345678.js",
+      "/assets/js/vendor.12345678.js"
+    ],
+    "css": "/assets/css/test.12345678.css"
+  },
+  "test2": {
+    "js": [
+      "/assets/js/test2.12345678.js",
+      "/assets/js/vendor.12345678.js"
+    ],
+    "css": "/assets/css/test2.12345678.css"
+  }
+}

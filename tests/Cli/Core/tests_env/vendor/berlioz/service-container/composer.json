@@ -1,0 +1,34 @@
+{
+  "name": "berlioz/service-container",
+  "description": "Berlioz Service Container",
+  "minimum-stability": "stable",
+  "license": "MIT",
+  "homepage": "http://getberlioz.com",
+  "authors": [
+    {
+      "name": "Ronan Giron",
+      "email": "ronan@getberlioz.com"
+    }
+  ],
+  "autoload": {
+    "psr-4": {
+      "Berlioz\\ServiceContainer\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Berlioz\\ServiceContainer\\Tests\\": "tests/"
+    }
+  },
+  "require": {
+    "php": "^7.1",
+    "../../../../vendor/psr/container": "^1.0"
+  },
+  "require-dev": {
+    "ext-json": "*",
+    "../../../../vendor/phpunit/phpunit": "^7.5"
+  },
+  "provide": {
+    "psr/container-implementation": "^1.0"
+  }
+}

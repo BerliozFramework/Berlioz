@@ -1,0 +1,57 @@
+#!/usr/bin/env php
+<?php
+/**
+ * This file is part of Berlioz framework.
+ *
+ * @license   https://opensource.org/licenses/MIT MIT License
+ * @copyright 2018 Ronan GIRON
+ * @author    Ronan GIRON <https://github.com/ElGigi>
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code, to the root.
+ */
+
+declare(strict_types=1);
+
+use Berlioz\Cli\Core\App\CliApp;
+
+// Find autoload of Composer
+$autoloadFile = $GLOBALS['_composer_autoload_path'] ?? null;
+if (null === $autoloadFile) {
+  $autoloadFiles = [
+    __DIR__ . '/../../autoload.php',
+    __DIR__ . '/../autoload.php',
+    __DIR__ . '/../vendor/autoload.php',
+    __DIR__ . '/../../vendor/autoload.php',
+    __DIR__ . '/../../../vendor/autoload.php',
+    __DIR__ . '/vendor/autoload.php'
+  ];
+
+  foreach ($autoloadFiles as $file) {
+    if (true === file_exists($file)) {
+      $autoloadFile = $file;
+      break;
+    }
+  }
+
+  if (null === $autoloadFile) {
+    fwrite(
+      STDERR,
+      'You must install Berlioz/CliCore with Composer, looks at https://getcomposer.org/ to do that.' . PHP_EOL
+    );
+    exit(1);
+  }
+}
+
+// Load autoload file of Composer
+require $autoloadFile;
+
+// Application
+try {
+  // App
+  $app = new CliApp();
+  exit($app->handle());
+} catch (Throwable $e) {
+  fwrite(STDERR, rtrim((string)$e) . PHP_EOL);
+  exit(1);
+}

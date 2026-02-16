@@ -1,0 +1,12 @@
+qux: value1
+
+section:
+  foo: value
+  qux: value2
+
+section2:
+  bar: value3
+
+foo:
+  - foo
+  - bar

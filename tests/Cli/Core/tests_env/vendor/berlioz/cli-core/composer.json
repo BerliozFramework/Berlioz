@@ -1,0 +1,52 @@
+{
+  "name": "berlioz/cli-core",
+  "type": "berlioz-package",
+  "description": "Berlioz Framework CLI Core",
+  "minimum-stability": "dev",
+  "prefer-stable": true,
+  "license": "MIT",
+  "homepage": "https://getberlioz.com",
+  "authors": [
+    {
+      "name": "Ronan Giron",
+      "email": "ronan@getberlioz.com"
+    }
+  ],
+  "autoload": {
+    "psr-4": {
+      "Berlioz\\Cli\\Core\\": "src/",
+      "Berlioz\\Cli\\Core\\TestProject\\": "tests/_envTest/src/"
+    },
+    "exclude-from-classmap": [
+      "/tests/_envTest/"
+    ]
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Berlioz\\Cli\\Core\\Tests\\": "tests/"
+    }
+  },
+  "require": {
+    "php": "^8.0",
+    "ext-json": "*",
+    "ext-mbstring": "*",
+    "../../../../vendor/berlioz/core": "dev-develop",
+    "ulrichsg/getopt-php": "^3.3"
+  },
+  "require-dev": {
+    "../../../../vendor/phpunit/phpunit": "^9.3"
+  },
+  "provide": {
+    "psr/container-implementation": "^1.0",
+    "psr/log-implementation": "^1.0",
+    "psr/simple-cache-implementation": "^1.0"
+  },
+  "bin": [
+    "berlioz"
+  ],
+  "config": {
+    "berlioz": {
+      "package": "Berlioz\\Cli\\Core\\BerliozPackage"
+    }
+  }
+}

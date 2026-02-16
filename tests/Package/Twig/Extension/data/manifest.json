@@ -1,0 +1,7 @@
+{
+  "website.css": "/assets/css/website.css",
+  "website.js": "/assets/js/website.js",
+  "admin.css": "/assets/css/admin.css",
+  "admin.js": "/assets/js/admin.js",
+  "vendor.js": "/assets/js/vendor.js"
+}

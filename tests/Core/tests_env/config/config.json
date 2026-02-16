@@ -1,0 +1,37 @@
+{
+  "container": {
+    "services": {
+      "foo": "Berlioz\\Core\\TestsEnv\\ServiceFoo",
+      "bar": {
+        "class": "Berlioz\\Core\\TestsEnv\\ServiceBar",
+        "arguments": {
+          "quux": "foo"
+        }
+      },
+      "qux": {
+        "class": "Berlioz\\Core\\TestsEnv\\ServiceQux",
+        "arguments": {
+          "quux": "foo"
+        },
+        "calls": [
+          {
+            "method": "inc",
+            "arguments": {
+              "increment": 4
+            }
+          },
+          {
+            "method": "inc",
+            "arguments": {
+              "increment": 2
+            }
+          }
+        ]
+      },
+      "quux": {
+        "class": "Berlioz\\Core\\TestsEnv\\ServiceQuux",
+        "factory": "Berlioz\\Core\\TestsEnv\\ServiceQuux::factory"
+      }
+    }
+  }
+}

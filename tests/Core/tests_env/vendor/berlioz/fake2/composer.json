@@ -1,0 +1,10 @@
+{
+  "name": "berlioz/fake2",
+  "description": "Berlioz Fake Package #2",
+  "type": "berlioz-package",
+  "config": {
+    "berlioz": {
+      "package": "Berlioz\\Core\\Tests\\Package\\FakePackage2"
+    }
+  }
+}

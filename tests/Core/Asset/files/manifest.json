@@ -1,0 +1,5 @@
+{
+  "/test.js": "/assets/test.1234567890.js",
+  "/test2.js": "\\assets\\test2.1234567890.js",
+  "\\test3.js": "\\assets\\test3.1234567890.js"
+}

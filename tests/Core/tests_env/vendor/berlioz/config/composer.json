@@ -1,0 +1,38 @@
+{
+  "name": "berlioz/config",
+  "description": "Berlioz Configuration",
+  "minimum-stability": "stable",
+  "license": "MIT",
+  "homepage": "http://www.berlioz-framework.com",
+  "authors": [
+    {
+      "name": "Ronan Giron",
+      "email": "ronan.giron@berlioz-framework.com"
+    }
+  ],
+  "autoload": {
+    "psr-4": {
+      "Berlioz\\Config\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Berlioz\\Config\\Tests\\": "tests/"
+    }
+  },
+  "require": {
+    "php": "^7.1",
+    "ext-json": "*",
+    "berlioz/utils": "dev-develop"
+  },
+  "require-dev": {
+    "../../../../vendor/phpunit/phpunit": "^7.2"
+  },
+  "config": {
+    "platform": {
+      "php": "7.1.0"
+    },
+    "optimize-autoloader": true,
+    "sort-packages": true
+  }
+}

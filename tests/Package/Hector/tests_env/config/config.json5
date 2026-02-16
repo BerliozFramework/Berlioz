@@ -1,0 +1,7 @@
+{
+  "hector": {
+    "dsn": "sqlite:memory:",
+    "schemas": [
+    ]
+  }
+}
