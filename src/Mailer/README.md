@@ -18,7 +18,7 @@
 
 **Berlioz Mailer** is a PHP library for sending mail, with or without local server.
 
-📖 **[Full documentation](https://getberlioz.com/)**
+📖 **[Full documentation](https://getberlioz.com/docs/3.x/components/mailer)**
 
 ## Installation
 
@@ -30,4 +30,4 @@ $ composer require berlioz/mailer
 
 ## Documentation
 
-For usage and examples, visit the [official documentation on **getberlioz.com**](https://getberlioz.com/).
+For usage and examples, visit the [official documentation on **getberlioz.com**](https://getberlioz.com/docs/3.x/components/mailer).

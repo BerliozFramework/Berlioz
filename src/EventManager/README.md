@@ -18,7 +18,7 @@
 
 **Berlioz Event Manager** is a PHP event manager/dispatcher, respecting PSR-14 (Event Dispatcher) standard.
 
-📖 **[Full documentation](https://getberlioz.com/)**
+📖 **[Full documentation](https://getberlioz.com/docs/3.x/components/event-manager)**
 
 ## Installation
 
@@ -30,4 +30,4 @@ $ composer require berlioz/event-manager
 
 ## Documentation
 
-For usage and examples, visit the [official documentation on **getberlioz.com**](https://getberlioz.com/).
+For usage and examples, visit the [official documentation on **getberlioz.com**](https://getberlioz.com/docs/3.x/components/event-manager).

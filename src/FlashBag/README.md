@@ -18,7 +18,7 @@
 
 **Berlioz FlashBag** is a PHP library to manage flash messages to showed to the user.
 
-📖 **[Full documentation](https://getberlioz.com/)**
+📖 **[Full documentation](https://getberlioz.com/docs/3.x/components/flash-bag)**
 
 ## Installation
 
@@ -30,4 +30,4 @@ $ composer require berlioz/flash-bag
 
 ## Documentation
 
-For usage and examples, visit the [official documentation on **getberlioz.com**](https://getberlioz.com/).
+For usage and examples, visit the [official documentation on **getberlioz.com**](https://getberlioz.com/docs/3.x/components/flash-bag).

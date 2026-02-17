@@ -19,7 +19,7 @@
 **Berlioz Queue Manager** is responsible for processing jobs from a queue using a job handler. It supports advanced
 features like memory and time limits, signal handling, and customizable worker options.
 
-📖 **[Full documentation](https://getberlioz.com/)**
+📖 **[Full documentation](https://getberlioz.com/docs/3.x/components/queue-manager)**
 
 ## Installation
 
@@ -31,4 +31,4 @@ $ composer require berlioz/queue-manager
 
 ## Documentation
 
-For usage and examples, visit the [official documentation on **getberlioz.com**](https://getberlioz.com/).
+For usage and examples, visit the [official documentation on **getberlioz.com**](https://getberlioz.com/docs/3.x/components/queue-manager).

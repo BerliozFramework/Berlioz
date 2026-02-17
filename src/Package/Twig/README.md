@@ -18,7 +18,7 @@
 
 It's a package to use the Twig rendering engine in Berlioz Framework.
 
-📖 **[Full documentation](https://getberlioz.com/)**
+📖 **[Full documentation](https://getberlioz.com/docs/3.x/guides/templating)**
 
 ## Installation
 
@@ -31,4 +31,4 @@ $ composer require berlioz/twig-package
 
 ## Documentation
 
-For usage and examples, visit the [official documentation on **getberlioz.com**](https://getberlioz.com/).
+For usage and examples, visit the [official documentation on **getberlioz.com**](https://getberlioz.com/docs/3.x/guides/templating).

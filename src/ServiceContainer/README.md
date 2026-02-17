@@ -19,7 +19,7 @@
 **Berlioz Service Container** is a PHP library to manage your services with dependencies injection, respecting PSR-11
 (Container interface) standard.
 
-📖 **[Full documentation](https://getberlioz.com/)**
+📖 **[Full documentation](https://getberlioz.com/docs/3.x/components/service-container)**
 
 ## Installation
 
@@ -32,4 +32,4 @@ $ composer require berlioz/service-container
 
 ## Documentation
 
-For usage and examples, visit the [official documentation on **getberlioz.com**](https://getberlioz.com/).
+For usage and examples, visit the [official documentation on **getberlioz.com**](https://getberlioz.com/docs/3.x/components/service-container).

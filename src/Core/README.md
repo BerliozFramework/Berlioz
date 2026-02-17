@@ -18,7 +18,7 @@
 
 It's the core of Berlioz Framework.
 
-📖 **[Full documentation](https://getberlioz.com/)**
+📖 **[Full documentation](https://getberlioz.com/docs/3.x/getting-started)**
 
 ## Installation
 
@@ -30,4 +30,4 @@ $ composer require berlioz/core
 
 ## Documentation
 
-For usage and examples, visit the [official documentation on **getberlioz.com**](https://getberlioz.com/).
+For usage and examples, visit the [official documentation on **getberlioz.com**](https://getberlioz.com/docs/3.x/getting-started).

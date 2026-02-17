@@ -18,7 +18,7 @@
 
 **Berlioz Configuration** is a PHP library to manage your configuration files.
 
-📖 **[Full documentation](https://getberlioz.com/)**
+📖 **[Full documentation](https://getberlioz.com/docs/3.x/components/config)**
 
 ## Installation
 
@@ -30,4 +30,4 @@ $ composer require berlioz/config
 
 ## Documentation
 
-For usage and examples, visit the [official documentation on **getberlioz.com**](https://getberlioz.com/).
+For usage and examples, visit the [official documentation on **getberlioz.com**](https://getberlioz.com/docs/3.x/components/config).

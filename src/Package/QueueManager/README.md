@@ -18,7 +18,7 @@
 
 This package is intended to provide **Queue Manager** in **Berlioz Framework**.
 
-📖 **[Full documentation](https://getberlioz.com/)**
+📖 **[Full documentation](https://getberlioz.com/docs/3.x/components/queue-manager)**
 
 ## Installation
 
@@ -31,4 +31,4 @@ $ composer require berlioz/queue-manager-package
 
 ## Documentation
 
-For usage and examples, visit the [official documentation on **getberlioz.com**](https://getberlioz.com/).
+For usage and examples, visit the [official documentation on **getberlioz.com**](https://getberlioz.com/docs/3.x/components/queue-manager).
