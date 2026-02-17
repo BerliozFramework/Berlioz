@@ -23,7 +23,7 @@
     "php": "^8.2",
     "ext-intl": "*",
     "berlioz/core": "self.version",
-    "berlioz/helpers": "^1.0",
+    "berlioz/helpers": "^1.10",
     "twig/twig": "^3.0"
   },
   "extra": {

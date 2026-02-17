@@ -20,10 +20,10 @@
   },
   "require": {
     "php": "^8.2",
-    "berlioz/helpers": "^1.0",
+    "berlioz/helpers": "^1.10",
     "psr/clock": "^1.0",
-    "psr/container": "^1.0 || ^2.0",
-    "psr/log": "^1.0 || ^2.0 || ^3.0"
+    "psr/container": "^2.0",
+    "psr/log": "^2.0 || ^3.0"
   },
   "suggest": {
     "ext-pcntl": "To use signals to exit worker",
