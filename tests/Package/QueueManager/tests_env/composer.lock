@@ -1,0 +1,40 @@
+{
+  "packages": [
+    {
+      "name": "berlioz/config",
+      "version": "2.0.0",
+      "type": "library",
+      "description": "Berlioz Configuration"
+    },
+    {
+      "name": "berlioz/core",
+      "version": "2.0.0",
+      "type": "library",
+      "description": "Berlioz Framework Core"
+    },
+    {
+      "name": "berlioz/service-container",
+      "version": "2.0.0",
+      "type": "library",
+      "description": "Berlioz Service Container"
+    },
+    {
+      "name": "psr/container",
+      "version": "1.0.0",
+      "type": "library",
+      "description": "Common Container Interface (PHP FIG PSR-11)"
+    },
+    {
+      "name": "psr/log",
+      "version": "1.1.0",
+      "type": "library",
+      "description": "Common interface for logging libraries"
+    },
+    {
+      "name": "psr/simple-cache",
+      "version": "1.0.1",
+      "type": "library",
+      "description": "Common interfaces for simple caching"
+    }
+  ]
+}

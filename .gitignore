@@ -4,6 +4,7 @@ composer.lock
 phpunit.xml
 
 # Tests
+!/tests/**/tests_env/composer.lock
 /tests/**/tests_env/var/*
 
 # Dev environment
