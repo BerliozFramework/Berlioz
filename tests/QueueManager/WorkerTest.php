@@ -245,4 +245,92 @@ class WorkerTest extends TestCase
 
         $this->assertEquals($exceptedDelay, $this->worker->nextDelayAfterFailure($jobMock, $options));
     }
+
+    public function testRunJobAlreadyDeletedByHandler(): void
+    {
+        $jobMock = $this->createMock(JobInterface::class);
+
+        $this->queueMock->method('consume')->willReturn($jobMock);
+        $jobMock->method('getId')->willReturn('Job123');
+        $jobMock->method('getQueue')->willReturn($this->queueMock);
+
+        // Handler deletes the job itself
+        $this->jobHandlerMock->method('handle')->willReturnCallback(
+            function (JobInterface $job) use ($jobMock) {
+                // Simulate that the handler called $job->delete()
+                $jobMock->method('isDeleted')->willReturn(true);
+            }
+        );
+
+        // delete() should NOT be called by the Worker since handler already did it
+        $jobMock->expects($this->never())->method('delete');
+        $jobMock->expects($this->never())->method('release');
+
+        $exitCode = $this->worker->run($this->queueMock, new WorkerOptions(limit: 1));
+        $this->assertSame(WorkerExit::LIMIT_EXCEEDED->code(), $exitCode);
+    }
+
+    public function testRunJobAlreadyReleasedByHandler(): void
+    {
+        $jobMock = $this->createMock(JobInterface::class);
+
+        $this->queueMock->method('consume')->willReturn($jobMock);
+        $jobMock->method('getId')->willReturn('Job123');
+        $jobMock->method('getQueue')->willReturn($this->queueMock);
+
+        // Handler releases the job itself
+        $this->jobHandlerMock->method('handle')->willReturnCallback(
+            function (JobInterface $job) use ($jobMock) {
+                // Simulate that the handler called $job->release()
+                $jobMock->method('isReleased')->willReturn(true);
+            }
+        );
+
+        // Neither delete() nor release() should be called by the Worker
+        $jobMock->expects($this->never())->method('delete');
+        $jobMock->expects($this->never())->method('release');
+
+        $exitCode = $this->worker->run($this->queueMock, new WorkerOptions(limit: 1));
+        $this->assertSame(WorkerExit::LIMIT_EXCEEDED->code(), $exitCode);
+    }
+
+    public function testRunJobAlreadyReleasedByHandlerThenException(): void
+    {
+        $jobMock = $this->createMock(JobInterface::class);
+
+        $this->queueMock->method('consume')->willReturn($jobMock);
+        $jobMock->method('getId')->willReturn('Job123');
+        $jobMock->method('getQueue')->willReturn($this->queueMock);
+        $jobMock->method('isReleased')->willReturn(true);
+
+        // Handler releases the job then throws
+        $this->jobHandlerMock->method('handle')->willThrowException(new Exception('Job failed'));
+
+        // release() should NOT be called again by the Worker
+        $jobMock->expects($this->never())->method('release');
+        $jobMock->expects($this->never())->method('delete');
+
+        $exitCode = $this->worker->run($this->queueMock, new WorkerOptions(limit: 1));
+        $this->assertSame(WorkerExit::LIMIT_EXCEEDED->code(), $exitCode);
+    }
+
+    public function testRunJobAlreadyDeletedByHandlerThenException(): void
+    {
+        $jobMock = $this->createMock(JobInterface::class);
+
+        $this->queueMock->method('consume')->willReturn($jobMock);
+        $jobMock->method('getId')->willReturn('Job123');
+        $jobMock->method('getQueue')->willReturn($this->queueMock);
+        $jobMock->method('isDeleted')->willReturn(true);
+
+        // Handler deletes the job then throws
+        $this->jobHandlerMock->method('handle')->willThrowException(new Exception('Job failed'));
+
+        // Neither delete() nor release() should be called by the Worker
+        $jobMock->expects($this->never())->method('release');
+        $jobMock->expects($this->never())->method('delete');
+
+        $exitCode = $this->worker->run($this->queueMock, new WorkerOptions(limit: 1));
+        $this->assertSame(WorkerExit::LIMIT_EXCEEDED->code(), $exitCode);
+    }
 }

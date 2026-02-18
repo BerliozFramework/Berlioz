@@ -204,8 +204,10 @@ class Worker implements LoggerAwareInterface
                 // Exec
                 $this->executeJob($job);
 
-                // Delete job
-                $job->delete();
+                // Delete job (if not already handled by the handler)
+                if (false === $job->isDeleted() && false === $job->isReleased()) {
+                    $job->delete();
+                }
 
                 $this->logger?->info(
                     sprintf(
@@ -216,8 +218,10 @@ class Worker implements LoggerAwareInterface
                     ),
                 );
             } catch (Throwable $exception) {
-                // Release job
-                $job->release($this->nextDelayAfterFailure($job, $options));
+                // Release job (if not already handled by the handler)
+                if (false === $job->isDeleted() && false === $job->isReleased()) {
+                    $job->release($this->nextDelayAfterFailure($job, $options));
+                }
 
                 $this->logger?->error(
                     sprintf(
