@@ -1,0 +1,68 @@
+name: Bug Report
+description: Report a bug in the Berlioz Framework
+labels: ["bug"]
+body:
+  - type: dropdown
+    id: package
+    attributes:
+      label: Package
+      description: Which package is affected?
+      options:
+        - berlioz/core
+        - berlioz/config
+        - berlioz/service-container
+        - berlioz/event-manager
+        - berlioz/router
+        - berlioz/http-core
+        - berlioz/http-message
+        - berlioz/http-client
+        - berlioz/cli-core
+        - berlioz/mailer
+        - berlioz/form
+        - berlioz/flash-bag
+        - berlioz/html-selector
+        - berlioz/queue-manager
+        - berlioz/twig-package
+        - berlioz/hector-package
+        - berlioz/queue-manager-package
+        - Other / Not sure
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Which version of Berlioz are you using?
+      placeholder: "e.g. 3.0.0"
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: A clear description of the bug.
+      placeholder: What happened? What did you expect to happen?
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce
+      description: How can we reproduce this bug?
+      placeholder: |
+        1. ...
+        2. ...
+        3. ...
+    validations:
+      required: true
+
+  - type: input
+    id: php-version
+    attributes:
+      label: PHP version
+      placeholder: "e.g. 8.2.15"
+    validations:
+      required: false
