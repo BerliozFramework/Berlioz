@@ -2,7 +2,6 @@
   "name": "berlioz/berlioz",
   "description": "Berlioz Framework",
   "type": "berlioz-package",
-  "version": "3.0",
   "license": "MIT",
   "homepage": "https://getberlioz.com",
   "support": {
