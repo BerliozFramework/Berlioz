@@ -206,6 +206,27 @@ middleware, CLI commands.
 
 ## Coding Conventions
 
+### Commit Messages
+
+This project follows [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/).
+
+Format: `<type>(<scope>): <description>`
+
+**Types:** `feat`, `fix`, `docs`, `refactor`, `test`, `chore`, `perf`, `style`, `ci`, `build`.
+
+**Scope** is the package name. For nested packages, use `:` as sub-scope separator:
+
+```
+feat(router): add wildcard route parameters
+fix(http:core): handle empty body in ControllerHandler
+docs(package:twig): update TwigExtension usage examples
+refactor(service-container): simplify auto-wiring resolution
+test(queue-manager): add worker backoff tests
+chore(release): prepare v3.1.0
+```
+
+Breaking changes use `!` after the scope: `feat(config)!: remove INI adapter support`
+
 ### Formatting
 
 | Rule                | Value                                      |
