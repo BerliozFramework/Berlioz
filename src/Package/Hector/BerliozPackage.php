@@ -47,7 +47,7 @@ class BerliozPackage extends AbstractPackage
                     ],
                 ],
                 'hector' => [
-                    'dsn' => null,
+                    'dsn' => '',
                     'read_dsn' => null,
                     'schemas' => [],
                     'dynamic_events' => true,
