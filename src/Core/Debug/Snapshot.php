@@ -44,7 +44,7 @@ class Snapshot
         private array $exceptions,
         private array $sections,
     ) {
-        array_filter($this->sections, fn($section) => $section instanceof Section);
+        $this->sections = array_filter($this->sections, fn($section) => $section instanceof Section);
     }
 
     /**

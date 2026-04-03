@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fix `DefaultDirectories::getAppDir()` never caching due to operator precedence (`!null ===`)
 - Fix `ComposerBuilder::build()` checking `json_decode()` result against `false` instead of `null`
 - Fix `PhpErrorHandler::handler()` returning `true` which suppressed PHP's built-in error handling
+- Fix `Snapshot::__construct()` discarding `array_filter()` result for sections filtering
 
 ## [3.0.0] - 2026-02-19
 
