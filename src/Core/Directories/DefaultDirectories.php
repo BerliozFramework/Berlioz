@@ -87,7 +87,7 @@ class DefaultDirectories implements DirectoriesInterface
      */
     public function getAppDir(): string
     {
-        if (!null === $this->appDirectory) {
+        if (null !== $this->appDirectory) {
             return $this->appDirectory;
         }
 
