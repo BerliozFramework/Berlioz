@@ -229,16 +229,16 @@ abstract class AbstractFilesystem implements FilesystemInterface
      */
     public function move(string $source, string $destination, array $config = []): void
     {
-        $sourceAdapter = $this->getFilesystem($source);
-        $destinationAdapter = $this->getFilesystem($destination);
+        list('path' => $sourcePath, 'filesystem' => $sourceFs) = $this->determineFilesystemAndPath($source);
+        list('path' => $destPath, 'filesystem' => $destFs) = $this->determineFilesystemAndPath($destination);
 
-        if ($sourceAdapter === $destinationAdapter) {
-            $sourceAdapter->move($source, $destination, $config);
+        if ($sourceFs === $destFs) {
+            $sourceFs->move($sourcePath, $destPath, $config);
             return;
         }
 
-        $destinationAdapter->writeStream($destination, $sourceAdapter->readStream($source), $config);
-        $sourceAdapter->delete($source);
+        $destFs->writeStream($destPath, $sourceFs->readStream($sourcePath), $config);
+        $sourceFs->delete($sourcePath);
     }
 
     /**
@@ -246,14 +246,14 @@ abstract class AbstractFilesystem implements FilesystemInterface
      */
     public function copy(string $source, string $destination, array $config = []): void
     {
-        $sourceAdapter = $this->getFilesystem($source);
-        $destinationAdapter = $this->getFilesystem($destination);
+        list('path' => $sourcePath, 'filesystem' => $sourceFs) = $this->determineFilesystemAndPath($source);
+        list('path' => $destPath, 'filesystem' => $destFs) = $this->determineFilesystemAndPath($destination);
 
-        if ($sourceAdapter === $destinationAdapter) {
-            $sourceAdapter->copy($source, $destination, $config);
+        if ($sourceFs === $destFs) {
+            $sourceFs->copy($sourcePath, $destPath, $config);
             return;
         }
 
-        $destinationAdapter->writeStream($destination, $sourceAdapter->readStream($source), $config);
+        $destFs->writeStream($destPath, $sourceFs->readStream($sourcePath), $config);
     }
 }

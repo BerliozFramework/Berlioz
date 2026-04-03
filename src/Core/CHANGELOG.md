@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Fix `AbstractFilesystem::copy()` incorrectly calling `move()` on the adapter, causing source file deletion
+- Fix `AbstractFilesystem::move()` and `copy()` passing full URIs instead of stripped paths to filesystem adapters
 
 ## [3.0.0] - 2026-02-19
 
