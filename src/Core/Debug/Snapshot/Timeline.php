@@ -24,7 +24,7 @@ class Timeline implements Countable
     public function __construct(private array $activities = [])
     {
         // Filter activities
-        array_filter($this->activities, fn($activity) => $activity instanceof TimelineActivity);
+        $this->activities = array_filter($this->activities, fn($activity) => $activity instanceof TimelineActivity);
 
         // Sort activities
         usort(
