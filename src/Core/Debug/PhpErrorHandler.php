@@ -36,13 +36,13 @@ class PhpErrorHandler
      * @param string|null $file The filename that the error was raised in
      * @param int|null $line The line number the error was raised at
      *
-     * @return true
+     * @return false
      */
     public function handler(int $errno, string $message, ?string $file = null, ?int $line = null): bool
     {
         $this->errors[] = new PhpError(errno: $errno, message: $message, file: $file, line: $line);
 
-        return true;
+        return false;
     }
 
     /**
