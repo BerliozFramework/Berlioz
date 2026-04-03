@@ -93,8 +93,10 @@ class FileCacheDriver extends AbstractCacheDriver implements CacheInterface
         $this->controlKey($key);
         $cacheFilename = $this->getFilename($key);
 
-        if (($serialized = serialize($value)) === false) {
-            throw new CacheException(sprintf('Unable to serialize data to cache save "%s"', $key));
+        try {
+            $serialized = serialize($value);
+        } catch (Exception $e) {
+            throw new CacheException(sprintf('Unable to serialize data to cache save "%s"', $key), 0, $e);
         }
 
         $data = [

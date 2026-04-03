@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fix `Timeline::__construct()` discarding `array_filter()` result for activities filtering
 - Fix `FileCacheDriver::get()` treating a cached `false` value as corrupted data
 - Move `Composer` object creation outside the loop in `ComposerBuilder::build()` to avoid unnecessary intermediate instance
+- Fix `FileCacheDriver::set()` using unreachable `false` check on `serialize()`, use try/catch instead
 
 ## [3.0.0] - 2026-02-19
 
