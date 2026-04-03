@@ -45,7 +45,7 @@ class Card extends BasicTerminalObject
             $str,
             fn(&$line) => $line =
                 str_repeat(' ', $this->xPadding) .
-                str_pad($line, $strMaxWidth) .
+                $line . str_repeat(' ', max(0, $strMaxWidth - mb_strlen($line))) .
                 str_repeat(' ', $this->xPadding)
         );
         array_unshift($str, ...$yPaddingArray);
