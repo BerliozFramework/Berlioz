@@ -62,11 +62,9 @@ class CacheClearCommand extends AbstractCommand
         foreach ($contents as $item) {
             $basename = basename($item->path());
 
-            // Ignore hidden items
-            if (true === $directories || in_array($basename, $directories)) {
-                if (str_starts_with($basename, '.')) {
-                    continue;
-                }
+            // Ignore hidden items only when clearing all directories
+            if (true === $directories && str_starts_with($basename, '.')) {
+                continue;
             }
 
             if (true === is_array($directories) && false === in_array($basename, $directories)) {
