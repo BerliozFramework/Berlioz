@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fix `Card::result()` using non-multibyte-safe `str_pad()` causing misaligned rendering with accented characters
 - Fix `AbstractCommand::get()` accessing uninitialized `$app` property directly instead of using `getApp()`
 - Fix `CacheClearCommand::clearCache()` ignoring explicitly requested hidden directories
+- Add missing `declare(strict_types=1)` in `Console`, `Parser` and `ArgumentsManager`
 
 ## [3.0.0] - 2026-02-19
 
