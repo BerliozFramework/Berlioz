@@ -49,6 +49,6 @@ abstract class AbstractCommand implements CliAppAwareInterface, CommandInterface
      */
     protected function get(string $id): mixed
     {
-        return $this->app->get($id);
+        return $this->getApp()->get($id);
     }
 }
