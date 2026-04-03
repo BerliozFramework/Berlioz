@@ -106,6 +106,31 @@ class FileFormatValidatorTest extends TestCase
         $this->assertEmpty($constraints);
     }
 
+    public function testValidateRewindsStreamAfterRead(): void
+    {
+        // Mock of the stream — seekable, so detectMimeType reads 4096 bytes
+        $stream = $this->createMock(StreamInterface::class);
+        $stream->method('isSeekable')->willReturn(true);
+        $stream->method('read')->with(4096)->willReturn(str_repeat("\x00", 4096));
+        $stream->expects($this->once())->method('rewind');
+
+        // Mock of the uploaded file
+        $file = $this->createMock(UploadedFile::class);
+        $file->method('getClientFilename')->willReturn('image.png');
+        $file->method('getStream')->willReturn($stream);
+
+        // Mock of the form element — accept all images
+        $element = $this->createMock(ElementInterface::class);
+        $element->method('getOption')
+            ->with('attributes.accept', [])
+            ->willReturn('image/*');
+        $element->method('getValue')->willReturn($file);
+
+        // Execute the validator — PHPUnit verifies rewind() was called exactly once
+        $validator = new FileFormatValidator();
+        $validator->validate($element);
+    }
+
     public function testNullFilesReturnsNoConstraints(): void
     {
         // Mock of the form element
