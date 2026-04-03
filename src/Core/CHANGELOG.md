@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fix `AbstractFilesystem::copy()` incorrectly calling `move()` on the adapter, causing source file deletion
 - Fix `AbstractFilesystem::move()` and `copy()` passing full URIs instead of stripped paths to filesystem adapters
 - Fix `DefaultDirectories::getAppDir()` never caching due to operator precedence (`!null ===`)
+- Fix `ComposerBuilder::build()` checking `json_decode()` result against `false` instead of `null`
 
 ## [3.0.0] - 2026-02-19
 

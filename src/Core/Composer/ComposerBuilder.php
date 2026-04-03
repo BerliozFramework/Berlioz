@@ -50,7 +50,7 @@ class ComposerBuilder
             throw new ComposerException('Project "composer.json" file not found');
         }
 
-        if (false === ($composerJson = json_decode($this->fs->read($composerFile), true))) {
+        if (null === ($composerJson = json_decode($this->fs->read($composerFile), true))) {
             throw new ComposerException('Not valid project "composer.json" file');
         }
 
@@ -58,7 +58,7 @@ class ComposerBuilder
             throw new ComposerException('Project "composer.lock" file not found, execute "composer install" command?');
         }
 
-        if (false === ($composerLock = json_decode($this->fs->read($lockFile), true))) {
+        if (null === ($composerLock = json_decode($this->fs->read($lockFile), true))) {
             throw new ComposerException('Not valid project "composer.lock" file');
         }
 
