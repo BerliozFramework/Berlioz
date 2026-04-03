@@ -91,13 +91,13 @@ class ComposerBuilder
                     config: $packageComposer['config'] ?? $packageFromLock['config'] ?? [],
                 );
             }
-
-            $this->composer = new Composer(
-                name: $composerJson['name'],
-                version: $composerJson['version'] ?? null,
-                packages: $packages,
-            );
         }
+
+        $this->composer = new Composer(
+            name: $composerJson['name'],
+            version: $composerJson['version'] ?? null,
+            packages: $packages,
+        );
     }
 
     /**
