@@ -67,7 +67,9 @@ class FileCacheDriver extends AbstractCacheDriver implements CacheInterface
 
         try {
             if ($this->isValidTtl($content['ttl'])) {
-                if (($unserializedData = @unserialize($content['data'] ?? null)) === false) {
+                $unserializedData = @unserialize($content['data'] ?? '');
+
+                if ($unserializedData === false && ($content['data'] ?? '') !== 'b:0;') {
                     throw new CacheException(
                         sprintf('Corrupted data for key "%s" from cache "%s"', $key, $cacheFilename)
                     );

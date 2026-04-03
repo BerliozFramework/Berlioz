@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fix `PhpErrorHandler::handler()` returning `true` which suppressed PHP's built-in error handling
 - Fix `Snapshot::__construct()` discarding `array_filter()` result for sections filtering
 - Fix `Timeline::__construct()` discarding `array_filter()` result for activities filtering
+- Fix `FileCacheDriver::get()` treating a cached `false` value as corrupted data
 
 ## [3.0.0] - 2026-02-19
 
