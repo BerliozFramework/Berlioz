@@ -250,7 +250,7 @@ abstract class AbstractFilesystem implements FilesystemInterface
         $destinationAdapter = $this->getFilesystem($destination);
 
         if ($sourceAdapter === $destinationAdapter) {
-            $sourceAdapter->move($source, $destination, $config);
+            $sourceAdapter->copy($source, $destination, $config);
             return;
         }
 
