@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fix listener priority sort order so that higher priority listeners execute first
 - Fix `addEventListener()` TypeError when passing an object instead of a string event name
 - Fix `SubscriberProvider` tracking wrong subscriber after sequential dispatches due to `array_slice` offset mismatch
+- Fix delegate dispatchers being called even when event propagation was stopped
 
 ## [3.0.0] - 2026-02-19
 

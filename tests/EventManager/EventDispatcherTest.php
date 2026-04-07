@@ -18,6 +18,7 @@ use Berlioz\EventManager\Tests\Event\TestEvent;
 use Berlioz\EventManager\Tests\Provider\ListenerProviderTest;
 use Berlioz\EventManager\Tests\Subscriber\FakeSubscriber;
 use LogicException;
+use Psr\EventDispatcher\EventDispatcherInterface;
 use stdClass;
 
 class EventDispatcherTest extends ListenerProviderTest
@@ -246,5 +247,45 @@ class EventDispatcherTest extends ListenerProviderTest
         $this->expectExceptionMessage('Maximum event dispatch depth');
 
         $dispatcher->dispatch(new TestEvent('event.a'));
+    }
+
+    public function testDispatchDoesNotDelegateWhenPropagationStopped()
+    {
+        $delegateCalled = false;
+
+        $delegateDispatcher = $this->createMock(EventDispatcherInterface::class);
+        $delegateDispatcher
+            ->expects($this->never())
+            ->method('dispatch');
+
+        $dispatcher = new EventDispatcher(dispatchers: [$delegateDispatcher]);
+        $dispatcher->addEventListener(
+            'event.name',
+            function (TestEvent $event) {
+                $event->stopPropagation();
+                return $event;
+            },
+        );
+
+        $event = new TestEvent('event.name');
+        $dispatcher->dispatch($event);
+
+        $this->assertTrue($event->isPropagationStopped());
+    }
+
+    public function testDispatchDelegatesWhenPropagationNotStopped()
+    {
+        $delegateDispatcher = $this->createMock(EventDispatcherInterface::class);
+        $delegateDispatcher
+            ->expects($this->once())
+            ->method('dispatch');
+
+        $dispatcher = new EventDispatcher(dispatchers: [$delegateDispatcher]);
+        $dispatcher->addEventListener(
+            'event.name',
+            fn(TestEvent $event) => $event->increaseCounter(),
+        );
+
+        $dispatcher->dispatch(new TestEvent('event.name'));
     }
 }
