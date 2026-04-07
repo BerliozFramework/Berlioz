@@ -237,7 +237,7 @@ class Config implements ConfigInterface
 
             $result = (string)$result;
             $value = substr_replace($value, $result, $match[1] + $shift, $length = strlen($match[0]));
-            $shift = strlen($result) - $length;
+            $shift += strlen($result) - $length;
         }
     }
 }

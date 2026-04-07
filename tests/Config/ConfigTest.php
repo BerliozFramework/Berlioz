@@ -219,4 +219,22 @@ class ConfigTest extends TestCase
 
         $this->assertEquals([], $config->getArrayCopy(true));
     }
+
+    public function testTreatValue_multipleInterpolations()
+    {
+        $config = new Config(
+            [
+                new JsonAdapter(
+                    json_encode([
+                        'a' => 'AAAA',
+                        'b' => 'BB',
+                        'c' => 'CCCCCC',
+                        'combined' => '{config: a}-{config: b}-{config: c}',
+                    ])
+                ),
+            ]
+        );
+
+        $this->assertSame('AAAA-BB-CCCCCC', $config->get('combined'));
+    }
 }
