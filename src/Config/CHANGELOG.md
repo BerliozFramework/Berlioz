@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Fix `getOrFail()` no longer throws on falsy configuration values (0, false, empty string)
 - Fix shift accumulation in string interpolation with multiple config functions
 
 ## [3.0.0] - 2026-02-19

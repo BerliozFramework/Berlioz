@@ -107,7 +107,11 @@ class Config implements ConfigInterface
      */
     public function getOrFail(string $key): mixed
     {
-        return $this->get($key) ?: throw new ConfigException(sprintf('Missing configuration value at "%s"', $key));
+        if (!$this->has($key)) {
+            throw new ConfigException(sprintf('Missing configuration value at "%s"', $key));
+        }
+
+        return $this->get($key) ?? throw new ConfigException(sprintf('Missing configuration value at "%s"', $key));
     }
 
     /**

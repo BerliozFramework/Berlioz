@@ -103,6 +103,25 @@ class ConfigTest extends TestCase
         $config->getOrFail('baz.unknown.foo');
     }
 
+    public function testGetOrFail_falsyValues()
+    {
+        $config = new Config(
+            [
+                new JsonAdapter(
+                    json_encode([
+                        'zero_int' => 0,
+                        'false_val' => false,
+                        'empty_string' => '',
+                    ])
+                ),
+            ]
+        );
+
+        $this->assertSame(0, $config->getOrFail('zero_int'));
+        $this->assertSame(false, $config->getOrFail('false_val'));
+        $this->assertSame('', $config->getOrFail('empty_string'));
+    }
+
     public function testGet()
     {
         $config = new FakeConfig(
