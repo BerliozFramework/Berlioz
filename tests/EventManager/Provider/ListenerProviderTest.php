@@ -19,6 +19,7 @@ use Berlioz\EventManager\Provider\ListenerProvider;
 use Berlioz\EventManager\Tests\Event\TestEvent;
 use Closure;
 use PHPUnit\Framework\TestCase;
+use stdClass;
 
 class ListenerProviderTest extends TestCase
 {
@@ -135,5 +136,43 @@ class ListenerProviderTest extends TestCase
         }
 
         $this->assertSame(['high', 'normal', 'low'], $executionOrder);
+    }
+
+    public function testAddEventListenerWithObject()
+    {
+        $called = false;
+
+        $provider = new ($this->getListenerProviderClass())();
+        $provider->addEventListener(
+            new stdClass(),
+            function () use (&$called) {
+                $called = true;
+            },
+        );
+
+        $listeners = iterator_to_array($provider->getListenersForEvent(new stdClass()), false);
+        $this->assertCount(1, $listeners);
+
+        $listeners[0](new stdClass());
+        $this->assertTrue($called);
+    }
+
+    public function testAddEventListenerWithEventInterfaceObject()
+    {
+        $called = false;
+
+        $provider = new ($this->getListenerProviderClass())();
+        $provider->addEventListener(
+            new TestEvent('my.event'),
+            function () use (&$called) {
+                $called = true;
+            },
+        );
+
+        $listeners = iterator_to_array($provider->getListenersForEvent(new TestEvent('my.event')), false);
+        $this->assertCount(1, $listeners);
+
+        $listeners[0](new TestEvent('my.event'));
+        $this->assertTrue($called);
     }
 }

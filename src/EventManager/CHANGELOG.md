@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Fix listener priority sort order so that higher priority listeners execute first
+- Fix `addEventListener()` TypeError when passing an object instead of a string event name
 
 ## [3.0.0] - 2026-02-19
 

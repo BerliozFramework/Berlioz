@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace Berlioz\EventManager\Provider;
 
+use Berlioz\EventManager\Event\EventInterface;
 use Berlioz\EventManager\Listener\Listener;
 use Berlioz\EventManager\Listener\ListenerInterface;
 use Closure;
@@ -34,6 +35,10 @@ class ListenerProvider implements ListenerProviderInterface
         Closure|array|string $callback,
         int $priority = 0
     ): ListenerInterface {
+        if (is_object($event)) {
+            $event = $event instanceof EventInterface ? $event->getName() : $event::class;
+        }
+
         $this->addListener($listener = new Listener($event, $callback, $priority));
 
         return $listener;
