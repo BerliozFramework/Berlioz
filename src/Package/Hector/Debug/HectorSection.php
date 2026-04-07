@@ -95,7 +95,7 @@ class HectorSection extends AbstractSection implements Countable
      */
     public function __unserialize(array $data): void
     {
-        $this->logger = [];
+        $this->loggers = [];
         $this->logs = $data['logs'] ?? [];
     }
 
