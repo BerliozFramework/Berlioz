@@ -273,6 +273,12 @@ readonly class AmqpQueue extends AbstractQueue implements PurgeableQueueInterfac
         $job->isDeleted() && throw JobException::alreadyDeleted($job);
 
         $this->push($job, $delay);
+
+        try {
+            $this->queue->ack($job->getAmqpEnvelope()->getDeliveryTag());
+        } catch (Exception $e) {
+            throw new QueueException('Failed to acknowledge original message during release.', previous: $e);
+        }
     }
 
     /**
