@@ -42,7 +42,7 @@ class PhpMail extends AbstractTransport implements TransportInterface
         }
 
         // Headers
-        $headers = $this->getHeaders($mail, ['To', 'Subject']);
+        $headers = $this->getHeaders($mail, ['To', 'Subject', 'Bcc']);
 
         // Mail
         $result =
