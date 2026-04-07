@@ -30,6 +30,10 @@ class PhpMail extends AbstractTransport implements TransportInterface
      */
     public function send(Mail $mail): bool
     {
+        if (null === $mail->getFrom()) {
+            throw new TransportException('No sender address defined');
+        }
+
         // To
         $toAddresses = $mail->getTo();
         $to = implode(', ', $toAddresses);

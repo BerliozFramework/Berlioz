@@ -3,7 +3,9 @@
 namespace Berlioz\Mailer\Tests\Transport;
 
 use Berlioz\Mailer\Attachment;
+use Berlioz\Mailer\Exception\TransportException;
 use Berlioz\Mailer\Mail;
+use Berlioz\Mailer\Transport\PhpMail;
 use PHPUnit\Framework\TestCase;
 
 class AbstractTransportTest extends TestCase
@@ -75,5 +77,17 @@ class AbstractTransportTest extends TestCase
             ],
             $contents
         );
+    }
+
+    public function testSendThrowsWhenNoFromAddress()
+    {
+        $transport = new PhpMail();
+        $mail = new Mail();
+        $mail->setText('Hello');
+
+        $this->expectException(TransportException::class);
+        $this->expectExceptionMessage('No sender address defined');
+
+        $transport->send($mail);
     }
 }

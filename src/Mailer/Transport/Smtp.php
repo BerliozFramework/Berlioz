@@ -251,6 +251,10 @@ class Smtp extends AbstractTransport implements TransportInterface, LoggerAwareI
      */
     public function send(Mail $mail)
     {
+        if (null === $mail->getFrom()) {
+            throw new TransportException('No sender address defined');
+        }
+
         $response = '';
 
         if (!$this->isConnected()) {

@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Fix `Address::__toString()` TypeError when mail property is not set
+- Fix null pointer error in `Smtp::send()` and `PhpMail::send()` when no sender address is defined
 
 ## [3.0.0] - 2026-02-19
 
