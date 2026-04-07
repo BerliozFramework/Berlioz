@@ -14,6 +14,7 @@ namespace Berlioz\QueueManager\Tests\Queue;
 
 use Aws\Result;
 use Aws\Sqs\SqsClient;
+use Berlioz\QueueManager\Exception\JobException;
 use Berlioz\QueueManager\Exception\QueueException;
 use Berlioz\QueueManager\Job\JobDescriptorInterface;
 use Berlioz\QueueManager\Job\SqsJob;
@@ -164,6 +165,8 @@ class AwsSqsQueueTest extends TestCase
         $jobMock = $this->createMock(SqsJob::class);
         $jobMock->method('getAwsResult')
             ->willReturn(['ReceiptHandle' => 'abc123']);
+        $jobMock->method('isReleased')->willReturn(false);
+        $jobMock->method('isDeleted')->willReturn(false);
 
         $this->sqsClientMock
             ->expects($this->once())
@@ -182,11 +185,26 @@ class AwsSqsQueueTest extends TestCase
         $this->queue->release($jobMock, 5);
     }
 
+    public function testReleaseThrowsIfAlreadyReleased(): void
+    {
+        $jobMock = $this->createMock(SqsJob::class);
+        $jobMock->method('isReleased')->willReturn(true);
+
+        $this->sqsClientMock
+            ->expects($this->never())
+            ->method('__call');
+
+        $this->expectException(JobException::class);
+
+        $this->queue->release($jobMock, 5);
+    }
+
     public function testDelete(): void
     {
         $jobMock = $this->createMock(SqsJob::class);
         $jobMock->method('getAwsResult')
             ->willReturn(['ReceiptHandle' => 'abc123']);
+        $jobMock->method('isDeleted')->willReturn(false);
 
         $this->sqsClientMock
             ->expects($this->once())
@@ -200,6 +218,20 @@ class AwsSqsQueueTest extends TestCase
                     ]
                 ]
             );
+
+        $this->queue->delete($jobMock);
+    }
+
+    public function testDeleteThrowsIfAlreadyDeleted(): void
+    {
+        $jobMock = $this->createMock(SqsJob::class);
+        $jobMock->method('isDeleted')->willReturn(true);
+
+        $this->sqsClientMock
+            ->expects($this->never())
+            ->method('__call');
+
+        $this->expectException(JobException::class);
 
         $this->queue->delete($jobMock);
     }

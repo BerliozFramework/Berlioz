@@ -15,6 +15,7 @@ declare(strict_types=1);
 namespace Berlioz\QueueManager\Queue;
 
 use Aws\Sqs\SqsClient;
+use Berlioz\QueueManager\Exception\JobException;
 use Berlioz\QueueManager\Exception\QueueException;
 use Berlioz\QueueManager\Exception\QueueManagerException;
 use Berlioz\QueueManager\Job\JobDescriptorInterface;
@@ -147,6 +148,9 @@ readonly class AwsSqsQueue extends AbstractQueue implements PurgeableQueueInterf
      */
     public function release(SqsJob $job, int $delay = 0): void
     {
+        $job->isReleased() && throw JobException::alreadyReleased($job);
+        $job->isDeleted() && throw JobException::alreadyDeleted($job);
+
         $this->sqsClient->changeMessageVisibility([
             'QueueUrl' => $this->queueUrl,
             'ReceiptHandle' => $job->getAwsResult()['ReceiptHandle'],
@@ -163,6 +167,8 @@ readonly class AwsSqsQueue extends AbstractQueue implements PurgeableQueueInterf
      */
     public function delete(SqsJob $job): void
     {
+        $job->isDeleted() && throw JobException::alreadyDeleted($job);
+
         $this->sqsClient->deleteMessage([
             'QueueUrl' => $this->queueUrl,
             'ReceiptHandle' => $job->getAwsResult()['ReceiptHandle'],
