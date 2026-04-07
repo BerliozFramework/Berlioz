@@ -20,6 +20,7 @@ use Berlioz\QueueManager\Queue\PurgeableQueueInterface;
 use Berlioz\QueueManager\Queue\QueueInterface;
 use Berlioz\QueueManager\QueueManager;
 use Berlioz\QueueManager\RateLimiter\NullRateLimiter;
+use Berlioz\QueueManager\RateLimiter\RateLimiterInterface;
 use PHPUnit\Framework\TestCase;
 
 class QueueManagerTest extends TestCase
@@ -148,6 +149,26 @@ class QueueManagerTest extends TestCase
         $this->secondaryQueueMock->method('consume')->willReturn(null);
 
         $this->assertNull($this->queueManager->consume());
+    }
+
+    public function testConsumeSkipsQueueWhenRateLimiterReached(): void
+    {
+        $primaryLimiter = $this->createMock(RateLimiterInterface::class);
+        $primaryLimiter->method('reached')->willReturn(true);
+        $this->primaryQueueMock->method('getRateLimiter')->willReturn($primaryLimiter);
+        $this->primaryQueueMock
+            ->expects($this->never())
+            ->method('consume');
+
+        $jobMock = $this->createMock(JobInterface::class);
+        $secondaryLimiter = $this->createMock(RateLimiterInterface::class);
+        $secondaryLimiter->method('reached')->willReturn(false);
+        $this->secondaryQueueMock->method('getRateLimiter')->willReturn($secondaryLimiter);
+        $this->secondaryQueueMock->method('consume')->willReturn($jobMock);
+
+        $job = $this->queueManager->consume();
+
+        $this->assertSame($jobMock, $job);
     }
 
     public function testPushToSpecificQueue(): void

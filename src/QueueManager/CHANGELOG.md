@@ -21,6 +21,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fix incorrect exception message in `AmqpQueue::size()` (was referring to purge instead of size)
 - Fix grammar in `QueueManagerException::queueNotFound()` plural message
 
+### Removed
+
+- Remove unused private method `QueueManager::consumeInAllQueues()`
+
 ## [3.0.0] - 2026-02-19
 
 The version 3.0.0 marks the transition of the Berlioz Framework to a **Monorepo** structure.

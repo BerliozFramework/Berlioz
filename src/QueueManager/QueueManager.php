@@ -169,21 +169,6 @@ readonly class QueueManager implements QueueInterface, PurgeableQueueInterface, 
         return null;
     }
 
-    private function consumeInAllQueues(): ?JobInterface
-    {
-        foreach ($this->getQueues() as $queue) {
-            if ($queue->getRateLimiter()->reached()) {
-                continue;
-            }
-
-            if (null !== ($job = $queue->consume())) {
-                return $job;
-            }
-        }
-
-        return null;
-    }
-
     /**
      * @inheritDoc
      * @param ?string $queue
