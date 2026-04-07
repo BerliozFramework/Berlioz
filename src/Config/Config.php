@@ -119,6 +119,10 @@ class Config implements ConfigInterface
      */
     public function get(?string $key = null, mixed $default = null): mixed
     {
+        if (null === $key) {
+            return $this->getArrayCopy(true);
+        }
+
         $arrayValue = null;
         $found = false;
 

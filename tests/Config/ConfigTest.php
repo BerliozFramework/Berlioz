@@ -146,6 +146,19 @@ class ConfigTest extends TestCase
         $this->assertSame(true, $config->get('baz'));
     }
 
+    public function testGet_nullKey()
+    {
+        $config = new Config(
+            [new JsonAdapter(json_encode(['foo' => 'bar', 'baz' => 42]))]
+        );
+
+        $result = $config->get(null);
+
+        $this->assertIsArray($result);
+        $this->assertSame('bar', $result['foo']);
+        $this->assertSame(42, $result['baz']);
+    }
+
     public function testHas()
     {
         $config = new FakeConfig(
