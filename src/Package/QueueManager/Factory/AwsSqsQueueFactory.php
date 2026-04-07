@@ -39,12 +39,14 @@ class AwsSqsQueueFactory implements QueueFactory
 
         foreach ((array)($config['name'] ?? []) as $name => $queue) {
             !is_array($queue) && $queue = ['name' => $name, 'url' => (string)$queue];
-            is_int($queue['name']) && $queue['name'] = $queue['url'];
+
+            $queueName = $queue['name'] ?? $name;
+            is_int($queueName) && $queueName = $queue['url'] ?? 'default';
 
             yield new AwsSqsQueue(
                 sqsClient: $sqsClient,
                 queueUrl: $queue['url'] ?? null,
-                name: $queue['name'] ?? 'default',
+                name: (string)$queueName,
                 retryTime: (int)($queue['retry_time'] ?? $config['retry_time'] ?? 30),
                 limiter: self::getRateLimiterFromConfig($queue['rate_limit'] ?? null),
             );
