@@ -101,7 +101,7 @@ readonly class RedisQueue extends AbstractQueue implements QueueInterface
 
             $jobRaw = json_decode($payload, true);
 
-            if (!isset($jobRaw['jobId'], $jobRaw['payload'])) {
+            if (!is_array($jobRaw) || !isset($jobRaw['jobId'], $jobRaw['payload'])) {
                 throw new QueueException('Invalid job structure. Missing required fields: jobId or payload.');
             }
 
@@ -123,6 +123,11 @@ readonly class RedisQueue extends AbstractQueue implements QueueInterface
     protected function createJob(array $raw): RedisJob
     {
         $payload = json_decode($raw['payload'], true);
+
+        if (!is_array($payload)) {
+            throw new QueueException('Failed to decode Redis job payload as JSON');
+        }
+
         $name = $payload['jobName'] ?? null;
         unset($payload['jobName']);
 

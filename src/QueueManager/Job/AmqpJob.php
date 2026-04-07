@@ -15,6 +15,7 @@ declare(strict_types=1);
 namespace Berlioz\QueueManager\Job;
 
 use AMQPEnvelope;
+use Berlioz\QueueManager\Exception\QueueException;
 use Berlioz\QueueManager\Queue\AmqpQueue;
 
 class AmqpJob extends Job
@@ -24,6 +25,10 @@ class AmqpJob extends Job
         protected readonly AmqpQueue $queue,
     ) {
         $payload = json_decode($this->envelope->getBody(), true);
+
+        if (!is_array($payload)) {
+            throw new QueueException('Failed to decode AMQP message body as JSON');
+        }
 
         parent::__construct(
             id: $envelope->getHeader('jobId') ?? (string)$this->envelope->getDeliveryTag(),

@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace Berlioz\QueueManager\Job;
 
+use Berlioz\QueueManager\Exception\QueueException;
 use Berlioz\QueueManager\Queue\AwsSqsQueue;
 
 class SqsJob extends Job
@@ -23,6 +24,10 @@ class SqsJob extends Job
         protected readonly AwsSqsQueue $queue,
     ) {
         $payload = json_decode($this->awsResult['Body'], true);
+
+        if (!is_array($payload)) {
+            throw new QueueException('Failed to decode SQS message body as JSON');
+        }
 
         parent::__construct(
             id: $this->awsResult['MessageId'],

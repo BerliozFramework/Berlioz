@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add missing `declare(strict_types=1)` in `SqsJob`
 - Fix `AmqpJob` TypeError when delivery tag fallback is used as job id by casting to string
 - Fix `RedisQueue::freeDelayedJobs()` lock release safety: use unique lock value to prevent deleting another process's lock
+- Fix missing `json_decode` error handling in `SqsJob`, `AmqpJob`, and `RedisQueue`, preventing TypeError on invalid JSON
 
 ## [3.0.0] - 2026-02-19
 
