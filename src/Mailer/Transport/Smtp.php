@@ -212,11 +212,15 @@ class Smtp extends AbstractTransport implements TransportInterface, LoggerAwareI
             throw new TransportException('Not connected');
         }
 
-        if (($response = fgets($this->resource)) === false) {
-            throw new TransportException('Reading failed');
-        }
+        $response = '';
 
-        $response = trim($response);
+        do {
+            if (($line = fgets($this->resource)) === false) {
+                throw new TransportException('Reading failed');
+            }
+
+            $response = trim($line);
+        } while (isset($response[3]) && $response[3] === '-');
 
         return substr($response, 0, 3);
     }
