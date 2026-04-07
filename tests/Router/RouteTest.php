@@ -250,6 +250,15 @@ class RouteTest extends AbstractTestCase
         $this->assertFalse($route2->test($this->getServerRequest('/my-path/12-3/value2')));
     }
 
+    public function testTestRouteWithFloatType()
+    {
+        $route = new Route('/price/{amount::float}');
+
+        $this->assertTrue($route->test($this->getServerRequest('/price/42.5')));
+        $this->assertTrue($route->test($this->getServerRequest('/price/42')));
+        $this->assertFalse($route->test($this->getServerRequest('/price/abc')));
+    }
+
     public function testTestRouteWithRequirementsInPath_deprecated()
     {
         set_error_handler(
