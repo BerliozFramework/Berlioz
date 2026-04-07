@@ -50,12 +50,12 @@ class SubscriberProvider implements PsrListenerProviderInterface
                 continue;
             }
 
-            array_push($this->subscribed, ...array_slice($this->subscribers, $iSubscriber, 1));
+            $this->subscribed[] = $subscriber;
             $this->subscribers[$iSubscriber] = null;
             $subscriber->subscribe($this->listenerProvider);
         }
 
-        $this->subscribers = array_filter($this->subscribers);
+        $this->subscribers = array_values(array_filter($this->subscribers));
 
         return [];
     }

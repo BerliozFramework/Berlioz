@@ -14,7 +14,9 @@ namespace Berlioz\EventManager\Tests\Provider;
 
 use Berlioz\EventManager\Event\CustomEvent;
 use Berlioz\EventManager\Provider\ListenerProvider;
+use Berlioz\EventManager\Provider\ListenerProviderInterface;
 use Berlioz\EventManager\Provider\SubscriberProvider;
+use Berlioz\EventManager\Subscriber\AbstractSubscriber;
 use Berlioz\EventManager\Tests\Event\TestEvent;
 use Berlioz\EventManager\Tests\Subscriber\FakeSubscriber;
 use PHPUnit\Framework\TestCase;
@@ -51,5 +53,51 @@ class SubscriberProviderTest extends TestCase
 
         $result = iterator_to_array($defaultProvider->getListenersForEvent(new TestEvent('event.test')), false);
         $this->assertCount(1, $result);
+    }
+
+    public function testGetListenersForEvent_multipleSubscribersAcrossDispatches()
+    {
+        $subscriberA = new class extends AbstractSubscriber {
+            protected array $listens = ['event.foo'];
+
+            public function subscribe(ListenerProviderInterface $provider): void
+            {
+                $provider->addEventListener('event.foo', fn() => null);
+            }
+        };
+        $subscriberB = new class extends AbstractSubscriber {
+            protected array $listens = ['event.bar'];
+
+            public function subscribe(ListenerProviderInterface $provider): void
+            {
+                $provider->addEventListener('event.bar', fn() => null);
+            }
+        };
+        $subscriberC = new class extends AbstractSubscriber {
+            protected array $listens = ['event.baz'];
+
+            public function subscribe(ListenerProviderInterface $provider): void
+            {
+                $provider->addEventListener('event.baz', fn() => null);
+            }
+        };
+
+        $provider = new FakeSubscriberProvider(new ListenerProvider());
+        $provider->addSubscriber($subscriberA, $subscriberB, $subscriberC);
+
+        // First dispatch: A is matched and moved to subscribed
+        $provider->getListenersForEvent(new CustomEvent('event.foo'));
+        $this->assertSame([$subscriberA], $provider->getSubscribed());
+        $this->assertCount(2, $provider->getSubscribers());
+
+        // Second dispatch: B is matched and moved to subscribed
+        $provider->getListenersForEvent(new CustomEvent('event.bar'));
+        $this->assertSame([$subscriberA, $subscriberB], $provider->getSubscribed());
+        $this->assertCount(1, $provider->getSubscribers());
+
+        // Third dispatch: C is matched and moved to subscribed
+        $provider->getListenersForEvent(new CustomEvent('event.baz'));
+        $this->assertSame([$subscriberA, $subscriberB, $subscriberC], $provider->getSubscribed());
+        $this->assertCount(0, $provider->getSubscribers());
     }
 }

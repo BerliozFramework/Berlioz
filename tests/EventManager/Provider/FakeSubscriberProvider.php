@@ -20,4 +20,9 @@ class FakeSubscriberProvider extends SubscriberProvider
     {
         return $this->subscribers;
     }
+
+    public function getSubscribed(): array
+    {
+        return $this->subscribed;
+    }
 }
