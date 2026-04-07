@@ -568,4 +568,19 @@ class RouteTest extends AbstractTestCase
         $routes = iterator_to_array($parentRoute->getRoutes(), false);
         $this->assertCount(2, $routes);
     }
+
+    public function testCountWithGroups()
+    {
+        $parentRoute = new Route('/path/{foo}');
+        $parentRoute->addRoute(new Route('/child1'));
+
+        $group = new Route('/group');
+        $group->addRoute(new Route('/child2'));
+        $group->addRoute(new Route('/child3'));
+        $parentRoute->addRoute($group);
+
+        // 3 leaf routes: child1 + child2 + child3
+        $this->assertCount(3, $parentRoute);
+        $this->assertSame(iterator_count($parentRoute->getRoutes()), count($parentRoute));
+    }
 }
