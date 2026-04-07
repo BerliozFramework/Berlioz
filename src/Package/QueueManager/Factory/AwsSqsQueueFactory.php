@@ -15,6 +15,7 @@ declare(strict_types=1);
 namespace Berlioz\Package\QueueManager\Factory;
 
 use Aws\Sqs\SqsClient;
+use Berlioz\Core\Exception\ConfigException;
 use Berlioz\QueueManager\Queue\AwsSqsQueue;
 use Generator;
 
@@ -43,9 +44,14 @@ class AwsSqsQueueFactory implements QueueFactory
             $queueName = $queue['name'] ?? $name;
             is_int($queueName) && $queueName = $queue['url'] ?? 'default';
 
+            $queueUrl = $queue['url'] ?? null;
+            if (!is_string($queueUrl) || '' === trim($queueUrl)) {
+                throw new ConfigException(sprintf('Missing or invalid SQS queue URL for queue "%s"', (string)$queueName));
+            }
+
             yield new AwsSqsQueue(
                 sqsClient: $sqsClient,
-                queueUrl: $queue['url'] ?? null,
+                queueUrl: $queueUrl,
                 name: (string)$queueName,
                 retryTime: (int)($queue['retry_time'] ?? $config['retry_time'] ?? 30),
                 limiter: self::getRateLimiterFromConfig($queue['rate_limit'] ?? null),

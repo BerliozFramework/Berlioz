@@ -12,6 +12,7 @@
 
 namespace Berlioz\Package\QueueManager\Tests\Factory;
 
+use Berlioz\Core\Exception\ConfigException;
 use Berlioz\Package\QueueManager\Factory\AwsSqsQueueFactory;
 use Berlioz\QueueManager\Queue\AwsSqsQueue;
 use PHPUnit\Framework\TestCase;
@@ -42,5 +43,25 @@ class AwsSqsQueueFactoryTest extends TestCase
 
         $this->assertCount(1, $queues);
         $this->assertSame('https://sqs.eu-west-3.amazonaws.com/123456789012/queue1', $queue->getName());
+    }
+
+    public function testCreateFromConfig_withoutQueueUrl(): void
+    {
+        $this->expectException(ConfigException::class);
+        $this->expectExceptionMessage('Missing or invalid SQS queue URL');
+
+        iterator_to_array(AwsSqsQueueFactory::createFromConfig([
+            'client' => [
+                'version' => 'latest',
+                'region' => 'eu-west-3',
+                'credentials' => [
+                    'key' => 'test',
+                    'secret' => 'test',
+                ],
+            ],
+            'name' => [
+                ['name' => 'queue1'],
+            ],
+        ]));
     }
 }
