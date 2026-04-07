@@ -328,10 +328,12 @@ class Mail
 %Six
 EOD;
 
+        $result = preg_replace($regex, ' ', $this->html);
+
         // Reset PHP configuration value
         ini_set('pcre.recursion_limit', $oldPcreRecursionLimit);
 
-        return preg_replace($regex, ' ', $this->html);
+        return $result;
     }
 
     /**
