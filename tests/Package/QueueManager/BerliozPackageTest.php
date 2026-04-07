@@ -17,6 +17,7 @@ use Berlioz\Core\Core;
 use Berlioz\Core\Tests\RestoresErrorHandler;
 use Berlioz\Package\QueueManager\BerliozPackage;
 use Berlioz\Package\QueueManager\TestProject\TestEnvDirectories;
+use Berlioz\QueueManager\Exception\QueueManagerException;
 use Berlioz\QueueManager\Handler\JobHandlerManager;
 use Berlioz\QueueManager\QueueManager;
 use Berlioz\QueueManager\Worker;
@@ -48,5 +49,16 @@ class BerliozPackageTest extends TestCase
         $this->assertTrue($core->getContainer()->has(QueueManager::class));
         $this->assertTrue($core->getContainer()->has(Worker::class));
         $this->assertTrue($core->getContainer()->has(JobHandlerManager::class));
+    }
+
+    public function testRegister_withEmptyQueueConfig()
+    {
+        $core = new Core(new TestEnvDirectories(), cache: false);
+        BerliozPackage::register($core->getContainer());
+
+        $this->expectException(QueueManagerException::class);
+        $this->expectExceptionMessage('No queue configured, at least one queue must be configured.');
+
+        $core->getContainer()->get(QueueManager::class);
     }
 }

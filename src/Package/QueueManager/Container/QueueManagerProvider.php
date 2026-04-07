@@ -16,6 +16,7 @@ namespace Berlioz\Package\QueueManager\Container;
 
 use Berlioz\Config\Config;
 use Berlioz\Package\QueueManager\Factory\QueueFactories;
+use Berlioz\QueueManager\Exception\QueueManagerException;
 use Berlioz\QueueManager\Handler\JobHandlerManager;
 use Berlioz\QueueManager\QueueManager;
 use Berlioz\QueueManager\Worker;
@@ -63,6 +64,10 @@ class QueueManagerProvider extends AbstractServiceProvider
                         $config->get('berlioz.queues.queues', [])
                     );
                     $queues = array_merge(...$queues);
+
+                    if (empty($queues)) {
+                        throw new QueueManagerException('No queue configured, at least one queue must be configured.');
+                    }
 
                     return new QueueManager(...$queues);
                 }
