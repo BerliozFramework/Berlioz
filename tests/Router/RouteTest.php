@@ -181,6 +181,20 @@ class RouteTest extends AbstractTestCase
         $this->assertEquals([Request::HTTP_METHOD_GET], $route->getMethods());
     }
 
+    public function testGetMethodsWithPatch()
+    {
+        $route = new Route('/my-path', method: 'PATCH');
+
+        $this->assertEquals(['PATCH'], $route->getMethods());
+    }
+
+    public function testGetMethodsWithNonStandard()
+    {
+        $route = new Route('/my-path', method: ['PATCH', 'PURGE']);
+
+        $this->assertEquals(['PATCH'], array_values($route->getMethods()));
+    }
+
     public function testGetMethodsDefault()
     {
         $route = new Route('/my-path/{foo}/{bar}');
@@ -194,6 +208,7 @@ class RouteTest extends AbstractTestCase
                 Request::HTTP_METHOD_CONNECT,
                 Request::HTTP_METHOD_TRACE,
                 Request::HTTP_METHOD_PUT,
+                Request::HTTP_METHOD_PATCH,
                 Request::HTTP_METHOD_DELETE,
             ],
             $route->getMethods()
