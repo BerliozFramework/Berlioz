@@ -127,17 +127,17 @@ class Smtp extends AbstractTransport implements TransportInterface, LoggerAwareI
         // Log
         $this->log(LogLevel::DEBUG, sprintf('Connection response: %s', $response));
 
-        $this->write("HELO " . trim(gethostname()));
+        $this->write("EHLO " . trim(gethostname()));
 
         if ($this->get($response) != "250") {
             // Log
-            $this->log(LogLevel::ERROR, sprintf('HELO command error: %s', $response));
+            $this->log(LogLevel::ERROR, sprintf('EHLO command error: %s', $response));
 
-            throw new TransportException(sprintf('"HELO" command failed: %s', $response));
+            throw new TransportException(sprintf('"EHLO" command failed: %s', $response));
         }
 
         // Log
-        $this->log(LogLevel::DEBUG, sprintf('HELO command response: %s', $response));
+        $this->log(LogLevel::DEBUG, sprintf('EHLO command response: %s', $response));
 
         if (!empty($this->username) && !empty($this->password)) {
             $this->write('AUTH PLAIN ' . base64_encode("\000" . $this->username . "\000" . $this->password));
