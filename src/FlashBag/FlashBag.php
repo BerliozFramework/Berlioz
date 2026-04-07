@@ -152,6 +152,10 @@ class FlashBag implements Countable
      */
     protected function saveToSession()
     {
+        if (session_status() !== PHP_SESSION_ACTIVE) {
+            return;
+        }
+
         // Save into sessions
         $_SESSION[self::SESSION_KEY] = $this->messages;
     }
