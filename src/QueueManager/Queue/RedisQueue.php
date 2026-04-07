@@ -35,6 +35,7 @@ readonly class RedisQueue extends AbstractQueue implements QueueInterface
         private Redis $redis,
         string $name = 'default',
         RateLimiterInterface $limiter = new NullRateLimiter(),
+        private int $deletedJobsTtl = 86400,
     ) {
         parent::__construct(name: $name, limiter: $limiter);
     }
@@ -210,7 +211,11 @@ readonly class RedisQueue extends AbstractQueue implements QueueInterface
         $job->isReleased() && throw JobException::alreadyReleased($job);
         $job->isDeleted() && throw JobException::alreadyDeleted($job);
 
-        $this->redis->hset($this->getDeletedJobsKey(), $job->getId(), json_encode($job));
+        $deletedJobsKey = $this->getDeletedJobsKey();
+        $this->redis->hset($deletedJobsKey, $job->getId(), json_encode($job));
+        if ($this->deletedJobsTtl > 0) {
+            $this->redis->expire($deletedJobsKey, $this->deletedJobsTtl);
+        }
     }
 
     private function getDelayedQueueKey(): string

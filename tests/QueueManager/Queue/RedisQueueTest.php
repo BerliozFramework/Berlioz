@@ -16,6 +16,7 @@ use Berlioz\QueueManager\Queue\QueueInterface;
 use Berlioz\QueueManager\Queue\RedisQueue;
 use Berlioz\QueueManager\RateLimiter\NullRateLimiter;
 use Berlioz\QueueManager\RateLimiter\RateLimiterInterface;
+use Berlioz\QueueManager\Job\RedisJob;
 use PHPUnit\Framework\Attributes\RequiresPhpExtension;
 use Redis;
 use RedisException;
@@ -133,5 +134,59 @@ class RedisQueueTest extends QueueTestCase
             ->method('del');
 
         $queue->freeDelayedJobs();
+    }
+
+    public function testDeleteSetsTtlOnDeletedJobsKey(): void
+    {
+        $redisMock = $this->createMock(Redis::class);
+        $queue = new RedisQueue($redisMock, 'testQueue');
+
+        $jobMock = $this->createMock(RedisJob::class);
+        $jobMock->method('isReleased')->willReturn(false);
+        $jobMock->method('isDeleted')->willReturn(false);
+        $jobMock->method('getId')->willReturn('job-id-123');
+
+        $redisMock
+            ->expects($this->once())
+            ->method('hset')
+            ->with(
+                'testQueue:deleted',
+                'job-id-123',
+                $this->callback(fn(string $payload) => $payload !== ''),
+            );
+
+        $redisMock
+            ->expects($this->once())
+            ->method('expire')
+            ->with('testQueue:deleted', 86400);
+
+        $queue->delete($jobMock);
+    }
+
+    public function testDeleteUsesCustomTtlOnDeletedJobsKey(): void
+    {
+        $redisMock = $this->createMock(Redis::class);
+        $queue = new RedisQueue($redisMock, 'testQueue', new NullRateLimiter(), 3600);
+
+        $jobMock = $this->createMock(RedisJob::class);
+        $jobMock->method('isReleased')->willReturn(false);
+        $jobMock->method('isDeleted')->willReturn(false);
+        $jobMock->method('getId')->willReturn('job-id-456');
+
+        $redisMock
+            ->expects($this->once())
+            ->method('hset')
+            ->with(
+                'testQueue:deleted',
+                'job-id-456',
+                $this->callback(fn(string $payload) => $payload !== ''),
+            );
+
+        $redisMock
+            ->expects($this->once())
+            ->method('expire')
+            ->with('testQueue:deleted', 3600);
+
+        $queue->delete($jobMock);
     }
 }
