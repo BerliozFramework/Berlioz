@@ -27,10 +27,10 @@ class HectorException extends BerliozException
      *
      * @param Throwable|null $previous
      *
-     * @return static
+     * @return self
      */
-    public static function typesConfig(?Throwable $previous = null): static
+    public static function typesConfig(?Throwable $previous = null): self
     {
-        return new static('Types config error', previous: $previous);
+        return new self('Types config error', previous: $previous);
     }
 }
