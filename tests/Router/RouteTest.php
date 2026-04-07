@@ -293,6 +293,14 @@ class RouteTest extends AbstractTestCase
         $this->assertFalse($route->test($this->getServerRequest('/test/abc')));
     }
 
+    public function testTestRouteWithInlineRegexZero()
+    {
+        $route = new Route('/test/{foo:0}');
+
+        $this->assertTrue($route->test($this->getServerRequest('/test/0')));
+        $this->assertFalse($route->test($this->getServerRequest('/test/1')));
+    }
+
     public function testTestRouteWithRequirementsInPath()
     {
         $route = new Route('/my-path/{foo::int}/{bar}');
