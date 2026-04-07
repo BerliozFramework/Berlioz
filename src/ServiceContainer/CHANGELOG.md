@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Fix service `provides` field is now preserved through serialization
+- Fix services with null factory or alias can now be deserialized
 - Fix auto-wiring now tries all types in union type parameters before giving up
 - Fix method calls on non-shared services now correctly target the created instance
 

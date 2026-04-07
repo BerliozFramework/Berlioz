@@ -69,6 +69,7 @@ class Service
             'shared' => $this->shared,
             'factory' => $this->factory,
             'alias' => $this->alias,
+            'provides' => $this->provides,
             'arguments' => $this->arguments,
             'calls' => $this->calls
         ];
@@ -86,8 +87,9 @@ class Service
         $this->class = $data['class'] ?? throw new ContainerException('Serialization error');
         $this->nullable = $data['nullable'] ?? throw new ContainerException('Serialization error');
         $this->shared = $data['shared'] ?? true;
-        $this->factory = $data['factory'] ?? throw new ContainerException('Serialization error');
-        $this->alias = $data['alias'] ?? throw new ContainerException('Serialization error');
+        $this->factory = array_key_exists('factory', $data) ? $data['factory'] : throw new ContainerException('Serialization error');
+        $this->alias = array_key_exists('alias', $data) ? $data['alias'] : throw new ContainerException('Serialization error');
+        $this->provides = $data['provides'] ?? [];
         $this->arguments = $data['arguments'] ?? throw new ContainerException('Serialization error');
         $this->calls = $data['calls'] ?? throw new ContainerException('Serialization error');
     }

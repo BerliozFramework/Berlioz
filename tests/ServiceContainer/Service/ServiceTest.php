@@ -281,4 +281,15 @@ class ServiceTest extends TestCase
         $this->assertInstanceOf(Service1::class, $result);
         $this->assertEquals(15, $result->getParam3());
     }
+
+    public function testSerializationPreservesProvides()
+    {
+        $service = new Service(Service1::class, 'foo');
+        $service->addProvide('bar', 'baz');
+
+        $unserialized = unserialize(serialize($service));
+
+        $this->assertEquals(['bar', 'baz'], $unserialized->getProvides());
+        $this->assertEquals('foo', $unserialized->getAlias());
+    }
 }
