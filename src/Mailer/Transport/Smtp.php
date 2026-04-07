@@ -68,13 +68,15 @@ class Smtp extends AbstractTransport implements TransportInterface, LoggerAwareI
 
     /**
      * Smtp destructor.
-     *
-     * @throws TransportException if disconnection throw exception.
      */
     public function __destruct()
     {
-        if ($this->isConnected()) {
-            $this->disconnect();
+        try {
+            if ($this->isConnected()) {
+                $this->disconnect();
+            }
+        } catch (TransportException $e) {
+            $this->log(LogLevel::WARNING, sprintf('Disconnection error in destructor: %s', $e->getMessage()));
         }
     }
 
