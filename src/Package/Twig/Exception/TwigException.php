@@ -25,11 +25,11 @@ class TwigException extends BerliozException
      *
      * @param mixed $extension
      *
-     * @return static
+     * @return self
      */
-    public static function invalidExtension(mixed $extension): static
+    public static function invalidExtension(mixed $extension): self
     {
-        return new static(
+        return new self(
             sprintf(
                 'Twig extension must implement "%s" interface, actual "%s"',
                 ExtensionInterface::class,
@@ -41,10 +41,10 @@ class TwigException extends BerliozException
     /**
      * Not loaded.
      *
-     * @return static
+     * @return self
      */
-    public static function notLoaded(): static
+    public static function notLoaded(): self
     {
-        return new static(sprintf('Twig is not loaded with method "%s::setTwig()"', TwigAwareInterface::class));
+        return new self(sprintf('Twig is not loaded with method "%s::setTwig()"', TwigAwareInterface::class));
     }
 }
