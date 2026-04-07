@@ -220,7 +220,7 @@ readonly class QueueManager implements QueueInterface, PurgeableQueueInterface, 
         ?string $queue = null,
     ): string {
         if (null === $queue) {
-            return $this->queue->pushRaw($payload);
+            return $this->queue->pushRaw($payload, $delay);
         }
 
         foreach ($this->getQueues() as $queueObj) {

@@ -230,6 +230,21 @@ class QueueManagerTest extends TestCase
         $this->assertSame('JobID111', $jobId);
     }
 
+    public function testPushRawPassesDelayToPrimaryQueue(): void
+    {
+        $payload = ['data' => 'value'];
+
+        $this->primaryQueueMock
+            ->expects($this->once())
+            ->method('pushRaw')
+            ->with($payload, 30)
+            ->willReturn('JobID222');
+
+        $jobId = $this->queueManager->pushRaw($payload, 30);
+
+        $this->assertSame('JobID222', $jobId);
+    }
+
     public function testPurge(): void
     {
         $purgeableQueueMock = $this->createMock(PurgeableQueueInterface::class);

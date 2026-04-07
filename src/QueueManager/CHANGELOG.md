@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fix `AwsSqsQueue::delete()` using `MessageId` instead of `ReceiptHandle`, causing SQS messages to never be deleted
 - Fix operator precedence in `AwsSqsQueue::size()` causing TypeError when attributes are missing
 - Fix `AmqpQueue::release()` not acknowledging original message, causing duplicate processing
+- Fix `QueueManager::pushRaw()` not passing `$delay` parameter when using the default queue
 
 ## [3.0.0] - 2026-02-19
 
