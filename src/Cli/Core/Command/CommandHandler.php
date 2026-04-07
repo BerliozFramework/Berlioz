@@ -61,29 +61,29 @@ class CommandHandler
             return 1;
         }
 
-        // Add help argument
-        $this->console->getArgumentsManager()->add(
-            Argument::createFromArray(
-                'help',
-                [
-                    'longPrefix' => 'help',
-                    'description' => 'Show this help',
-                    'noValue' => true
-                ]
-            )
-        );
-
-        /** @var CommandInterface $commandObj */
-        $commandObj = $this->core->getContainer()->get($command->getClass());
-
-        // Ask help
-        if (true === $this->console->getArgumentsManager()->defined('help', $argv)) {
-            $usage = new CommandUsage($command);
-            $usage->output($this->console);
-            return 0;
-        }
-
         try {
+            // Add help argument
+            $this->console->getArgumentsManager()->add(
+                Argument::createFromArray(
+                    'help',
+                    [
+                        'longPrefix' => 'help',
+                        'description' => 'Show this help',
+                        'noValue' => true
+                    ]
+                )
+            );
+
+            /** @var CommandInterface $commandObj */
+            $commandObj = $this->core->getContainer()->get($command->getClass());
+
+            // Ask help
+            if (true === $this->console->getArgumentsManager()->defined('help', $argv)) {
+                $usage = new CommandUsage($command);
+                $usage->output($this->console);
+                return 0;
+            }
+
             $this->addArguments($command);
             $this->console->getArgumentsManager()->parse($argv);
 

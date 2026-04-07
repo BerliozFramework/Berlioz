@@ -7,8 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add `CommandDeclaration::integrity()` method to verify command class availability
+
 ### Fixed
 
+- Gracefully handle unavailable command classes (e.g. removed package with stale cache) instead of crashing the entire console
 - Fix `Parser::getCommandAndArguments()` injecting `null` into arguments array when no command is provided
 - Fix `Card::result()` using non-multibyte-safe `str_pad()` causing misaligned rendering with accented characters
 - Fix `AbstractCommand::get()` accessing uninitialized `$app` property directly instead of using `getApp()`

@@ -17,6 +17,7 @@ namespace Berlioz\Cli\Core\Console\Usage;
 use Berlioz\Cli\Core\Command\Argument;
 use Berlioz\Cli\Core\Command\CommandDeclaration;
 use Berlioz\Cli\Core\Console\Console;
+use Berlioz\Cli\Core\Exception\CommandException;
 
 /**
  * Class CommandUsage.
@@ -31,9 +32,13 @@ class CommandUsage
      * Output.
      *
      * @param Console $console
+     *
+     * @throws CommandException
      */
     public function output(Console $console): void
     {
+        $this->commandDeclaration->integrity();
+
         $description = call_user_func([$this->commandDeclaration->getClass(), 'getDescription']) ?: null;
         if (null !== $description) {
             $console->out($description)->br();

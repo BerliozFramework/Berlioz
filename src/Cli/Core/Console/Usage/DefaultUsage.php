@@ -16,6 +16,7 @@ namespace Berlioz\Cli\Core\Console\Usage;
 
 use Berlioz\Cli\Core\Command\CommandManager;
 use Berlioz\Cli\Core\Console\Console;
+use Berlioz\Cli\Core\Exception\CommandException;
 
 /**
  * Class DefaultUsage.
@@ -37,7 +38,7 @@ class DefaultUsage
         $console
             ->out(
                 <<<EOF
-    ____            ___          
+    ____            ___
    / __ )___  _____/ (_)___  ____
   / __  / _ \/ ___/ / / __ \/_  /
  / /_/ /  __/ /  / / / /_/ / / /_
@@ -64,15 +65,38 @@ EOF
             return;
         }
 
-        $console->yellow('Available commands:');
-
         $commandsSummary = [];
+        $warnings = [];
+
         foreach ($this->commandManager->getCommands() as $command) {
-            $commandsSummary[] = [
-                'name' => $command->getName(),
-                'description' => call_user_func([$command->getClass(), 'getDescription']),
-            ];
+            try {
+                $command->integrity();
+                $commandsSummary[] = [
+                    'name' => $command->getName(),
+                    'description' => call_user_func([$command->getClass(), 'getDescription']),
+                ];
+            } catch (CommandException $exception) {
+                $warnings[$command->getName()] = $exception;
+            }
         }
+
+        // Warnings
+        if (count($warnings) > 0) {
+            foreach ($warnings as $name => $exception) {
+                $console->backgroundLightYellow()->black()->card(
+                    sprintf('Command "%s" skipped: %s', $name, $exception->getMessage())
+                );
+            }
+
+            $console->br();
+        }
+
+        // Commands list
+        if (0 === count($commandsSummary)) {
+            return;
+        }
+
+        $console->yellow('Available commands:');
 
         $maxLength = array_map(fn($commandSummary) => mb_strlen($commandSummary['name']), $commandsSummary);
         $maxLength = max($maxLength);

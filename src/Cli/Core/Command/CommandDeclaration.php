@@ -14,6 +14,8 @@ declare(strict_types=1);
 
 namespace Berlioz\Cli\Core\Command;
 
+use Berlioz\Cli\Core\Exception\CommandException;
+
 /**
  * Class CommandDeclaration.
  */
@@ -44,6 +46,18 @@ class CommandDeclaration
     public function getClass(): string
     {
         return $this->class;
+    }
+
+    /**
+     * Check integrity of command declaration.
+     *
+     * @throws CommandException
+     */
+    public function integrity(): void
+    {
+        if (!is_a($this->class, CommandInterface::class, true)) {
+            throw CommandException::invalidCommandClass($this->class);
+        }
     }
 
     /**

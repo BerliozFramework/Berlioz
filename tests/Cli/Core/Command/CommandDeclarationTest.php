@@ -14,6 +14,7 @@ namespace Berlioz\Cli\Core\Tests\Command;
 
 use Berlioz\Cli\Core\Command\Argument;
 use Berlioz\Cli\Core\Command\CommandDeclaration;
+use Berlioz\Cli\Core\Exception\CommandException;
 use PHPUnit\Framework\TestCase;
 use stdClass;
 
@@ -60,5 +61,29 @@ class CommandDeclarationTest extends TestCase
 
         $this->assertEquals([$optionalArgument], $declaration->getArguments(false));
         $this->assertEquals([$requiredArgument], $declaration->getArguments(true));
+    }
+
+    public function testIntegrity()
+    {
+        $declaration = new CommandDeclaration('foo:bar', FakeCommand::class);
+        $declaration->integrity();
+
+        $this->addToAssertionCount(1);
+    }
+
+    public function testIntegrity_nonExistentClass()
+    {
+        $this->expectException(CommandException::class);
+
+        $declaration = new CommandDeclaration('foo:bar', 'App\\NonExistent\\Command');
+        $declaration->integrity();
+    }
+
+    public function testIntegrity_nonImplementingClass()
+    {
+        $this->expectException(CommandException::class);
+
+        $declaration = new CommandDeclaration('foo:bar', stdClass::class);
+        $declaration->integrity();
     }
 }
