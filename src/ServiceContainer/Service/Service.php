@@ -379,7 +379,7 @@ class Service
         }
 
         foreach ($this->calls ?? [] as $call) {
-            $instantiator->invokeMethod($this->object, $call[0], $call[1] ?? []);
+            $instantiator->invokeMethod($object, $call[0], $call[1] ?? []);
         }
     }
 }

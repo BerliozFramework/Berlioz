@@ -266,4 +266,19 @@ class ServiceTest extends TestCase
         $this->assertNull($service2->get(new Instantiator()));
         $this->assertEquals(1, $nbRetrieve);
     }
+
+    public function testCallsOnNonSharedService()
+    {
+        $service = new Service(
+            class: Service1::class,
+            factory: fn() => new Service1('a', 'b', 10),
+        );
+        $service->setShared(false);
+        $service->addCall('increaseParam3', ['nb' => 5]);
+
+        $result = $service->get(new Instantiator());
+
+        $this->assertInstanceOf(Service1::class, $result);
+        $this->assertEquals(15, $result->getParam3());
+    }
 }
