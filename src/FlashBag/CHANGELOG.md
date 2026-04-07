@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Fix `saveToSession()` writing to `$_SESSION` when session is not active, causing silent data loss
+- Fix constructor silently continuing when session cannot be started (headers already sent)
 
 ## [3.0.0] - 2026-02-19
 

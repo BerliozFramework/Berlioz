@@ -54,6 +54,10 @@ class FlashBag implements Countable
             session_start();
         }
 
+        if (session_status() == PHP_SESSION_NONE) {
+            throw new Exception('Unable to start session for FlashBag: headers already sent');
+        }
+
         $this->messages = [];
         if (isset($_SESSION[self::SESSION_KEY]) && is_array($_SESSION[self::SESSION_KEY])) {
             $this->messages = $_SESSION[self::SESSION_KEY];
