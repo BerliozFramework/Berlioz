@@ -215,6 +215,26 @@ class RouteTest extends AbstractTestCase
         );
     }
 
+    public function testGetHostsInheritedFromParent()
+    {
+        $parentRoute = new Route('/api', host: 'api.example.com');
+        $parentRoute->addRoute($childRoute = new Route('/users'));
+
+        $this->assertEquals(['api.example.com'], $childRoute->getHosts());
+
+        // Child route should reject requests from other hosts
+        $this->assertFalse($childRoute->test($this->getServerRequest('https://evil.com/api/users')));
+        $this->assertTrue($childRoute->test($this->getServerRequest('https://api.example.com/api/users')));
+    }
+
+    public function testGetHostsChildOverridesParent()
+    {
+        $parentRoute = new Route('/api', host: 'api.example.com');
+        $parentRoute->addRoute($childRoute = new Route('/users', host: 'other.example.com'));
+
+        $this->assertEquals(['other.example.com'], $childRoute->getHosts());
+    }
+
     public function testGetRoute()
     {
         $route = new Route('/my-path/{foo}/{bar}');
