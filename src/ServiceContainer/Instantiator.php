@@ -236,7 +236,7 @@ class Instantiator
                             $reflectionClass = new ReflectionClass($reflectionType->getName());
 
                             if (false === $reflectionClass->isInstantiable()) {
-                                continue 2;
+                                continue;
                             }
 
                             $arguments[$parameterName] = $this->newInstanceOf($reflectionType->getName());

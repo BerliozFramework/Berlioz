@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Fix auto-wiring now tries all types in union type parameters before giving up
 - Fix method calls on non-shared services now correctly target the created instance
 
 ## [3.0.0] - 2026-02-19

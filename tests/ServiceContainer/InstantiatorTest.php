@@ -298,4 +298,15 @@ class InstantiatorTest extends TestCase
         $result = $instantiator->invokeMethod(Service4::class, 'test');
         $this->assertEquals(sprintf('It\'s a test "%s"', Service4::class), $result);
     }
+
+    public function testNewInstanceOfWithUnionTypeNonInstantiableFirst()
+    {
+        $instantiator = new Instantiator();
+
+        // ServiceInterface is not instantiable, WithoutConstructor is
+        $callback = fn(\Berlioz\ServiceContainer\Tests\Asset\ServiceInterface|WithoutConstructor $dep) => $dep;
+        $result = $instantiator->call($callback);
+
+        $this->assertInstanceOf(WithoutConstructor::class, $result);
+    }
 }
