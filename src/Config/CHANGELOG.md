@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Fix `JSON_THROW_ON_ERROR` passed as options instead of depth in `JsonAdapter`
 - Fix `IniAdapter` no longer rejects valid empty INI files
 - Fix `get(null)` now returns the full merged configuration instead of throwing TypeError
 - Fix `getOrFail()` no longer throws on falsy configuration values (0, false, empty string)

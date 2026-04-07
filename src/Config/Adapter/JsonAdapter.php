@@ -32,7 +32,7 @@ class JsonAdapter extends AbstractFileAdapter
         }
 
         try {
-            return json5_decode($str, true, JSON_THROW_ON_ERROR);
+            return json5_decode($str, true, 512, JSON_THROW_ON_ERROR);
         } catch (JsonException $exception) {
             throw new ConfigException('Not a valid JSON', 0, $exception);
         }
