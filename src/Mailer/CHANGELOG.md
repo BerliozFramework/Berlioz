@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fix `Smtp::__destruct()` potentially throwing an exception causing a fatal error
 - Fix `PhpMail` leaking Bcc addresses in headers sent to recipients
 - Fix MIME boundary generation including a spurious `--` prefix, producing malformed multipart messages
+- Fix header injection vulnerability by rejecting CR/LF characters in `Mail::addHeader()`
 
 ## [3.0.0] - 2026-02-19
 

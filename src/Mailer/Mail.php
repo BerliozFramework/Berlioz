@@ -106,6 +106,11 @@ class Mail
             );
         }
 
+        // Prevent header injection
+        if (preg_match('/[\r\n]/', $name . $value)) {
+            throw new InvalidArgumentException('Header name or value must not contain CR or LF characters');
+        }
+
         if (isset($this->headers[$name]) && $replace === false) {
             $this->headers[$name][] = $value;
 

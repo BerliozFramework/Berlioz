@@ -69,6 +69,16 @@ class MailTest extends TestCase
         $mail->setHeaders(self::TEST_INVALID_HEADERS);
     }
 
+    public function testAddHeaderRejectsCRLFInjection()
+    {
+        $mail = new Mail;
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('must not contain CR or LF');
+
+        $mail->addHeader('X-Custom', "value\r\nBcc: attacker@evil.com");
+    }
+
     public function testAccessors()
     {
         $addressFrom = new Address('ronan1@berlioz-framework.com');
