@@ -27,9 +27,13 @@ class IniAdapter extends AbstractFileAdapter
     protected function load(string $str, bool $strIsUrl = false): array
     {
         if (true === $strIsUrl) {
-            return @parse_ini_file($str, true) ?: throw new ConfigException('Not a valid INI file');
+            $result = @parse_ini_file($str, true);
+
+            return $result !== false ? $result : throw new ConfigException('Not a valid INI file');
         }
 
-        return @parse_ini_string($str, true) ?: throw new ConfigException('Not a valid INI contents');
+        $result = @parse_ini_string($str, true);
+
+        return $result !== false ? $result : throw new ConfigException('Not a valid INI contents');
     }
 }

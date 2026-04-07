@@ -68,6 +68,13 @@ EOF;
         new IniAdapter(__DIR__ . '/config-failed.ini', true);
     }
 
+    public function testLoadEmptyString()
+    {
+        $adapter = new IniAdapter('');
+
+        $this->assertEquals([], $adapter->getArrayCopy());
+    }
+
     public function testGetArrayCopy()
     {
         $adapter = new IniAdapter(
