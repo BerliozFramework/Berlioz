@@ -69,6 +69,24 @@ class MailTest extends TestCase
         $mail->setHeaders(self::TEST_INVALID_HEADERS);
     }
 
+    public function testReservedHeaderCaseInsensitive()
+    {
+        $mail = new Mail;
+
+        $this->expectException(InvalidArgumentException::class);
+
+        $mail->addHeader('subject', 'bypass attempt');
+    }
+
+    public function testSetHeadersReservedCaseInsensitive()
+    {
+        $mail = new Mail;
+
+        $this->expectException(InvalidArgumentException::class);
+
+        $mail->setHeaders(['SUBJECT' => 'bypass attempt']);
+    }
+
     public function testAddHeaderRejectsCRLFInjection()
     {
         $mail = new Mail;

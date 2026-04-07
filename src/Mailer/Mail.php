@@ -63,8 +63,9 @@ class Mail
      */
     public function setHeaders(array $headers): Mail
     {
-        // Check reserved headers
-        if (count(array_intersect(array_keys($headers), self::RESERVED_HEADERS)) > 0) {
+        // Check reserved headers (case-insensitive per RFC 5322)
+        $reservedLower = array_map('strtolower', self::RESERVED_HEADERS);
+        if (count(array_intersect(array_map('strtolower', array_keys($headers)), $reservedLower)) > 0) {
             throw new InvalidArgumentException(
                 sprintf(
                     '"%s" are reserved headers, use internal functions instead',
@@ -99,8 +100,8 @@ class Mail
      */
     public function addHeader(string $name, string $value, bool $replace = false): Mail
     {
-        // Check reserved headers
-        if (in_array($name, self::RESERVED_HEADERS)) {
+        // Check reserved headers (case-insensitive per RFC 5322)
+        if (in_array(strtolower($name), array_map('strtolower', self::RESERVED_HEADERS))) {
             throw new InvalidArgumentException(
                 sprintf('"%s" is a reserved header, use internal functions instead', $name)
             );
