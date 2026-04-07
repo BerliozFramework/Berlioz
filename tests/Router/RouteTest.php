@@ -28,6 +28,14 @@ class RouteTest extends AbstractTestCase
         $this->assertEquals($path, $route->getPath());
     }
 
+    public function testConstructorWithDuplicateAttribute()
+    {
+        $this->expectException(RoutingException::class);
+        $this->expectExceptionMessage('Duplicate attribute name "foo" in route path');
+
+        new Route('/{foo}/{foo}');
+    }
+
     public function testConstructor()
     {
         $route = new Route(
