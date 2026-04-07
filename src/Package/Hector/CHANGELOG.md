@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- Fixed restoration of internal loggers in `HectorSection::__unserialize()`.
+- Fixed restoration of internal loggers in `HectorSection::__unserialize()`
 - Updated `HectorException::typesConfig()` to use a safe non-late-static constructor return
 
 ## [3.0.0] - 2026-02-19

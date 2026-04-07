@@ -9,9 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- Added a clear exception when no queue is configured to avoid runtime constructor crashes.
-- Fixed SQS queue factory handling when queue entries are arrays without explicit `name`.
-- Added explicit validation for required SQS queue URLs in queue factory configuration.
+- Added a clear exception when no queue is configured to avoid runtime constructor crashes
+- Fixed SQS queue factory handling when queue entries are arrays without explicit `name`
+- Added explicit validation for required SQS queue URLs in queue factory configuration
 
 ## [3.0.0] - 2026-02-19
 
