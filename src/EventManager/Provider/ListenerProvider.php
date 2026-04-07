@@ -47,7 +47,7 @@ class ListenerProvider implements ListenerProviderInterface
         array_push($this->listeners, ...$listener);
         usort(
             $this->listeners,
-            fn(ListenerInterface $l1, ListenerInterface $l2) => $l1->getPriority() <=> $l2->getPriority()
+            fn(ListenerInterface $l1, ListenerInterface $l2) => $l2->getPriority() <=> $l1->getPriority()
         );
     }
 

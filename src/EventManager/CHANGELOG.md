@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Fix listener priority sort order so that higher priority listeners execute first
+
 ## [3.0.0] - 2026-02-19
 
 The version 3.0.0 marks the transition of the Berlioz Framework to a **Monorepo** structure.

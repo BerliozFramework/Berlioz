@@ -14,6 +14,7 @@ namespace Berlioz\EventManager\Tests\Provider;
 
 use Berlioz\EventManager\Event\CustomEvent;
 use Berlioz\EventManager\Listener\Listener;
+use Berlioz\EventManager\Listener\ListenerInterface;
 use Berlioz\EventManager\Provider\ListenerProvider;
 use Berlioz\EventManager\Tests\Event\TestEvent;
 use Closure;
@@ -95,5 +96,44 @@ class ListenerProviderTest extends TestCase
 
         $result = iterator_to_array($provider->getListenersForEvent(new TestEvent('event.test')), false);
         $this->assertCount(1, $result);
+    }
+
+    public function testListenersPriorityOrder()
+    {
+        $executionOrder = [];
+
+        $provider = new ($this->getListenerProviderClass())();
+        $provider->addListener(
+            new Listener(
+                'event.name',
+                function () use (&$executionOrder) {
+                    $executionOrder[] = 'low';
+                },
+                ListenerInterface::PRIORITY_LOW,
+            ),
+            new Listener(
+                'event.name',
+                function () use (&$executionOrder) {
+                    $executionOrder[] = 'high';
+                },
+                ListenerInterface::PRIORITY_HIGH,
+            ),
+            new Listener(
+                'event.name',
+                function () use (&$executionOrder) {
+                    $executionOrder[] = 'normal';
+                },
+                ListenerInterface::PRIORITY_NORMAL,
+            ),
+        );
+
+        $event = new TestEvent('event.name');
+        $listeners = iterator_to_array($provider->getListenersForEvent($event), false);
+
+        foreach ($listeners as $listener) {
+            $listener($event);
+        }
+
+        $this->assertSame(['high', 'normal', 'low'], $executionOrder);
     }
 }
