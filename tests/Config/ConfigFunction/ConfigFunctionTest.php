@@ -15,6 +15,7 @@ namespace Berlioz\Config\Tests\ConfigFunction;
 use Berlioz\Config\Adapter\JsonAdapter;
 use Berlioz\Config\Config;
 use Berlioz\Config\ConfigFunction\ConfigFunction;
+use Berlioz\Config\Exception\ConfigException;
 use LogicException;
 use PHPUnit\Framework\TestCase;
 
@@ -43,5 +44,24 @@ class ConfigFunctionTest extends TestCase
         $config = new Config([new JsonAdapter(__DIR__ . '/../Adapter/config.json5', true)]);
         $function = new ConfigFunction($config);
         $function->execute('foo.section');
+    }
+
+    public function testExecuteCircularReference()
+    {
+        $this->expectException(ConfigException::class);
+        $this->expectExceptionMessageMatches('/Circular reference detected/');
+
+        $config = new Config(
+            [
+                new JsonAdapter(
+                    json_encode([
+                        'a' => '{config: b}',
+                        'b' => '{config: a}',
+                    ])
+                ),
+            ]
+        );
+
+        $config->get('a');
     }
 }

@@ -15,6 +15,7 @@ declare(strict_types=1);
 namespace Berlioz\Config\ConfigFunction;
 
 use Berlioz\Config\Config;
+use Berlioz\Config\Exception\ConfigException;
 use LogicException;
 
 /**
@@ -22,6 +23,9 @@ use LogicException;
  */
 class ConfigFunction implements ConfigFunctionInterface
 {
+    /** @var string[] Stack of keys currently being resolved, for circular reference detection. */
+    private array $resolving = [];
+
     public function __construct(protected Config $config)
     {
     }
@@ -39,12 +43,31 @@ class ConfigFunction implements ConfigFunctionInterface
      */
     public function execute(string $str): mixed
     {
-        $value = $this->config->get($str, new LogicException(sprintf('Config path "%s" does not exists', $str)));
-
-        if ($value instanceof LogicException) {
-            throw $value;
+        if (in_array($str, $this->resolving, true)) {
+            throw new ConfigException(
+                sprintf(
+                    'Circular reference detected in configuration: %s -> %s',
+                    implode(' -> ', $this->resolving),
+                    $str
+                )
+            );
         }
 
-        return $value;
+        $this->resolving[] = $str;
+
+        try {
+            $value = $this->config->get(
+                $str,
+                new LogicException(sprintf('Config path "%s" does not exists', $str))
+            );
+
+            if ($value instanceof LogicException) {
+                throw $value;
+            }
+
+            return $value;
+        } finally {
+            array_pop($this->resolving);
+        }
     }
 }

@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Detect and report circular references in config function resolution
+
 ### Fixed
 
 - Fix `JSON_THROW_ON_ERROR` passed as options instead of depth in `JsonAdapter`
