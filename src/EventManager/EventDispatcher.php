@@ -23,6 +23,7 @@ use Berlioz\EventManager\Provider\SubscriberProvider;
 use Berlioz\EventManager\Subscriber\SubscriberInterface;
 use Closure;
 use Generator;
+use LogicException;
 use Psr\EventDispatcher as Psr;
 
 /**
@@ -30,10 +31,13 @@ use Psr\EventDispatcher as Psr;
  */
 class EventDispatcher implements Psr\EventDispatcherInterface, ListenerProviderInterface
 {
+    private const MAX_DISPATCH_DEPTH = 10;
+
     protected ListenerProviderInterface $defaultProvider;
     protected SubscriberProvider $subscriberProvider;
     protected array $providers = [];
     protected array $dispatchers = [];
+    private int $dispatchDepth = 0;
 
     public function __construct(
         array $providers = [],
@@ -96,40 +100,51 @@ class EventDispatcher implements Psr\EventDispatcherInterface, ListenerProviderI
      */
     public function dispatch(object $event): object
     {
-        foreach ($this->getListenersForEvent($event) as $listener) {
-            // It's a stoppable event
-            if ($event instanceof Psr\StoppableEventInterface) {
-                if ($event->isPropagationStopped()) {
-                    return $event;
-                }
-            }
-
-            $result = $listener($event);
-
-            // Stop propagation
-            if (false === $result) {
-                return $event;
-            }
-
-            // Not an object so continue
-            if (!is_object($result)) {
-                continue;
-            }
-
-            // Another instance of event
-            if (!$result instanceof $event ||
-                ($event instanceof EventInterface &&
-                    $event->getName() !== $result->getName())) {
-                return $this->dispatch($result);
-            }
-
-            $event = $result;
+        if (++$this->dispatchDepth > self::MAX_DISPATCH_DEPTH) {
+            $this->dispatchDepth = 0;
+            throw new LogicException(
+                sprintf('Maximum event dispatch depth (%d) exceeded, possible infinite loop', self::MAX_DISPATCH_DEPTH)
+            );
         }
 
-        // Delegate
-        array_walk($this->dispatchers, fn(Psr\EventDispatcherInterface $dispatcher) => $dispatcher->dispatch($event));
+        try {
+            foreach ($this->getListenersForEvent($event) as $listener) {
+                // It's a stoppable event
+                if ($event instanceof Psr\StoppableEventInterface) {
+                    if ($event->isPropagationStopped()) {
+                        return $event;
+                    }
+                }
 
-        return $event;
+                $result = $listener($event);
+
+                // Stop propagation
+                if (false === $result) {
+                    return $event;
+                }
+
+                // Not an object so continue
+                if (!is_object($result)) {
+                    continue;
+                }
+
+                // Another instance of event
+                if (!$result instanceof $event ||
+                    ($event instanceof EventInterface &&
+                        $event->getName() !== $result->getName())) {
+                    return $this->dispatch($result);
+                }
+
+                $event = $result;
+            }
+
+            // Delegate
+            array_walk($this->dispatchers, fn(Psr\EventDispatcherInterface $dispatcher) => $dispatcher->dispatch($event));
+
+            return $event;
+        } finally {
+            $this->dispatchDepth--;
+        }
     }
 
     /**

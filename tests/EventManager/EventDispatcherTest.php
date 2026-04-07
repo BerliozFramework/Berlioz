@@ -17,6 +17,7 @@ use Berlioz\EventManager\Provider\ListenerProvider;
 use Berlioz\EventManager\Tests\Event\TestEvent;
 use Berlioz\EventManager\Tests\Provider\ListenerProviderTest;
 use Berlioz\EventManager\Tests\Subscriber\FakeSubscriber;
+use LogicException;
 use stdClass;
 
 class EventDispatcherTest extends ListenerProviderTest
@@ -227,5 +228,23 @@ class EventDispatcherTest extends ListenerProviderTest
         $dispatcher->trigger('event.name');
 
         $this->assertTrue($triggered);
+    }
+
+    public function testDispatchThrowsOnInfiniteRecursion()
+    {
+        $dispatcher = new EventDispatcher();
+        $dispatcher->addEventListener(
+            'event.a',
+            fn() => new TestEvent('event.b'),
+        );
+        $dispatcher->addEventListener(
+            'event.b',
+            fn() => new TestEvent('event.a'),
+        );
+
+        $this->expectException(LogicException::class);
+        $this->expectExceptionMessage('Maximum event dispatch depth');
+
+        $dispatcher->dispatch(new TestEvent('event.a'));
     }
 }

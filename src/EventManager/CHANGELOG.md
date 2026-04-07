@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add max dispatch depth guard to prevent infinite recursion in `EventDispatcher::dispatch()`
+
 ### Fixed
 
 - Fix listener priority sort order so that higher priority listeners execute first
