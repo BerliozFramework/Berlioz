@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fix `Address::__toString()` TypeError when mail property is not set
 - Fix null pointer error in `Smtp::send()` and `PhpMail::send()` when no sender address is defined
 - Fix `Mail::getHtml()` minification having no effect due to `pcre.recursion_limit` being restored before `preg_replace`
+- Fix Windows detection in `Mail::getHtml()` using `PHP_OS_FAMILY` instead of unreliable `PHP_OS == 'WIN'`
 
 ## [3.0.0] - 2026-02-19
 

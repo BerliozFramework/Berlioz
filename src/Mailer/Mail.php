@@ -302,7 +302,7 @@ class Mail
         // Save and change PHP configuration value
         $oldPcreRecursionLimit = ini_get('pcre.recursion_limit');
         ini_set('pcre.recursion_limit', '16777');
-        if (PHP_OS == 'WIN') {
+        if (PHP_OS_FAMILY === 'Windows') {
             ini_set('pcre.recursion_limit', '524');
         }
 
