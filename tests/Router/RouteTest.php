@@ -585,6 +585,17 @@ class RouteTest extends AbstractTestCase
         $this->assertCount(2, $routes);
     }
 
+    public function testGetRouteByNameForGroup()
+    {
+        $router = new Route('/root');
+        $group = new Route('/api', name: 'api-group');
+        $group->addRoute(new Route('/users', name: 'users'));
+        $router->addRoute($group);
+
+        $this->assertSame($group, $router->getRoute('api-group'));
+        $this->assertNotNull($router->getRoute('users'));
+    }
+
     public function testCountWithGroups()
     {
         $parentRoute = new Route('/path/{foo}');
