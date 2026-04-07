@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fix `QueueManager::pushRaw()` not passing `$delay` parameter when using the default queue
 - Add missing `declare(strict_types=1)` in `SqsJob`
 - Fix `AmqpJob` TypeError when delivery tag fallback is used as job id by casting to string
+- Fix `RedisQueue::freeDelayedJobs()` lock release safety: use unique lock value to prevent deleting another process's lock
 
 ## [3.0.0] - 2026-02-19
 

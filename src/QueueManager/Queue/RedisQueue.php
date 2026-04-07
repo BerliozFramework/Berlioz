@@ -52,12 +52,13 @@ readonly class RedisQueue extends AbstractQueue implements QueueInterface
     public function freeDelayedJobs(): void
     {
         $lockKey = $this->getDelayedQueueKey() . ':lock';
+        $lockValue = bin2hex(random_bytes(16));
         $delayedQueueKey = $this->getDelayedQueueKey();
         $currentTime = time();
 
         try {
-            // Attempt to acquire lock
-            if (!$this->redis->set($lockKey, '1', ['nx', 'ex' => 10])) {
+            // Attempt to acquire lock with unique value
+            if (!$this->redis->set($lockKey, $lockValue, ['nx', 'ex' => 10])) {
                 // Lock already held by another process
                 return;
             }
@@ -75,8 +76,10 @@ readonly class RedisQueue extends AbstractQueue implements QueueInterface
         } catch (Exception $e) {
             throw new QueueException('Failed to process delayed jobs.', 0, $e);
         } finally {
-            // Release lock
-            $this->redis->del($lockKey);
+            // Release lock only if we still own it
+            if ($this->redis->get($lockKey) === $lockValue) {
+                $this->redis->del($lockKey);
+            }
         }
     }
 

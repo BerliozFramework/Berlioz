@@ -60,10 +60,20 @@ class RedisQueueTest extends QueueTestCase
         $queue = new RedisQueue($redisMock, 'testQueue');
         $jobData = json_encode(['jobId' => '123', 'payload' => '{"key":"value"}', 'attempts' => 0]);
 
+        $lockValue = null;
+
         $redisMock
             ->expects($this->once())
             ->method('set')
-            ->with('testQueue:delayed:lock', '1', ['nx', 'ex' => 10])
+            ->with(
+                'testQueue:delayed:lock',
+                $this->callback(function ($value) use (&$lockValue) {
+                    $lockValue = $value;
+                    // Must be a non-empty hex string (32 chars from 16 random bytes)
+                    return is_string($value) && strlen($value) === 32 && ctype_xdigit($value);
+                }),
+                ['nx', 'ex' => 10],
+            )
             ->willReturn(true);
 
         $redisMock
@@ -81,6 +91,46 @@ class RedisQueueTest extends QueueTestCase
             ->expects($this->once())
             ->method('rpush')
             ->with('testQueue', $jobData);
+
+        $redisMock
+            ->method('get')
+            ->with('testQueue:delayed:lock')
+            ->willReturnCallback(function () use (&$lockValue) {
+                return $lockValue;
+            });
+
+        $redisMock
+            ->expects($this->once())
+            ->method('del')
+            ->with('testQueue:delayed:lock');
+
+        $queue->freeDelayedJobs();
+    }
+
+    public function testFreeDelayedJobsDoesNotDeleteOtherProcessLock(): void
+    {
+        $redisMock = $this->createMock(Redis::class);
+        $queue = new RedisQueue($redisMock, 'testQueue');
+
+        $redisMock
+            ->expects($this->once())
+            ->method('set')
+            ->willReturn(true);
+
+        $redisMock
+            ->method('zrangebyscore')
+            ->willReturn([]);
+
+        // Simulate lock owned by another process
+        $redisMock
+            ->method('get')
+            ->with('testQueue:delayed:lock')
+            ->willReturn('other-process-lock-value');
+
+        // del should NOT be called since the lock value doesn't match
+        $redisMock
+            ->expects($this->never())
+            ->method('del');
 
         $queue->freeDelayedJobs();
     }
