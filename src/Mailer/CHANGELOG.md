@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fix `Mail::getHtml()` minification having no effect due to `pcre.recursion_limit` being restored before `preg_replace`
 - Fix Windows detection in `Mail::getHtml()` using `PHP_OS_FAMILY` instead of unreliable `PHP_OS == 'WIN'`
 - Fix SMTP transport using `EHLO` instead of `HELO` for proper AUTH extension support (RFC 4954)
+- Fix `Smtp::write()` treating zero-length writes as errors by using strict `=== false` check on `fwrite`
 
 ## [3.0.0] - 2026-02-19
 

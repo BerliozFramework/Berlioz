@@ -239,7 +239,7 @@ class Smtp extends AbstractTransport implements TransportInterface, LoggerAwareI
             $data = implode($this->getLineFeed(), $data);
         }
 
-        if (!fwrite($this->resource, $data . $this->getLineFeed())) {
+        if (false === fwrite($this->resource, $data . $this->getLineFeed())) {
             throw new TransportException('Write failed');
         }
     }
