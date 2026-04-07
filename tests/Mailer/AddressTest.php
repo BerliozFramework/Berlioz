@@ -40,6 +40,12 @@ class AddressTest extends TestCase
         $this->assertInstanceOf(Address::class, $address);
     }
 
+    public function testToStringWithNoMail()
+    {
+        $address = new Address();
+        $this->assertSame('', (string)$address);
+    }
+
     public function testGetters()
     {
         $address = new Address('ronan.giron@berlioz-framework.com', 'Ronan Giron');

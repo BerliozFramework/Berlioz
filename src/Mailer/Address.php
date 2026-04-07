@@ -60,7 +60,7 @@ class Address
             );
         }
 
-        return $this->mail;
+        return $this->mail ?? '';
     }
 
     /**
