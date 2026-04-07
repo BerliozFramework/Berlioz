@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Fix `AwsSqsQueue::delete()` using `MessageId` instead of `ReceiptHandle`, causing SQS messages to never be deleted
+- Fix operator precedence in `AwsSqsQueue::size()` causing TypeError when attributes are missing
 
 ## [3.0.0] - 2026-02-19
 

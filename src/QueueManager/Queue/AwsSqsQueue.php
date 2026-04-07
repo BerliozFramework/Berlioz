@@ -48,7 +48,7 @@ readonly class AwsSqsQueue extends AbstractQueue implements PurgeableQueueInterf
             'AttributeNames' => ['ApproximateNumberOfMessages'],
         ]);
 
-        return (int)$response->get('Attributes')['ApproximateNumberOfMessages'] ?? 0;
+        return (int)($response->get('Attributes')['ApproximateNumberOfMessages'] ?? 0);
     }
 
     /**
