@@ -26,7 +26,7 @@ class AmqpJob extends Job
         $payload = json_decode($this->envelope->getBody(), true);
 
         parent::__construct(
-            id: $envelope->getHeader('jobId') ?? $this->envelope->getDeliveryTag(),
+            id: $envelope->getHeader('jobId') ?? (string)$this->envelope->getDeliveryTag(),
             name: $payload['jobName'] ?? null,
             attempts: ($envelope->getHeader('attempts') ?? 0) + 1,
             payload: $payload,
