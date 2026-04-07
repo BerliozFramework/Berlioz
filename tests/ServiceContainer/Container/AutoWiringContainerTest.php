@@ -51,6 +51,24 @@ class AutoWiringContainerTest extends TestCase
         $container->get('UnknownClass');
     }
 
+    public function testGet_failedInstantiationDoesNotBlockRetries()
+    {
+        $container = new AutoWiringContainer();
+
+        // First call fails (recursive dependency)
+        try {
+            $container->get(RecursiveService::class);
+        } catch (ContainerException) {
+        }
+
+        // After a failed get(), other services should not be affected
+        $this->assertInstanceOf(WithoutConstructor::class, $container->get(WithoutConstructor::class));
+
+        // And recursive detection error should repeat cleanly (not permanently blocked)
+        $this->expectException(ContainerException::class);
+        $container->get(RecursiveService::class);
+    }
+
     public function testHas()
     {
         $container = new AutoWiringContainer();

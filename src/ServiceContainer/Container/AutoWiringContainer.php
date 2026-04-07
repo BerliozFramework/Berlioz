@@ -61,13 +61,13 @@ class AutoWiringContainer implements ContainerInterface
                 array_walk($implements, fn(string $implement) => $this->cache[$implement][] = $object);
             }
 
-            unset($this->instantiation[array_search($id, $this->instantiation)]);
-
             return $object;
         } catch (ContainerException $exception) {
             throw $exception;
         } catch (Throwable $exception) {
             throw ContainerException::instantiation($id, $exception);
+        } finally {
+            unset($this->instantiation[array_search($id, $this->instantiation)]);
         }
     }
 

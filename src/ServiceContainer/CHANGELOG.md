@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Fix failed auto-wiring instantiation no longer permanently blocks retries
 - Fix service `provides` field is now preserved through serialization
 - Fix services with null factory or alias can now be deserialized
 - Fix auto-wiring now tries all types in union type parameters before giving up
