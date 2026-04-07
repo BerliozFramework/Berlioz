@@ -161,6 +161,19 @@ class RouterTest extends AbstractTestCase
         );
     }
 
+    public function testGenerate_withForwardedPrefix_andSchemeInParameter()
+    {
+        $_SERVER['HTTP_X_FORWARDED_PREFIX'] = '/prefix/';
+
+        $router = new Router(['X-Forwarded-Prefix' => true]);
+        $router->addRoute(new Route('/redirect/{url}', name: 'redir'));
+
+        $this->assertEquals(
+            '/prefix/redirect/http://evil.com',
+            $router->generate('redir', ['url' => 'http://evil.com'])
+        );
+    }
+
     public function testGenerateWithMissingAttributes()
     {
         $router = new Router;
