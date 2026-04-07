@@ -160,7 +160,7 @@ readonly class AmqpQueue extends AbstractQueue implements PurgeableQueueInterfac
 
             return $queue->declareQueue();
         } catch (Exception $e) {
-            throw new QueueException('Failed to purge queue.', previous: $e);
+            throw new QueueException('Failed to get queue size.', previous: $e);
         } finally {
             unset($queue, $channel);
         }
