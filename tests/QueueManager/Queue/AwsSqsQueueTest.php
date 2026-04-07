@@ -185,7 +185,8 @@ class AwsSqsQueueTest extends TestCase
     public function testDelete(): void
     {
         $jobMock = $this->createMock(SqsJob::class);
-        $jobMock->method('getId')->willReturn('msg123');
+        $jobMock->method('getAwsResult')
+            ->willReturn(['ReceiptHandle' => 'abc123']);
 
         $this->sqsClientMock
             ->expects($this->once())
@@ -195,7 +196,7 @@ class AwsSqsQueueTest extends TestCase
                 [
                     [
                         'QueueUrl' => 'https://sqs.us-east-1.amazonaws.com/123456789012/testQueue',
-                        'MessageId' => 'msg123',
+                        'ReceiptHandle' => 'abc123',
                     ]
                 ]
             );

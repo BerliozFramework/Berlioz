@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Fix `AwsSqsQueue::delete()` using `MessageId` instead of `ReceiptHandle`, causing SQS messages to never be deleted
+
 ## [3.0.0] - 2026-02-19
 
 The version 3.0.0 marks the transition of the Berlioz Framework to a **Monorepo** structure.

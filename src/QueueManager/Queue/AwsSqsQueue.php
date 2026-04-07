@@ -165,7 +165,7 @@ readonly class AwsSqsQueue extends AbstractQueue implements PurgeableQueueInterf
     {
         $this->sqsClient->deleteMessage([
             'QueueUrl' => $this->queueUrl,
-            'MessageId' => $job->getId(),
+            'ReceiptHandle' => $job->getAwsResult()['ReceiptHandle'],
         ]);
     }
 }
