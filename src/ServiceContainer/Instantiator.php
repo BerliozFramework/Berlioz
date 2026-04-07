@@ -281,10 +281,10 @@ class Instantiator
         $type = $parameter->getType();
 
         if ($type instanceof ReflectionUnionType) {
-            return $type->getTypes();
+            return array_filter($type->getTypes(), fn($t) => $t instanceof ReflectionNamedType);
         }
 
-        if ($type instanceof ReflectionType) {
+        if ($type instanceof ReflectionNamedType) {
             return [$type];
         }
 

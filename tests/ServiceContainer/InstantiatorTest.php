@@ -24,6 +24,7 @@ use Berlioz\ServiceContainer\Tests\Asset\Service4;
 use Berlioz\ServiceContainer\Tests\Asset\Service7;
 use Berlioz\ServiceContainer\Tests\Asset\Service9;
 use Berlioz\ServiceContainer\Tests\Asset\WithDependency2;
+use Berlioz\ServiceContainer\Tests\Asset\WithIntersectionType;
 use Berlioz\ServiceContainer\Tests\Asset\WithoutConstructor;
 use Berlioz\ServiceContainer\Tests\Asset\WithParameter;
 use Berlioz\ServiceContainer\Tests\Asset\WithVariadicParameter;
@@ -308,5 +309,17 @@ class InstantiatorTest extends TestCase
         $result = $instantiator->call($callback);
 
         $this->assertInstanceOf(WithoutConstructor::class, $result);
+    }
+
+    public function testNewInstanceOfWithIntersectionType()
+    {
+        $instantiator = new Instantiator();
+
+        // WithIntersectionType has a (Countable&Iterator)|null parameter
+        // The intersection type should be skipped gracefully, falling back to null default
+        $object = $instantiator->newInstanceOf(WithIntersectionType::class);
+
+        $this->assertInstanceOf(WithIntersectionType::class, $object);
+        $this->assertNull($object->param);
     }
 }
