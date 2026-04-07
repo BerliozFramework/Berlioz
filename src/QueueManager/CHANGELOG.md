@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fix missing `json_decode` error handling in `SqsJob`, `AmqpJob`, and `RedisQueue`, preventing TypeError on invalid JSON
 - Fix missing released/deleted state guards in `AwsSqsQueue::release()` and `AwsSqsQueue::delete()`
 - Fix incorrect exception message in `AmqpQueue::size()` (was referring to purge instead of size)
+- Fix grammar in `QueueManagerException::queueNotFound()` plural message
 
 ## [3.0.0] - 2026-02-19
 

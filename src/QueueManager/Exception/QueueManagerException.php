@@ -43,9 +43,9 @@ class QueueManagerException extends Exception
         $plural = count($queueName) > 1;
 
         return new self(sprintf(
-            'Queue%2$s %1$s not found%2$s',
+            'Queue%s %s not found.',
+            $plural ? 's' : '',
             implode(', ', $queueName),
-            $plural ? 's' : ''
         ));
     }
 
