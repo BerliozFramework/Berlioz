@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fix `Smtp::get()` not consuming multi-line SMTP responses, causing protocol desynchronization
 - Fix `Smtp::__destruct()` potentially throwing an exception causing a fatal error
 - Fix `PhpMail` leaking Bcc addresses in headers sent to recipients
+- Fix MIME boundary generation including a spurious `--` prefix, producing malformed multipart messages
 
 ## [3.0.0] - 2026-02-19
 
