@@ -92,7 +92,7 @@
     "ext-mbstring": "*",
     "ext-xml": "*",
     "berlioz/helpers": "^1.10",
-    "colinodell/json5": "^2.2",
+    "colinodell/json5": "^2.2.1",
     "doctrine/sql-formatter": "^1.1",
     "hectororm/hectororm": "^1.0",
     "league/climate": "^3.7",

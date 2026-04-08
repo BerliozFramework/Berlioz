@@ -21,7 +21,7 @@
   "require": {
     "php": "^8.2",
     "berlioz/helpers": "^1.10",
-    "colinodell/json5": "^2.2"
+    "colinodell/json5": "^2.2.1"
   },
   "suggest": {
     "ext-yaml": "To use YamlAdapter with Config",

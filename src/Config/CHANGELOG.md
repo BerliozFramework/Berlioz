@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Detect and report circular references in config function resolution
 
+### Changed
+
+- Raise minimum `colinodell/json5` requirement to `^2.2.1` to avoid `prefer-lowest` JSON5 parsing failures with `JSON_THROW_ON_ERROR`
+
 ### Fixed
 
 - Fix `JSON_THROW_ON_ERROR` passed as options instead of depth in `JsonAdapter`
