@@ -20,6 +20,7 @@ use Berlioz\Form\Tests\Fake\FakeForm;
 use Berlioz\Form\TwigExtension;
 use Berlioz\Form\Type\Checkbox;
 use Berlioz\Form\Type\Date;
+use Berlioz\Form\Type\File;
 use Berlioz\Form\Type\Text;
 use Berlioz\Form\Type\TextArea;
 use Twig\Environment;
@@ -107,6 +108,7 @@ class TwigTest extends AbstractFormTestCase
         $form->add('birthday', Date::class, ['label' => 'Birthday']);
         $form->add('text', TextArea::class, ['label' => 'Presentation']);
         $form->add('check', Checkbox::class, ['label' => 'Acceptation']);
+        $form->add('attachments', File::class, ['multiple' => true]);
         $form->add('addresses', Collection::class, ['prototype' => $address]);
 
         // With "required" default option
@@ -156,6 +158,12 @@ class TwigTest extends AbstractFormTestCase
     Acceptation
   </label>',
             $this->getTwigExtension()->functionFormWidget($form['check']->buildView())
+        );
+
+        // Multiple file
+        $this->assertEquals(
+            '<input type="file" id="foo_attachments" name="foo[attachments][]" required="required" multiple="multiple" />',
+            $this->getTwigExtension()->functionFormWidget($form['attachments']->buildView())
         );
     }
 
