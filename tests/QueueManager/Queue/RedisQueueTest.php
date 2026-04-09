@@ -14,6 +14,7 @@ namespace Berlioz\QueueManager\Tests\Queue;
 
 use Berlioz\QueueManager\Queue\QueueInterface;
 use Berlioz\QueueManager\Queue\RedisQueue;
+use Berlioz\QueueManager\Queue\MonitorableQueueInterface;
 use Berlioz\QueueManager\RateLimiter\NullRateLimiter;
 use Berlioz\QueueManager\RateLimiter\RateLimiterInterface;
 use Berlioz\QueueManager\Job\RedisJob;
@@ -59,7 +60,7 @@ class RedisQueueTest extends QueueTestCase
     {
         $redisMock = $this->createMock(Redis::class);
         $queue = new RedisQueue($redisMock, 'testQueue');
-        $jobData = json_encode(['jobId' => '123', 'payload' => '{"key":"value"}', 'attempts' => 0]);
+        $jobData = json_encode(['jobId' => '123', 'payload' => '{"key":"value"}', 'attempts' => 0, 'createdAt' => time()]);
 
         $lockValue = null;
 
@@ -188,5 +189,106 @@ class RedisQueueTest extends QueueTestCase
             ->with('testQueue:deleted', 3600);
 
         $queue->delete($jobMock);
+    }
+
+    public function testWaitTimeReturnsAgeWhenCreatedAtIsPresent(): void
+    {
+        $redisMock = $this->createMock(Redis::class);
+        $queue = new RedisQueue($redisMock, 'testQueue');
+        $this->assertInstanceOf(MonitorableQueueInterface::class, $queue);
+        $createdAt = time() - 5;
+
+        $redisMock
+            ->expects($this->once())
+            ->method('set')
+            ->willReturn(true);
+
+        $redisMock
+            ->expects($this->once())
+            ->method('zrangebyscore')
+            ->willReturn([]);
+
+        $redisMock
+            ->method('get')
+            ->with('testQueue:delayed:lock')
+            ->willReturnCallback(fn() => null);
+
+        $redisMock
+            ->expects($this->once())
+            ->method('lindex')
+            ->with('testQueue', 0)
+            ->willReturn(json_encode([
+                'jobId' => '123',
+                'payload' => '{"key":"value"}',
+                'attempts' => 0,
+                'createdAt' => $createdAt,
+            ]));
+
+        $waitTime = $queue->waitTime();
+
+        $this->assertNotNull($waitTime);
+        $this->assertGreaterThanOrEqual(5, $waitTime);
+    }
+
+    public function testWaitTimeReturnsZeroForLegacyPayload(): void
+    {
+        $redisMock = $this->createMock(Redis::class);
+        $queue = new RedisQueue($redisMock, 'testQueue');
+
+        $redisMock
+            ->expects($this->once())
+            ->method('set')
+            ->willReturn(true);
+
+        $redisMock
+            ->expects($this->once())
+            ->method('zrangebyscore')
+            ->willReturn([]);
+
+        $redisMock
+            ->method('get')
+            ->with('testQueue:delayed:lock')
+            ->willReturnCallback(fn() => null);
+
+        $redisMock
+            ->expects($this->once())
+            ->method('lindex')
+            ->with('testQueue', 0)
+            ->willReturn(json_encode([
+                'jobId' => '123',
+                'payload' => '{"key":"value"}',
+                'attempts' => 0,
+            ]));
+
+        $this->assertSame(0, $queue->waitTime());
+    }
+
+    public function testDelayedReturnsNumberOfDelayedJobs(): void
+    {
+        $redisMock = $this->createMock(Redis::class);
+        $queue = new RedisQueue($redisMock, 'testQueue');
+
+        $redisMock
+            ->expects($this->once())
+            ->method('set')
+            ->willReturn(true);
+
+        $redisMock
+            ->expects($this->once())
+            ->method('zrangebyscore')
+            ->willReturn([]);
+
+        $redisMock
+            ->method('get')
+            ->with('testQueue:delayed:lock')
+            ->willReturnCallback(fn() => null);
+
+        $redisMock
+            ->expects($this->once())
+            ->method('zcard')
+            ->with('testQueue:delayed')
+            ->willReturn(4);
+
+        $this->assertSame(4, $queue->delayed());
     }
 }

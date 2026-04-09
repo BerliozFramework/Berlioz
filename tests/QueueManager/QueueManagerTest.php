@@ -95,12 +95,32 @@ class QueueManagerTest extends TestCase
         $this->primaryQueueMock->method('size')->willReturn(5);
         $this->secondaryQueueMock->method('size')->willReturn(10);
 
-        $this->assertEquals(
-            [
-                'PrimaryQueue' => 5,
-                'SecondaryQueue' => 10
-            ],
-            iterator_to_array($this->queueManager->stats())
+        $deprecationMessage = null;
+        set_error_handler(function (int $errno, string $errstr) use (&$deprecationMessage): bool {
+            if ($errno !== E_USER_DEPRECATED) {
+                return false;
+            }
+
+            $deprecationMessage = $errstr;
+
+            return true;
+        });
+
+        try {
+            $this->assertEquals(
+                [
+                    'PrimaryQueue' => 5,
+                    'SecondaryQueue' => 10
+                ],
+                iterator_to_array($this->queueManager->stats())
+            );
+        } finally {
+            restore_error_handler();
+        }
+
+        $this->assertSame(
+            'QueueManager::stats() is deprecated, iterate over getQueues() for detailed metrics or use size() for total count.',
+            $deprecationMessage,
         );
     }
 

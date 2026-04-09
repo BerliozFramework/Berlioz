@@ -26,7 +26,7 @@ use DateInterval;
 use DateTimeImmutable;
 use DateTimeInterface;
 
-readonly class MemoryQueue extends AbstractQueue implements PurgeableQueueInterface
+readonly class MemoryQueue extends AbstractQueue implements PurgeableQueueInterface, MonitorableQueueInterface
 {
     private ArrayObject $stack;
 
@@ -80,6 +80,52 @@ readonly class MemoryQueue extends AbstractQueue implements PurgeableQueueInterf
         }
 
         return $total;
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function waitTime(): ?int
+    {
+        $oldestCreateTime = null;
+
+        foreach ($this->stack as $value) {
+            if (false === $this->jobRawCanBeConsumed($value)) {
+                continue;
+            }
+
+            if (null === $oldestCreateTime || $value['create_time'] < $oldestCreateTime) {
+                $oldestCreateTime = $value['create_time'];
+            }
+        }
+
+        if (null === $oldestCreateTime) {
+            return null;
+        }
+
+        return max(0, $this->now()->getTimestamp() - $oldestCreateTime->getTimestamp());
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function delayed(): ?int
+    {
+        $delayed = 0;
+
+        foreach ($this->stack as $value) {
+            if ($value['attempts'] >= $this->maxAttempts) {
+                continue;
+            }
+
+            if ($value['available_time'] <= $this->now()) {
+                continue;
+            }
+
+            $delayed++;
+        }
+
+        return $delayed;
     }
 
     /**

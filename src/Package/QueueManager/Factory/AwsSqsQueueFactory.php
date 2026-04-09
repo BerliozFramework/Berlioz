@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace Berlioz\Package\QueueManager\Factory;
 
+use Aws\CloudWatch\CloudWatchClient;
 use Aws\Sqs\SqsClient;
 use Berlioz\Core\Exception\ConfigException;
 use Berlioz\QueueManager\Queue\AwsSqsQueue;
@@ -37,6 +38,9 @@ class AwsSqsQueueFactory implements QueueFactory
     public static function createFromConfig(array $config): Generator
     {
         $sqsClient = new SqsClient($config['client'] ?? []);
+        $cloudWatchClient = isset($config['cloudwatch_client'])
+            ? new CloudWatchClient((array)$config['cloudwatch_client'])
+            : null;
 
         foreach ((array)($config['name'] ?? []) as $name => $queue) {
             !is_array($queue) && $queue = ['name' => $name, 'url' => (string)$queue];
@@ -55,6 +59,7 @@ class AwsSqsQueueFactory implements QueueFactory
                 name: (string)$queueName,
                 retryTime: (int)($queue['retry_time'] ?? $config['retry_time'] ?? 30),
                 limiter: self::getRateLimiterFromConfig($queue['rate_limit'] ?? null),
+                cloudWatchClient: $cloudWatchClient,
             );
         }
     }

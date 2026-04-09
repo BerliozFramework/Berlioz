@@ -13,7 +13,9 @@
 namespace Berlioz\QueueManager\Tests\Queue;
 
 use Berlioz\QueueManager\Queue\DbQueue;
+use Berlioz\QueueManager\Queue\MonitorableQueueInterface;
 use Berlioz\QueueManager\Queue\QueueInterface;
+use Berlioz\QueueManager\Job\JobDescriptor;
 use Berlioz\QueueManager\RateLimiter\NullRateLimiter;
 use Berlioz\QueueManager\RateLimiter\RateLimiterInterface;
 use Hector\Connection\Connection;
@@ -34,5 +36,21 @@ class DbQueueTest extends QueueTestCase
             name: 'default',
             limiter: $limiter,
         );
+    }
+
+    public function testMonitorableStats(): void
+    {
+        $queue = static::newQueue();
+        $this->assertInstanceOf(MonitorableQueueInterface::class, $queue);
+
+        $queue->push(new JobDescriptor('test', ['foo' => 'value']));
+        $queue->push(new JobDescriptor('test', ['foo' => 'value']), 3);
+
+        sleep(1);
+
+        $this->assertSame(1, $queue->size());
+        $this->assertNotNull($queue->waitTime());
+        $this->assertGreaterThanOrEqual(1, $queue->waitTime());
+        $this->assertSame(1, $queue->delayed());
     }
 }

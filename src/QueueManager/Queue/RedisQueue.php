@@ -29,7 +29,7 @@ use Redis;
 
 class_exists(Redis::class) || throw QueueManagerException::missingPackage('ext-redis');
 
-readonly class RedisQueue extends AbstractQueue implements QueueInterface
+readonly class RedisQueue extends AbstractQueue implements QueueInterface, MonitorableQueueInterface
 {
     public function __construct(
         private Redis $redis,
@@ -48,6 +48,36 @@ readonly class RedisQueue extends AbstractQueue implements QueueInterface
         $this->freeDelayedJobs();
 
         return $this->redis->llen($this->name) ?: 0;
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function waitTime(): ?int
+    {
+        $this->freeDelayedJobs();
+
+        $firstPayload = $this->redis->lindex($this->name, 0);
+        if ($firstPayload === false) {
+            return null;
+        }
+
+        $jobRaw = $this->decodeJobRaw($firstPayload);
+        if (null === $jobRaw || !isset($jobRaw['createdAt']) || !is_int($jobRaw['createdAt'])) {
+            return 0;
+        }
+
+        return max(0, time() - $jobRaw['createdAt']);
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function delayed(): ?int
+    {
+        $this->freeDelayedJobs();
+
+        return $this->redis->zcard($this->getDelayedQueueKey()) ?: 0;
     }
 
     public function freeDelayedJobs(): void
@@ -100,9 +130,9 @@ readonly class RedisQueue extends AbstractQueue implements QueueInterface
                 return null;
             }
 
-            $jobRaw = json_decode($payload, true);
+            $jobRaw = $this->decodeJobRaw($payload);
 
-            if (!is_array($jobRaw) || !isset($jobRaw['jobId'], $jobRaw['payload'])) {
+            if (null === $jobRaw) {
                 throw new QueueException('Invalid job structure. Missing required fields: jobId or payload.');
             }
 
@@ -164,7 +194,8 @@ readonly class RedisQueue extends AbstractQueue implements QueueInterface
         $jobData = [
             'jobId' => uniqid(more_entropy: true),
             'payload' => json_encode($payload),
-            'attempts' => $attempts
+            'attempts' => $attempts,
+            'createdAt' => time(),
         ];
 
         if ($delaySeconds > 0) {
@@ -226,5 +257,16 @@ readonly class RedisQueue extends AbstractQueue implements QueueInterface
     private function getDeletedJobsKey(): string
     {
         return $this->name . ':deleted';
+    }
+
+    private function decodeJobRaw(string $payload): ?array
+    {
+        $jobRaw = json_decode($payload, true);
+
+        if (!is_array($jobRaw) || !isset($jobRaw['jobId'], $jobRaw['payload'])) {
+            return null;
+        }
+
+        return $jobRaw;
     }
 }

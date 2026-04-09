@@ -17,6 +17,7 @@ namespace Berlioz\Package\QueueManager\Command;
 use Berlioz\Cli\Core\Command\AbstractCommand;
 use Berlioz\Cli\Core\Command\Argument;
 use Berlioz\Cli\Core\Console\Environment;
+use Berlioz\QueueManager\Queue\MonitorableQueueInterface;
 use Berlioz\QueueManager\QueueManager;
 
 #[Argument('queue', prefix: 'q', longPrefix: 'queue', description: 'Queue name', castTo: 'string')]
@@ -44,7 +45,15 @@ class QueueSizeCommand extends AbstractCommand
     public function run(Environment $env): int
     {
         $queueManager = $this->queueManager->filter(...$env->getArgumentMultiple('queue'));
-        $sizes = iterator_to_array($queueManager->stats());
+        $stats = [];
+        foreach ($queueManager->getQueues() as $queue) {
+            $stats[$queue->getName()] = [
+                'size' => $queue->size(),
+                'waitTime' => $queue instanceof MonitorableQueueInterface ? $queue->waitTime() : null,
+                'delayed' => $queue instanceof MonitorableQueueInterface ? $queue->delayed() : null,
+            ];
+        }
+        $sizes = array_column($stats, 'size');
         $total = array_sum($sizes);
 
         switch ($env->getArgument('format')) {
@@ -54,8 +63,26 @@ class QueueSizeCommand extends AbstractCommand
                 $labels = trim($labels, ' ,');
                 !empty($labels) && $labels = ',' . $labels;
 
-                foreach ($sizes as $queueName => $size) {
+                foreach ($stats as $queueName => $queueStats) {
+                    $size = $queueStats['size'];
                     $env->console()->out(sprintf('job_queue_length{queue_name="%s"%s} %d', $queueName, $labels, $size));
+
+                    if (null !== $queueStats['waitTime']) {
+                        $env->console()->out(
+                            sprintf(
+                                'job_queue_wait_time_seconds{queue_name="%s"%s} %d',
+                                $queueName,
+                                $labels,
+                                $queueStats['waitTime'],
+                            )
+                        );
+                    }
+
+                    if (null !== $queueStats['delayed']) {
+                        $env->console()->out(
+                            sprintf('job_queue_delayed{queue_name="%s"%s} %d', $queueName, $labels, $queueStats['delayed'])
+                        );
+                    }
                 }
                 if ($env->getArgument('total')) {
                     $env->console()->out(sprintf('job_queue_length_total{%s} %d', trim($labels, ','), $total));
@@ -64,15 +91,26 @@ class QueueSizeCommand extends AbstractCommand
             // JSON format
             case 'json':
                 $env->console()->json(match ($env->getArgument('total')) {
-                    false => $sizes,
-                    true => ['queues' => $sizes, 'total' => $total],
+                    false => $stats,
+                    true => ['queues' => $stats, 'total' => $total],
                 });
                 break;
             // RAW format
             default:
                 $padding = $env->console()->padding(max(array_map(fn($v) => strlen($v), array_keys($sizes))));
-                foreach ($sizes as $queueName => $size) {
-                    $padding->label($queueName)->result($size);
+                foreach ($stats as $queueName => $queueStats) {
+                    $waitTime = match ($queueStats['waitTime']) {
+                        null => 'n/a',
+                        default => $queueStats['waitTime'] . 's',
+                    };
+                    $delayed = match ($queueStats['delayed']) {
+                        null => 'n/a',
+                        default => (string)$queueStats['delayed'],
+                    };
+
+                    $padding
+                        ->label($queueName)
+                        ->result(sprintf('%d (wait: %s, delayed: %s)', $queueStats['size'], $waitTime, $delayed));
                 }
                 if ($env->getArgument('total')) {
                     $padding->label('')->result($total);

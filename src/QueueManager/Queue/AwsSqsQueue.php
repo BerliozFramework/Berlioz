@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace Berlioz\QueueManager\Queue;
 
+use Aws\CloudWatch\CloudWatchClient;
 use Aws\Sqs\SqsClient;
 use Berlioz\QueueManager\Exception\JobException;
 use Berlioz\QueueManager\Exception\QueueException;
@@ -23,11 +24,13 @@ use Berlioz\QueueManager\Job\SqsJob;
 use Berlioz\QueueManager\RateLimiter\NullRateLimiter;
 use Berlioz\QueueManager\RateLimiter\RateLimiterInterface;
 use DateInterval;
+use DateTimeImmutable;
 use DateTimeInterface;
+use Throwable;
 
 class_exists(SqsClient::class) || throw QueueManagerException::missingPackage('aws/aws-sdk-php');
 
-readonly class AwsSqsQueue extends AbstractQueue implements PurgeableQueueInterface
+readonly class AwsSqsQueue extends AbstractQueue implements PurgeableQueueInterface, MonitorableQueueInterface
 {
     public function __construct(
         private SqsClient $sqsClient,
@@ -35,6 +38,7 @@ readonly class AwsSqsQueue extends AbstractQueue implements PurgeableQueueInterf
         string $name = 'default',
         private int $retryTime = 30,
         RateLimiterInterface $limiter = new NullRateLimiter(),
+        private ?CloudWatchClient $cloudWatchClient = null,
     ) {
         parent::__construct(name: $name, limiter: $limiter);
     }
@@ -46,10 +50,31 @@ readonly class AwsSqsQueue extends AbstractQueue implements PurgeableQueueInterf
     {
         $response = $this->sqsClient->getQueueAttributes([
             'QueueUrl' => $this->queueUrl,
-            'AttributeNames' => ['ApproximateNumberOfMessages'],
+            'AttributeNames' => ['ApproximateNumberOfMessagesVisible'],
         ]);
 
-        return (int)($response->get('Attributes')['ApproximateNumberOfMessages'] ?? 0);
+        return (int)($response->get('Attributes')['ApproximateNumberOfMessagesVisible'] ?? 0);
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function waitTime(): ?int
+    {
+        return $this->getApproximateWaitTime();
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function delayed(): ?int
+    {
+        $response = $this->sqsClient->getQueueAttributes([
+            'QueueUrl' => $this->queueUrl,
+            'AttributeNames' => ['ApproximateNumberOfMessagesDelayed'],
+        ]);
+
+        return (int)($response->get('Attributes')['ApproximateNumberOfMessagesDelayed'] ?? 0);
     }
 
     /**
@@ -173,5 +198,44 @@ readonly class AwsSqsQueue extends AbstractQueue implements PurgeableQueueInterf
             'QueueUrl' => $this->queueUrl,
             'ReceiptHandle' => $job->getAwsResult()['ReceiptHandle'],
         ]);
+    }
+
+    private function getApproximateWaitTime(): ?int
+    {
+        if (null === $this->cloudWatchClient) {
+            return null;
+        }
+
+        try {
+            $now = new DateTimeImmutable();
+            $result = $this->cloudWatchClient->getMetricStatistics([
+                'Namespace' => 'AWS/SQS',
+                'MetricName' => 'ApproximateAgeOfOldestMessage',
+                'Dimensions' => [
+                    [
+                        'Name' => 'QueueName',
+                        'Value' => $this->name,
+                    ],
+                ],
+                'StartTime' => $now->sub(new DateInterval('PT5M')),
+                'EndTime' => $now,
+                'Period' => 60,
+                'Statistics' => ['Maximum'],
+            ]);
+
+            $dataPoints = (array)$result->get('Datapoints');
+            if (empty($dataPoints)) {
+                return null;
+            }
+
+            usort($dataPoints, fn(array $a, array $b) => ($b['Timestamp'] <=> $a['Timestamp']));
+            if (!isset($dataPoints[0]['Maximum'])) {
+                return null;
+            }
+
+            return max(0, (int)round((float)$dataPoints[0]['Maximum']));
+        } catch (Throwable) {
+            return null;
+        }
     }
 }

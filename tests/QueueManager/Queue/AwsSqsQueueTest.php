@@ -13,12 +13,14 @@
 namespace Berlioz\QueueManager\Tests\Queue;
 
 use Aws\Result;
+use Aws\CloudWatch\CloudWatchClient;
 use Aws\Sqs\SqsClient;
 use Berlioz\QueueManager\Exception\JobException;
 use Berlioz\QueueManager\Exception\QueueException;
 use Berlioz\QueueManager\Job\JobDescriptorInterface;
 use Berlioz\QueueManager\Job\SqsJob;
 use Berlioz\QueueManager\Queue\AwsSqsQueue;
+use Berlioz\QueueManager\Queue\MonitorableQueueInterface;
 use PHPUnit\Framework\TestCase;
 
 class AwsSqsQueueTest extends TestCase
@@ -50,13 +52,87 @@ class AwsSqsQueueTest extends TestCase
                 [
                     [
                         'QueueUrl' => 'https://sqs.us-east-1.amazonaws.com/123456789012/testQueue',
-                        'AttributeNames' => ['ApproximateNumberOfMessages'],
+                        'AttributeNames' => ['ApproximateNumberOfMessagesVisible'],
                     ]
                 ]
             )
-            ->willReturn(new Result(['Attributes' => ['ApproximateNumberOfMessages' => '5']]));
+            ->willReturn(new Result(['Attributes' => ['ApproximateNumberOfMessagesVisible' => '5']]));
 
         $this->assertSame(5, $this->queue->size());
+    }
+
+    public function testMonitorableWithoutCloudWatchClient(): void
+    {
+        $this->assertInstanceOf(MonitorableQueueInterface::class, $this->queue);
+
+        $this->sqsClientMock
+            ->method('__call')
+            ->with(
+                'getQueueAttributes',
+                [
+                    [
+                        'QueueUrl' => 'https://sqs.us-east-1.amazonaws.com/123456789012/testQueue',
+                        'AttributeNames' => ['ApproximateNumberOfMessagesVisible'],
+                    ]
+                ]
+            )
+            ->willReturn(new Result(['Attributes' => ['ApproximateNumberOfMessagesVisible' => '3']]));
+
+        $this->assertNull($this->queue->waitTime());
+    }
+
+    public function testWaitTimeWithCloudWatchClient(): void
+    {
+        $sqsClientMock = $this->createMock(SqsClient::class);
+        $cloudWatchClientMock = $this->createMock(CloudWatchClient::class);
+        $queue = new AwsSqsQueue(
+            $sqsClientMock,
+            'https://sqs.us-east-1.amazonaws.com/123456789012/testQueue',
+            'testQueue',
+            cloudWatchClient: $cloudWatchClientMock,
+        );
+
+        $sqsClientMock
+            ->method('__call')
+            ->with(
+                'getQueueAttributes',
+                [
+                    [
+                        'QueueUrl' => 'https://sqs.us-east-1.amazonaws.com/123456789012/testQueue',
+                        'AttributeNames' => ['ApproximateNumberOfMessagesVisible'],
+                    ]
+                ]
+            )
+            ->willReturn(new Result(['Attributes' => ['ApproximateNumberOfMessagesVisible' => '7']]));
+
+        $cloudWatchClientMock
+            ->method('__call')
+            ->with('getMetricStatistics', $this->isType('array'))
+            ->willReturn(new Result([
+                'Datapoints' => [
+                    ['Maximum' => 42, 'Timestamp' => '2026-01-01T12:00:00Z'],
+                ],
+            ]));
+
+        $this->assertSame(42, $queue->waitTime());
+    }
+
+    public function testDelayed(): void
+    {
+        $this->sqsClientMock
+            ->method('__call')
+            ->with(
+                'getQueueAttributes',
+                [
+                    [
+                        'QueueUrl' => 'https://sqs.us-east-1.amazonaws.com/123456789012/testQueue',
+                        'AttributeNames' => ['ApproximateNumberOfMessagesDelayed'],
+                    ]
+                ]
+            )
+            ->willReturn(new Result(['Attributes' => ['ApproximateNumberOfMessagesDelayed' => '9']]));
+
+        $this->assertSame(9, $this->queue->delayed());
     }
 
     public function testConsumeReturnsJob(): void

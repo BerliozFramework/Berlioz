@@ -7,9 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add `MonitorableQueueInterface` with `waitTime()` and `delayed()` metrics for supported queue backends
+- Add `RabbitMqQueue` to expose RabbitMQ-specific monitoring metrics through the management API
+
 ### Changed
 
 - Make Redis deleted-jobs TTL configurable in `RedisQueue` constructor (default: 86400s)
+- Deprecate `QueueManager::stats()` in favor of iterating over `QueueManager::getQueues()` for detailed metrics
 
 ### Fixed
 

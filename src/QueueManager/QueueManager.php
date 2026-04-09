@@ -103,11 +103,18 @@ readonly class QueueManager implements QueueInterface, PurgeableQueueInterface, 
     /**
      * Get stats.
      *
+     * @deprecated Iterate over getQueues() for detailed metrics, or use size() for total job count.
+     *
      * @return Generator<string, int>
      * @throws QueueException
      */
     public function stats(): Generator
     {
+        trigger_error(
+            'QueueManager::stats() is deprecated, iterate over getQueues() for detailed metrics or use size() for total count.',
+            E_USER_DEPRECATED,
+        );
+
         foreach ($this->getQueues() as $queue) {
             yield $queue->getName() => $queue->size();
         }

@@ -23,6 +23,7 @@ use Berlioz\QueueManager\Job\JobInterface;
 use Berlioz\QueueManager\RateLimiter\NullRateLimiter;
 use Berlioz\QueueManager\RateLimiter\RateLimiterInterface;
 use DateInterval;
+use DateTimeImmutable;
 use DateTimeInterface;
 use Hector\Connection\Connection;
 use Hector\Query\Component\Order;
@@ -32,7 +33,7 @@ use Throwable;
 
 class_exists(QueryBuilder::class) || throw QueueManagerException::missingPackage('hectororm/query');
 
-readonly class DbQueue extends AbstractQueue implements PurgeableQueueInterface
+readonly class DbQueue extends AbstractQueue implements PurgeableQueueInterface, MonitorableQueueInterface
 {
     public function __construct(
         private Connection $connection,
@@ -79,6 +80,37 @@ readonly class DbQueue extends AbstractQueue implements PurgeableQueueInterface
     public function size(): int
     {
         return $this->addBuilderConditions($this->getQueryBuilder())->count();
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function waitTime(): ?int
+    {
+        $oldestJob = $this->addBuilderConditions($this->getQueryBuilder())
+            ->orderBy('create_time', Order::ORDER_ASC)
+            ->limit(1)
+            ->fetchOne(true);
+
+        if (null === $oldestJob || !isset($oldestJob['create_time'])) {
+            return null;
+        }
+
+        return max(
+            0,
+            $this->now()->getTimestamp() - (new DateTimeImmutable((string)$oldestJob['create_time']))->getTimestamp(),
+        );
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function delayed(): ?int
+    {
+        return $this->getQueryBuilder()
+            ->whereGreaterThan('availability_time', $this->now()->format('Y-m-d H:i:s'))
+            ->whereLessThan('attempts', $this->maxAttempts)
+            ->count();
     }
 
     /**
