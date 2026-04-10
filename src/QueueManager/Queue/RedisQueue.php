@@ -63,7 +63,15 @@ readonly class RedisQueue extends AbstractQueue implements QueueInterface, Monit
         }
 
         $jobRaw = $this->decodeJobRaw($firstPayload);
-        if (null === $jobRaw || !isset($jobRaw['createdAt']) || !is_int($jobRaw['createdAt'])) {
+        if (null === $jobRaw) {
+            return null;
+        }
+
+        if (isset($jobRaw['availableAt']) && is_int($jobRaw['availableAt'])) {
+            return max(0, time() - $jobRaw['availableAt']);
+        }
+
+        if (!isset($jobRaw['createdAt']) || !is_int($jobRaw['createdAt'])) {
             return 0;
         }
 
@@ -190,12 +198,15 @@ readonly class RedisQueue extends AbstractQueue implements QueueInterface, Monit
      */
     public function pushRaw(mixed $payload, DateTimeInterface|DateInterval|int $delay = 0, int $attempts = 0): string
     {
-        $delaySeconds = $this->getDelayInSeconds($this->getAvailableDateTime($delay));
+        $availableAt = $this->getAvailableDateTime($delay);
+        $delaySeconds = $this->getDelayInSeconds($availableAt);
+        $createdAt = time();
         $jobData = [
             'jobId' => uniqid(more_entropy: true),
             'payload' => json_encode($payload),
             'attempts' => $attempts,
-            'createdAt' => time(),
+            'createdAt' => $createdAt,
+            'availableAt' => $availableAt->getTimestamp(),
         ];
 
         if ($delaySeconds > 0) {

@@ -191,11 +191,50 @@ class RedisQueueTest extends QueueTestCase
         $queue->delete($jobMock);
     }
 
-    public function testWaitTimeReturnsAgeWhenCreatedAtIsPresent(): void
+    public function testWaitTimeReturnsAgeWhenAvailableAtIsPresent(): void
     {
         $redisMock = $this->createMock(Redis::class);
         $queue = new RedisQueue($redisMock, 'testQueue');
         $this->assertInstanceOf(MonitorableQueueInterface::class, $queue);
+        $availableAt = time() - 5;
+
+        $redisMock
+            ->expects($this->once())
+            ->method('set')
+            ->willReturn(true);
+
+        $redisMock
+            ->expects($this->once())
+            ->method('zrangebyscore')
+            ->willReturn([]);
+
+        $redisMock
+            ->method('get')
+            ->with('testQueue:delayed:lock')
+            ->willReturnCallback(fn() => null);
+
+        $redisMock
+            ->expects($this->once())
+            ->method('lindex')
+            ->with('testQueue', 0)
+            ->willReturn(json_encode([
+                'jobId' => '123',
+                'payload' => '{"key":"value"}',
+                'attempts' => 0,
+                'createdAt' => $availableAt - 10,
+                'availableAt' => $availableAt,
+            ]));
+
+        $waitTime = $queue->waitTime();
+
+        $this->assertNotNull($waitTime);
+        $this->assertGreaterThanOrEqual(5, $waitTime);
+    }
+
+    public function testWaitTimeUsesCreatedAtFallbackWhenAvailableAtMissing(): void
+    {
+        $redisMock = $this->createMock(Redis::class);
+        $queue = new RedisQueue($redisMock, 'testQueue');
         $createdAt = time() - 5;
 
         $redisMock
@@ -224,10 +263,7 @@ class RedisQueueTest extends QueueTestCase
                 'createdAt' => $createdAt,
             ]));
 
-        $waitTime = $queue->waitTime();
-
-        $this->assertNotNull($waitTime);
-        $this->assertGreaterThanOrEqual(5, $waitTime);
+        $this->assertGreaterThanOrEqual(5, $queue->waitTime());
     }
 
     public function testWaitTimeReturnsZeroForLegacyPayload(): void

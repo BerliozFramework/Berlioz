@@ -54,6 +54,22 @@ class DbQueueTest extends QueueTestCase
         $this->assertSame(1, $queue->delayed());
     }
 
+    public function testWaitTimeUsesAvailabilityTime(): void
+    {
+        /** @var DbQueue $queue */
+        $queue = static::newQueue();
+
+        $queue->push(new JobDescriptor('delayed', ['foo' => 'value']), 5);
+
+        sleep(1);
+
+        $queue->push(new JobDescriptor('ready', ['foo' => 'value']));
+
+        sleep(1);
+
+        $this->assertLessThanOrEqual(2, $queue->waitTime());
+    }
+
     public function testConsumeOrdersByAvailabilityTimeThenJobId(): void
     {
         /** @var DbQueue $queue */

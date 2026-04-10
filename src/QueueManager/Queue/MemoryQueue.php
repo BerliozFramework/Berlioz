@@ -87,23 +87,23 @@ readonly class MemoryQueue extends AbstractQueue implements PurgeableQueueInterf
      */
     public function waitTime(): ?int
     {
-        $oldestCreateTime = null;
+        $oldestAvailableTime = null;
 
         foreach ($this->stack as $value) {
             if (false === $this->jobRawCanBeConsumed($value)) {
                 continue;
             }
 
-            if (null === $oldestCreateTime || $value['create_time'] < $oldestCreateTime) {
-                $oldestCreateTime = $value['create_time'];
+            if (null === $oldestAvailableTime || $value['available_time'] < $oldestAvailableTime) {
+                $oldestAvailableTime = $value['available_time'];
             }
         }
 
-        if (null === $oldestCreateTime) {
+        if (null === $oldestAvailableTime) {
             return null;
         }
 
-        return max(0, $this->now()->getTimestamp() - $oldestCreateTime->getTimestamp());
+        return max(0, $this->now()->getTimestamp() - $oldestAvailableTime->getTimestamp());
     }
 
     /**

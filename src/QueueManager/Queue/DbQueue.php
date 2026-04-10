@@ -23,7 +23,6 @@ use Berlioz\QueueManager\Job\JobInterface;
 use Berlioz\QueueManager\RateLimiter\NullRateLimiter;
 use Berlioz\QueueManager\RateLimiter\RateLimiterInterface;
 use DateInterval;
-use DateTimeImmutable;
 use DateTimeInterface;
 use Hector\Connection\Connection;
 use Hector\Query\Component\Order;
@@ -88,17 +87,18 @@ readonly class DbQueue extends AbstractQueue implements PurgeableQueueInterface,
     public function waitTime(): ?int
     {
         $oldestJob = $this->addBuilderConditions($this->getQueryBuilder())
-            ->orderBy('create_time', Order::ORDER_ASC)
+            ->orderBy('availability_time', Order::ORDER_ASC)
+            ->orderBy('job_id', Order::ORDER_ASC)
             ->limit(1)
             ->fetchOne(true);
 
-        if (null === $oldestJob || !isset($oldestJob['create_time'])) {
+        if (null === $oldestJob || !isset($oldestJob['availability_time'])) {
             return null;
         }
 
         return max(
             0,
-            $this->now()->getTimestamp() - (new DateTimeImmutable((string)$oldestJob['create_time']))->getTimestamp(),
+            $this->now()->getTimestamp() - strtotime((string)$oldestJob['availability_time']),
         );
     }
 

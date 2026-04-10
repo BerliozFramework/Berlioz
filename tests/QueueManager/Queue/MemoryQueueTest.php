@@ -44,4 +44,20 @@ class MemoryQueueTest extends QueueTestCase
         $this->assertGreaterThanOrEqual(1, $queue->waitTime());
         $this->assertSame(1, $queue->delayed());
     }
+
+    public function testWaitTimeUsesAvailableTime(): void
+    {
+        /** @var MemoryQueue $queue */
+        $queue = static::newQueue();
+
+        $queue->push(new JobDescriptor('delayed', ['foo' => 'value']), 5);
+
+        sleep(1);
+
+        $queue->push(new JobDescriptor('ready', ['foo' => 'value']));
+
+        sleep(1);
+
+        $this->assertLessThanOrEqual(2, $queue->waitTime());
+    }
 }
