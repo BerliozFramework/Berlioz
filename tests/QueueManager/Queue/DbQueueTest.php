@@ -53,4 +53,22 @@ class DbQueueTest extends QueueTestCase
         $this->assertGreaterThanOrEqual(1, $queue->waitTime());
         $this->assertSame(1, $queue->delayed());
     }
+
+    public function testConsumeOrdersByAvailabilityTimeThenJobId(): void
+    {
+        /** @var DbQueue $queue */
+        $queue = static::newQueue();
+
+        $firstJobId = $queue->push(new JobDescriptor('first', ['foo' => 'value']), 3);
+        $secondJobId = $queue->push(new JobDescriptor('second', ['foo' => 'value']), 1);
+
+        sleep(2);
+
+        $job = $queue->consume();
+
+        $this->assertNotNull($job);
+        $this->assertSame($secondJobId, $job->getId());
+        $this->assertSame('second', $job->getName());
+        $this->assertNotSame($firstJobId, $job->getId());
+    }
 }
