@@ -52,7 +52,7 @@ class AbstractCommandTest extends TestCase
         $command->setApp($app = new CliApp(new Core(new FakeDefaultDirectories(), cache: false)));
         $reflectionClass = new ReflectionClass(AbstractCommand::class);
         $reflectionMethod = $reflectionClass->getMethod('get');
-        $reflectionMethod->setAccessible(true);
+        PHP_VERSION_ID < 80100 && $reflectionMethod->setAccessible(true);
 
         $this->assertSame($app, $reflectionMethod->invoke($command, 'app'));
     }

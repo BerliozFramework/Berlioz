@@ -256,7 +256,7 @@ class InstantiatorTest extends TestCase
         $this->assertNull($result->obj);
 
         $reflectionProperty = new ReflectionProperty(Service::class, 'retrieved');
-        $reflectionProperty->setAccessible(true);
+        PHP_VERSION_ID < 80100 && $reflectionProperty->setAccessible(true);
 
         $this->assertTrue($reflectionProperty->getValue($service));
     }

@@ -44,7 +44,7 @@ abstract class ProviderTestCase extends TestCase
     {
         $container = $this->getContainer();
         $defaultContainerProperty = new ReflectionProperty(Container::class, 'container');
-        $defaultContainerProperty->setAccessible(true);
+        PHP_VERSION_ID < 80100 && $defaultContainerProperty->setAccessible(true);
         $defaultContainer = $defaultContainerProperty->getValue($container);
         $defaultServices = iterator_to_array($defaultContainer->getServices(), false);
         $provider->register($container);

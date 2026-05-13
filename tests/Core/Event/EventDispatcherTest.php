@@ -31,7 +31,7 @@ class EventDispatcherTest extends TestCase
         $dispatcher = new EventDispatcher(new DebugHandler(), $provider = new ListenerProvider());
 
         $reflection = new ReflectionProperty(\Berlioz\EventManager\EventDispatcher::class, 'defaultProvider');
-        $reflection->setAccessible(true);
+        PHP_VERSION_ID < 80100 && $reflection->setAccessible(true);
 
         $this->assertSame($provider, $reflection->getValue($dispatcher));
     }

@@ -44,7 +44,7 @@ class CacheManagerTest extends AbstractCacheDriverTestCase
         $cacheManager = new CacheManager(false, new FakeDefaultDirectories());
         $reflectionObj = new ReflectionObject($cacheManager);
         $reflectionProperty = $reflectionObj->getProperty('cache');
-        $reflectionProperty->setAccessible(true);
+        PHP_VERSION_ID < 80100 && $reflectionProperty->setAccessible(true);
 
         $this->assertEquals(false, $cacheManager->getClass());
         $this->assertInstanceOf(MemoryCacheDriver::class, $reflectionProperty->getValue($cacheManager));

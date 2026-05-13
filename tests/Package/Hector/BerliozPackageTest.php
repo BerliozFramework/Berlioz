@@ -59,7 +59,7 @@ class BerliozPackageTest extends TestCase
         $this->assertSame(Orm::get(), $core->getContainer()->get(Orm::class));
 
         $reflection = new ReflectionProperty($debugHandler, 'sections');
-        $reflection->setAccessible(true);
+        PHP_VERSION_ID < 80100 && $reflection->setAccessible(true);
         $sections = $reflection->getValue($debugHandler);
         $sections = array_filter($sections, fn(Section $section) => $section instanceof HectorSection);
 
@@ -77,7 +77,7 @@ class BerliozPackageTest extends TestCase
         $this->assertSame(Orm::get(), $core->getContainer()->get(Orm::class));
 
         $reflection = new ReflectionProperty($debugHandler, 'sections');
-        $reflection->setAccessible(true);
+        PHP_VERSION_ID < 80100 && $reflection->setAccessible(true);
         $sections = $reflection->getValue($debugHandler);
         $sections = array_filter($sections, fn(Section $section) => $section instanceof HectorSection);
 

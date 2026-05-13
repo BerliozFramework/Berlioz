@@ -24,7 +24,7 @@ class ArgumentsManagerTest extends TestCase
     {
         $manager = new ArgumentsManager();
         $reflectionProperty = new ReflectionProperty(Manager::class, 'parser');
-        $reflectionProperty->setAccessible(true);
+        PHP_VERSION_ID < 80100 && $reflectionProperty->setAccessible(true);
 
         $this->assertInstanceOf(Parser::class, $reflectionProperty->getValue($manager));
     }
@@ -32,7 +32,7 @@ class ArgumentsManagerTest extends TestCase
     public function testReset()
     {
         $reflectionProperty = new ReflectionProperty(Manager::class, 'description');
-        $reflectionProperty->setAccessible(true);
+        PHP_VERSION_ID < 80100 && $reflectionProperty->setAccessible(true);
 
         $manager = new ArgumentsManager();
         $manager->add('foo', []);

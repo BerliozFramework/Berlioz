@@ -29,7 +29,7 @@ class MailTest extends TestCase
         $mail->setHeaders(self::TEST_HEADERS);
 
         $reflectionProp = new ReflectionProperty($mail, 'headers');
-        $reflectionProp->setAccessible(true);
+        PHP_VERSION_ID < 80100 && $reflectionProp->setAccessible(true);
 
         $this->assertTrue(is_array($reflectionProp->getValue($mail)['Content-Type']));
         $this->assertEquals(['test/test'], $reflectionProp->getValue($mail)['Content-Type']);
@@ -42,7 +42,7 @@ class MailTest extends TestCase
         $mail->addHeader('Content-Type', 'test2/test2');
 
         $reflectionProp = new ReflectionProperty($mail, 'headers');
-        $reflectionProp->setAccessible(true);
+        PHP_VERSION_ID < 80100 && $reflectionProp->setAccessible(true);
 
         $this->assertTrue(is_array($reflectionProp->getValue($mail)['Content-Type']));
         $this->assertEquals(['test/test', 'test2/test2'], $reflectionProp->getValue($mail)['Content-Type']);
@@ -55,7 +55,7 @@ class MailTest extends TestCase
         $mail->addHeader('Content-Type', 'test2/test2', true);
 
         $reflectionProp = new ReflectionProperty($mail, 'headers');
-        $reflectionProp->setAccessible(true);
+        PHP_VERSION_ID < 80100 && $reflectionProp->setAccessible(true);
 
         $this->assertTrue(is_array($reflectionProp->getValue($mail)['Content-Type']));
         $this->assertEquals(['test2/test2'], $reflectionProp->getValue($mail)['Content-Type']);

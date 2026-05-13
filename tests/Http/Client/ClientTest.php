@@ -263,7 +263,7 @@ class ClientTest extends TestCase
 
         $class = new ReflectionObject($client);
         $property = $class->getProperty('defaultHeaders');
-        $property->setAccessible(true);
+        PHP_VERSION_ID < 80100 && $property->setAccessible(true);
         $defaultHeaders = $property->getValue($client);
 
         // Tests
@@ -397,7 +397,7 @@ class ClientTest extends TestCase
     {
         $client = new Client();
         $reflection = new ReflectionMethod($client, 'prepareRequest');
-        $reflection->setAccessible(true);
+        PHP_VERSION_ID < 80100 && $reflection->setAccessible(true);
 
         $request = new Request('get', 'http://localhost:8080/request.php', new MemoryStream('FOO'));
 
@@ -413,7 +413,7 @@ class ClientTest extends TestCase
     {
         $client = new Client();
         $reflection = new ReflectionMethod($client, 'prepareRequest');
-        $reflection->setAccessible(true);
+        PHP_VERSION_ID < 80100 && $reflection->setAccessible(true);
 
         $request = new Request(
             'get',
