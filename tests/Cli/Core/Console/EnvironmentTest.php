@@ -28,10 +28,19 @@ class EnvironmentTest extends TestCase
         $this->assertSame($console, $environment->console());
     }
 
+    /**
+     * Always provide both 'prefix' and 'longPrefix' to climate to avoid PHP 8.4+
+     * "Using null as an array offset" deprecation in climate's Manager.php.
+     */
+    private const ARGS = [
+        'foo' => ['prefix' => 'f', 'longPrefix' => ''],
+        'bar' => ['prefix' => '', 'longPrefix' => 'bar'],
+    ];
+
     public function testGetArgument()
     {
         $environment = new Environment($console = new Console(), new CommandDeclaration('foo', FakeCommand::class));
-        $console->arguments->add(['foo' => ['prefix' => 'f'], 'bar' => ['longPrefix' => 'bar']]);
+        $console->arguments->add(self::ARGS);
         $console->arguments->parse(['exec', 'command', '-f', 'value1']);
 
         $this->assertEquals('value1', $environment->getArgument('foo'));
@@ -42,14 +51,14 @@ class EnvironmentTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
 
         $environment = new Environment($console = new Console(), new CommandDeclaration('foo', FakeCommand::class));
-        $console->arguments->add(['foo' => ['prefix' => 'f'], 'bar' => ['longPrefix' => 'bar']]);
+        $console->arguments->add(self::ARGS);
         $environment->getArgument('qux');
     }
 
     public function testGetArgumentMultiple()
     {
         $environment = new Environment($console = new Console(), new CommandDeclaration('foo', FakeCommand::class));
-        $console->arguments->add(['foo' => ['prefix' => 'f'], 'bar' => ['longPrefix' => 'bar']]);
+        $console->arguments->add(self::ARGS);
         $console->arguments->parse(['exec', 'command', '-f', 'value1', '-f', 'value2']);
 
         $this->assertEquals('value2', $environment->getArgument('foo'));
@@ -59,7 +68,7 @@ class EnvironmentTest extends TestCase
     public function testGetArguments()
     {
         $environment = new Environment($console = new Console(), new CommandDeclaration('foo', FakeCommand::class));
-        $console->arguments->add(['foo' => ['prefix' => 'f'], 'bar' => ['longPrefix' => 'bar']]);
+        $console->arguments->add(self::ARGS);
         $console->arguments->parse(['exec', 'command', '-f', 'value1']);
 
         $this->assertSame(['foo' => 'value1', 'bar' => ''], $environment->getArguments());
@@ -68,7 +77,7 @@ class EnvironmentTest extends TestCase
     public function testIsArgumentDefined()
     {
         $environment = new Environment($console = new Console(), new CommandDeclaration('foo', FakeCommand::class));
-        $console->arguments->add(['foo' => ['prefix' => 'f'], 'bar' => ['longPrefix' => 'bar']]);
+        $console->arguments->add(self::ARGS);
 
         $this->assertTrue($environment->isArgumentDefined('foo', ['exec', 'command', '-f', 'value1']));
         $this->assertFalse($environment->isArgumentDefined('bar', ['exec', 'command', '-f', 'value1']));
@@ -79,7 +88,7 @@ class EnvironmentTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
 
         $environment = new Environment($console = new Console(), new CommandDeclaration('foo', FakeCommand::class));
-        $console->arguments->add(['foo' => ['prefix' => 'f'], 'bar' => ['longPrefix' => 'bar']]);
+        $console->arguments->add(self::ARGS);
         $environment->isArgumentDefined('qux', []);
     }
 }

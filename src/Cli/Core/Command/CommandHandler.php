@@ -63,10 +63,13 @@ class CommandHandler
 
         try {
             // Add help argument
+            // Note: 'prefix' => '' is required to avoid PHP 8.4+ deprecation in
+            // league/climate (Manager.php:175); see addArguments() for details.
             $this->console->getArgumentsManager()->add(
                 Argument::createFromArray(
                     'help',
                     [
+                        'prefix' => '',
                         'longPrefix' => 'help',
                         'description' => 'Show this help',
                         'noValue' => true
