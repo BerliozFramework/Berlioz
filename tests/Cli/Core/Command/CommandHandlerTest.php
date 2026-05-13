@@ -89,6 +89,25 @@ class CommandHandlerTest extends TestCase
         $this->assertStringContainsString('  foo', $console->output->get('buffer')->get());
     }
 
+    public function testHandle_withPositionalArgument()
+    {
+        FakePositionalCommand::$handled = false;
+        $handler = new CommandHandler(
+            $console = new Console(),
+            $manager = new CommandManager(),
+            new Core(new FakeDefaultDirectories(), cache: false)
+        );
+        $console->output->defaultTo('buffer');
+        $manager->addCommand(new CommandDeclaration('foo', FakePositionalCommand::class));
+
+        // failOnDeprecation="true" in phpunit.xml.dist will fail this test
+        // if league/climate's null-as-array-offset deprecation re-appears.
+        $result = $handler->handle(['exec', 'foo']);
+
+        $this->assertSame(0, $result);
+        $this->assertTrue(FakePositionalCommand::$handled);
+    }
+
     public function testHandle_commandFailed()
     {
         $handler = new CommandHandler(

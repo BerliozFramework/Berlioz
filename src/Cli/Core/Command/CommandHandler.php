@@ -105,9 +105,17 @@ class CommandHandler
     {
         $this->console->getArgumentsManager()->reset();
 
+        // Workaround for PHP 8.4+ deprecation in league/climate (Manager.php:175):
+        // climate builds an array using prefix()/longPrefix() as keys, which are
+        // null for positional arguments. Force empty strings to bypass this.
+        $climateDefaults = ['prefix' => '', 'longPrefix' => ''];
+
         foreach ($declaration->getArguments() as $argument) {
             $this->console->getArgumentsManager()->add(
-                Argument::createFromArray($argument->getName(), $argument->getArrayCopy())
+                Argument::createFromArray(
+                    $argument->getName(),
+                    array_replace($climateDefaults, $argument->getArrayCopy()),
+                )
             );
         }
     }

@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fix `AbstractCommand::get()` accessing uninitialized `$app` property directly instead of using `getApp()`
 - Fix `CacheClearCommand::clearCache()` ignoring explicitly requested hidden directories
 - Add missing `declare(strict_types=1)` in `Console`, `Parser` and `ArgumentsManager`
+- Suppress PHP 8.4+ deprecation `Using null as an array offset` triggered by `league/climate` when a command declares positional arguments (without prefix/longPrefix)
 
 ## [3.0.0] - 2026-02-19
 
