@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+
+- Bump minimum phpunit version to ^11.5.51
+
 ## [3.0.0] - 2026-02-19
 
 The version 3.0.0 marks the transition of the Berlioz Framework to a **Monorepo** structure.
