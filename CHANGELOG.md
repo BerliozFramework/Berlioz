@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.1.1] - 2026-06-10
+
+### Fixed
+
+- [cli-core] Fix command arguments being ignored and built-in `help` triggered erroneously: removed the obsolete `league/climate` null-offset workaround (forcing `prefix`/`longPrefix` to empty strings), which made every `-`/`--` argument match positional and help arguments. The upstream deprecation is fixed in `league/climate` 3.11.0
+
 ## [3.1.0] - 2026-05-18
 
 ### Added
