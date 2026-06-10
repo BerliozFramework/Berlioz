@@ -369,22 +369,46 @@ Example -- after adding a feature to the Router:
 
 ### Release process
 
-`bin/prepare-release.php` automates versioning:
+> **Lockstep versioning — release ALL packages together.** Every package is always released under the
+> **same version** as the monorepo, **even packages with no changes** (they get a `_No changes in this release._`
+> entry). This is mandatory, not cosmetic. Never release a subset of packages, even for a single-package fix.
+
+**Why all packages must share the version:**
+
+1. **`self.version` dependencies.** Inter-package `require` constraints use `"berlioz/xxx": "self.version"`
+   (see any package `composer.json`). So `berlioz/cli-core:3.1.1` requires `berlioz/core:3.1.1`. If `core` is
+   never tagged `3.1.1`, installing the patched package fails with an unsatisfiable constraint.
+2. **Subsplit tag propagation.** On a `v*` tag, the subsplit action recomputes each package's split hash from
+   its directory contents and only propagates the tag if **no tag already points at that hash**. A package whose
+   directory is unchanged produces the *same* hash as the previous release (already tagged), so the new tag is
+   **skipped** for it. Bumping its `CHANGELOG.md` (the `_No changes_` entry) changes the directory content →
+   new hash → the tag propagates to every mirror.
+3. **Consistency.** This matches the broader PHP-monorepo convention (Symfony, Laravel/Illuminate, etc.).
+
+`bin/prepare-release.php` automates versioning. **Always run it without a package filter:**
 
 ```bash
-php bin/prepare-release.php <version> <date> [package-names...] [--dry-run]
+php bin/prepare-release.php <version> <date> [--dry-run]
 
 # Examples:
-php bin/prepare-release.php 3.1.0 2026-03-15              # All packages
-php bin/prepare-release.php 3.1.0 2026-03-15 router core  # Specific packages
-php bin/prepare-release.php 3.1.0 2026-03-15 --dry-run    # Preview only
+php bin/prepare-release.php 3.1.1 2026-06-10 --dry-run    # Preview ALL packages first
+php bin/prepare-release.php 3.1.1 2026-06-10              # Release ALL packages (lockstep)
 ```
 
+The optional `[package-names...]` argument exists but is **reserved for exceptional manual recovery only**
+(e.g. fixing up a single mishandled changelog). It must **not** be used for normal releases, because it leaves
+the other packages behind and breaks `self.version` resolution and tag propagation as described above.
+
 What it does:
-1. For each package: renames `[Unreleased]` → `[version] - date` and creates a fresh empty `[Unreleased]` section
+1. For each package: renames `[Unreleased]` → `[version] - date` and creates a fresh empty `[Unreleased]` section.
+   Packages with an empty `[Unreleased]` get a `_No changes in this release._` placeholder so their split hash
+   changes and the tag propagates.
 2. Aggregates all package items into the root `CHANGELOG.md` under the same version, prefixed with the package name
-   (e.g., `**berlioz/router**: Support for wildcard route parameters`)
+   (e.g., `[router] Support for wildcard route parameters`)
 3. Merges intelligently if the version block already exists (idempotent)
+
+After running it, commit everything as `chore(release): prepare v<version>`, then tag `v<version>` to trigger the
+subsplit publication to all mirrors.
 
 ## Tooling
 
