@@ -22,6 +22,7 @@ use Berlioz\Cli\Core\Console\Environment;
 class FakePositionalCommand extends AbstractCommand
 {
     public static bool $handled = false;
+    public static string|int|float|bool|null $directory = null;
 
     /**
      * @inheritDoc
@@ -29,6 +30,7 @@ class FakePositionalCommand extends AbstractCommand
     public function run(Environment $env): int
     {
         self::$handled = true;
+        self::$directory = $env->getArgument('directory');
 
         return 0;
     }

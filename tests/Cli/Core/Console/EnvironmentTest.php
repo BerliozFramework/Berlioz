@@ -28,13 +28,9 @@ class EnvironmentTest extends TestCase
         $this->assertSame($console, $environment->console());
     }
 
-    /**
-     * Always provide both 'prefix' and 'longPrefix' to climate to avoid PHP 8.4+
-     * "Using null as an array offset" deprecation in climate's Manager.php.
-     */
     private const ARGS = [
-        'foo' => ['prefix' => 'f', 'longPrefix' => ''],
-        'bar' => ['prefix' => '', 'longPrefix' => 'bar'],
+        'foo' => ['prefix' => 'f'],
+        'bar' => ['longPrefix' => 'bar'],
     ];
 
     public function testGetArgument()

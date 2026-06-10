@@ -92,20 +92,44 @@ class CommandHandlerTest extends TestCase
     public function testHandle_withPositionalArgument()
     {
         FakePositionalCommand::$handled = false;
+        FakePositionalCommand::$directory = null;
         $handler = new CommandHandler(
             $console = new Console(),
             $manager = new CommandManager(),
             new Core(new FakeDefaultDirectories(), cache: false)
         );
         $console->output->defaultTo('buffer');
-        $manager->addCommand(new CommandDeclaration('foo', FakePositionalCommand::class));
+        $manager->newCommand('foo', FakePositionalCommand::class);
 
         // failOnDeprecation="true" in phpunit.xml.dist will fail this test
         // if league/climate's null-as-array-offset deprecation re-appears.
-        $result = $handler->handle(['exec', 'foo']);
+        $result = $handler->handle(['exec', 'foo', 'my-dir']);
 
         $this->assertSame(0, $result);
         $this->assertTrue(FakePositionalCommand::$handled);
+        $this->assertSame('my-dir', FakePositionalCommand::$directory);
+    }
+
+    public function testHandle_positionalNotTreatedAsHelp()
+    {
+        // Non-regression: a positional argument must not be swallowed by the
+        // built-in 'help' argument, and 'help' must not be triggered erroneously.
+        FakePositionalCommand::$handled = false;
+        FakePositionalCommand::$directory = null;
+        $handler = new CommandHandler(
+            $console = new Console(),
+            $manager = new CommandManager(),
+            new Core(new FakeDefaultDirectories(), cache: false)
+        );
+        $console->output->defaultTo('buffer');
+        $manager->newCommand('foo', FakePositionalCommand::class);
+
+        $result = $handler->handle(['exec', 'foo', 'some-value']);
+
+        $this->assertSame(0, $result);
+        $this->assertTrue(FakePositionalCommand::$handled);
+        $this->assertSame('some-value', FakePositionalCommand::$directory);
+        $this->assertStringNotContainsString('Usage:', $console->output->get('buffer')->get());
     }
 
     public function testHandle_commandFailed()

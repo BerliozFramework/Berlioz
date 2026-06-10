@@ -63,13 +63,10 @@ class CommandHandler
 
         try {
             // Add help argument
-            // Note: 'prefix' => '' is required to avoid PHP 8.4+ deprecation in
-            // league/climate (Manager.php:175); see addArguments() for details.
             $this->console->getArgumentsManager()->add(
                 Argument::createFromArray(
                     'help',
                     [
-                        'prefix' => '',
                         'longPrefix' => 'help',
                         'description' => 'Show this help',
                         'noValue' => true
@@ -108,17 +105,9 @@ class CommandHandler
     {
         $this->console->getArgumentsManager()->reset();
 
-        // Workaround for PHP 8.4+ deprecation in league/climate (Manager.php:175):
-        // climate builds an array using prefix()/longPrefix() as keys, which are
-        // null for positional arguments. Force empty strings to bypass this.
-        $climateDefaults = ['prefix' => '', 'longPrefix' => ''];
-
         foreach ($declaration->getArguments() as $argument) {
             $this->console->getArgumentsManager()->add(
-                Argument::createFromArray(
-                    $argument->getName(),
-                    array_replace($climateDefaults, $argument->getArrayCopy()),
-                )
+                Argument::createFromArray($argument->getName(), $argument->getArrayCopy())
             );
         }
     }
