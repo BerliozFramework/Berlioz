@@ -19,8 +19,10 @@ use Berlioz\Core\Debug\DebugHandler;
 use Countable;
 use Doctrine\SqlFormatter\NullHighlighter;
 use Doctrine\SqlFormatter\SqlFormatter;
+use Hector\Connection\Bind\BindParam;
 use Hector\Connection\Log\LogEntry;
 use Hector\Connection\Log\Logger;
+use PDO;
 
 /**
  * Class HectorSection.
@@ -29,6 +31,7 @@ class HectorSection extends AbstractSection implements Countable
 {
     private array $loggers;
     private array $logs = [];
+    private array $interpolated = [];
 
     /**
      * Hector constructor.
@@ -48,15 +51,21 @@ class HectorSection extends AbstractSection implements Countable
         $sqlFormatter = new SqlFormatter(new NullHighlighter());
 
         $this->logs = array_merge(...array_map(fn(Logger $logger) => $logger->getLogs(), $this->loggers));
+        $this->interpolated = [];
         $this->logs = array_map(
-            function (LogEntry $entry) use ($sqlFormatter) {
+            function (LogEntry $entry, int $index) use ($sqlFormatter) {
                 if ($entry->getType() !== LogEntry::TYPE_QUERY) {
                     return $entry;
                 }
 
+                $this->interpolated[$index] = $sqlFormatter->format(
+                    $this->interpolateStatement($entry->getStatement(), $entry->getParameters())
+                );
+
                 return $entry->withStatement($sqlFormatter->format($entry->getStatement()));
             },
-            $this->logs
+            $this->logs,
+            array_keys($this->logs),
         );
 
         // Add queries to the timeline
@@ -68,6 +77,65 @@ class HectorSection extends AbstractSection implements Countable
                 ->setDetail($logEntry->getStatement())
                 ->setResult($logEntry->getTrace());
         }
+    }
+
+    /**
+     * Interpolate statement with its bound parameters.
+     *
+     * The result is intended for debugging and copy/paste only, never for
+     * re-execution: values are quoted for readability, not for security.
+     *
+     * @param string $statement
+     * @param iterable $parameters
+     *
+     * @return string
+     */
+    private function interpolateStatement(string $statement, iterable $parameters): string
+    {
+        foreach ($parameters as $parameter) {
+            if (!$parameter instanceof BindParam) {
+                continue;
+            }
+
+            $name = $parameter->getName();
+            $value = $this->quoteValue($parameter->getValue(), $parameter->getDataType());
+
+            // Named placeholder (e.g. ":_h_0") or positional placeholder ("?").
+            if (is_string($name)) {
+                $placeholder = ':' . ltrim($name, ':');
+                $statement = preg_replace(
+                    '/' . preg_quote($placeholder, '/') . '\b/',
+                    addcslashes($value, '\\$'),
+                    $statement,
+                    1,
+                );
+                continue;
+            }
+
+            $statement = preg_replace('/\?/', addcslashes($value, '\\$'), $statement, 1);
+        }
+
+        return $statement;
+    }
+
+    /**
+     * Quote value according to its PDO data type.
+     *
+     * @param mixed $value
+     * @param int $dataType
+     *
+     * @return string
+     */
+    private function quoteValue(mixed $value, int $dataType): string
+    {
+        return match ($dataType) {
+            PDO::PARAM_NULL => 'NULL',
+            PDO::PARAM_INT => (string)(int)$value,
+            PDO::PARAM_BOOL => $value ? '1' : '0',
+            default => null === $value
+                ? 'NULL'
+                : "'" . str_replace("'", "''", (string)$value) . "'",
+        };
     }
 
     /**
@@ -85,7 +153,10 @@ class HectorSection extends AbstractSection implements Countable
      */
     public function __serialize(): array
     {
-        return ['logs' => $this->logs];
+        return [
+            'logs' => $this->logs,
+            'interpolated' => $this->interpolated,
+        ];
     }
 
     /**
@@ -97,6 +168,7 @@ class HectorSection extends AbstractSection implements Countable
     {
         $this->loggers = [];
         $this->logs = $data['logs'] ?? [];
+        $this->interpolated = $data['interpolated'] ?? [];
     }
 
     /**
@@ -133,6 +205,18 @@ class HectorSection extends AbstractSection implements Countable
     public function getLogs(): array
     {
         return $this->logs;
+    }
+
+    /**
+     * Get interpolated statement for the given log index (values replaced).
+     *
+     * @param int $index
+     *
+     * @return string|null
+     */
+    public function getInterpolatedStatement(int $index): ?string
+    {
+        return $this->interpolated[$index] ?? null;
     }
 
     /**
