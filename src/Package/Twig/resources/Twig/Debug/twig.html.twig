@@ -135,7 +135,7 @@
     <!-- Modal -->
     <div class="modal fade" id="twigDetail" tabindex="-1" role="dialog" aria-labelledby="twigDetailTitle"
          aria-hidden="true">
-        <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+        <div class="modal-dialog modal-xl modal-dialog-centered" role="document">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title" id="twigDetailTitle">Profile</h5>
@@ -200,7 +200,7 @@
             <tbody>
             <tr>
                 <th>Template</th>
-                <td>{{ profile.template }}</td>
+                <td><span data-toggle="copy" data-text="{{ profile.template|e('html_attr') }}">{{ profile.template }}</span></td>
             </tr>
             <tr>
                 <th>Type</th>
@@ -218,7 +218,7 @@
             </tr>
             <tr>
                 <th>Name</th>
-                <td>{{ profile.name }}</td>
+                <td><span data-toggle="copy" data-text="{{ profile.name|e('html_attr') }}">{{ profile.name }}</span></td>
             </tr>
             <tr>
                 <th>Duration</th>
