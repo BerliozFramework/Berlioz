@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - `RedisCacheDriver`, a PSR-16 cache driver backed by phpredis (ext-redis)
+- `FallbackCacheDriver`, a resilience decorator that falls back to the next driver when one fails
 
 ### Changed
 
