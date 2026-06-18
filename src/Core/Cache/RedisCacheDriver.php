@@ -91,10 +91,10 @@ class RedisCacheDriver extends AbstractCacheDriver implements CacheInterface
     {
         $this->controlKey($key);
 
-        $seconds = $this->ttlToSeconds($ttl);
+        $milliseconds = $this->ttlToMilliseconds($ttl);
 
         // Negative or zero TTL means the value is already expired: delete it.
-        if (null !== $seconds && $seconds <= 0) {
+        if (null !== $milliseconds && $milliseconds <= 0) {
             return $this->delete($key);
         }
 
@@ -105,11 +105,11 @@ class RedisCacheDriver extends AbstractCacheDriver implements CacheInterface
         }
 
         try {
-            if (null === $seconds) {
+            if (null === $milliseconds) {
                 return (bool)$this->redis->set($this->prefix($key), $serialized);
             }
 
-            return (bool)$this->redis->setex($this->prefix($key), $seconds, $serialized);
+            return (bool)$this->redis->pSetEx($this->prefix($key), $milliseconds, $serialized);
         } catch (RedisException $exception) {
             throw new CacheException(sprintf('Unable to save key "%s" to Redis cache', $key), 0, $exception);
         }
@@ -217,28 +217,31 @@ class RedisCacheDriver extends AbstractCacheDriver implements CacheInterface
     }
 
     /**
-     * Convert PSR-16 TTL to seconds.
+     * Convert PSR-16 TTL to milliseconds.
+     *
+     * Milliseconds are used (via PSETEX) so the expiration matches the requested
+     * TTL as closely as possible, instead of being rounded to the second.
      *
      * @param int|DateInterval|null $ttl
      *
      * @return int|null Null means no expiration.
      * @throws CacheException
      */
-    protected function ttlToSeconds(int|DateInterval|null $ttl): ?int
+    protected function ttlToMilliseconds(int|DateInterval|null $ttl): ?int
     {
         if (null === $ttl) {
             return null;
         }
 
         if (is_int($ttl)) {
-            return $ttl;
+            return $ttl * 1000;
         }
 
         try {
             $now = new DateTime('now');
             $expiration = (new DateTime('now'))->add($ttl);
 
-            return $expiration->getTimestamp() - $now->getTimestamp();
+            return (int)round(($expiration->format('U.u') - $now->format('U.u')) * 1000);
         } catch (Exception $exception) {
             throw new CacheException('TTL cache exception', 0, $exception);
         }
