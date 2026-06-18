@@ -48,6 +48,29 @@ class RedisCacheDriverTest extends AbstractCacheDriverTestCase
         return self::$redis = $redis;
     }
 
+    public static function setUpBeforeClass(): void
+    {
+        // Start from a clean namespace; AbstractCacheDriverTestCase relies on
+        // state persisting across its data-provided tests, so we only clean once.
+        $redis = self::getRedis();
+
+        if (null !== $redis) {
+            (new RedisCacheDriver($redis, self::NAMESPACE))->clear();
+        }
+    }
+
+    public static function tearDownAfterClass(): void
+    {
+        $redis = self::getRedis();
+
+        if (null !== $redis) {
+            (new RedisCacheDriver($redis, self::NAMESPACE))->clear();
+        }
+
+        self::$cacheDriver = null;
+        self::$redis = null;
+    }
+
     protected function getCacheDriver(): CacheInterface
     {
         $redis = self::getRedis();
@@ -63,13 +86,6 @@ class RedisCacheDriverTest extends AbstractCacheDriverTestCase
         return self::$cacheDriver;
     }
 
-    protected function tearDown(): void
-    {
-        if (null !== self::$cacheDriver) {
-            self::$cacheDriver->clear();
-        }
-    }
-
     public function testClearScopedToNamespace()
     {
         $redis = self::getRedis();
@@ -78,10 +94,13 @@ class RedisCacheDriverTest extends AbstractCacheDriverTestCase
             $this->markTestSkipped('Redis server is not available');
         }
 
+        // Use a dedicated namespace so this test never disturbs the shared state
+        // used by the inherited data-provided tests.
+        $driver = new RedisCacheDriver($redis, 'berlioz-test-clear');
+
         // A key outside the namespace must survive clear().
         $redis->set('berlioz-other:keep', 'value');
 
-        $driver = $this->getCacheDriver();
         $driver->set('foo', 'bar');
         $this->assertTrue($driver->has('foo'));
 
@@ -95,10 +114,18 @@ class RedisCacheDriverTest extends AbstractCacheDriverTestCase
 
     public function testNoExpirationWhenTtlNull()
     {
-        $driver = $this->getCacheDriver();
+        $redis = self::getRedis();
+
+        if (null === $redis) {
+            $this->markTestSkipped('Redis server is not available');
+        }
+
+        // Dedicated namespace to avoid interfering with shared state.
+        $driver = new RedisCacheDriver($redis, 'berlioz-test-ttl');
         $driver->set('persistent', 'value', null);
 
-        $redis = self::getRedis();
-        $this->assertEquals(-1, $redis->ttl(self::NAMESPACE . ':persistent'));
+        $this->assertEquals(-1, $redis->ttl('berlioz-test-ttl:persistent'));
+
+        $driver->clear();
     }
 }
