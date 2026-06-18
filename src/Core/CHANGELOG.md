@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `RedisCacheDriver`, a PSR-16 cache driver backed by phpredis (ext-redis)
+
 ### Changed
 
 - `FileCacheDriver` now also accepts a directory path string in addition to `DirectoriesInterface`

@@ -29,6 +29,9 @@
     "league/flysystem": "^2.1 || ^3.0",
     "psr/simple-cache": "^2.0 || ^3.0"
   },
+  "suggest": {
+    "ext-redis": "To use RedisCacheDriver for distributed caching"
+  },
   "extra": {
     "branch-alias": {
       "dev-main": "3.x-dev"

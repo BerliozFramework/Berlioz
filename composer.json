@@ -134,7 +134,7 @@
     "elgigi/har-parser": "To use HAR support in HttpClient",
     "ext-amqp": "To use AMQP queue in QueueManager",
     "ext-pcntl": "Tu use signals to exit worker in QueueManager",
-    "ext-redis": "To use Redis queue in QueueManager",
+    "ext-redis": "To use RedisCacheDriver in Core, or Redis queue in QueueManager",
     "aws/aws-sdk-php": "To use AWS SQS service in QueueManager",
     "hectororm/query": "To use database queue in QueueManager"
   },
