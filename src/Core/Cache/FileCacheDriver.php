@@ -28,12 +28,26 @@ class FileCacheDriver extends AbstractCacheDriver implements CacheInterface
     public const CACHE_DIRECTORY = 'berlioz';
 
     /**
-     * CacheManager constructor.
+     * FileCacheDriver constructor.
      *
-     * @param DirectoriesInterface $directories
+     * @param DirectoriesInterface|string $directories A DirectoriesInterface or a cache directory path.
      */
-    public function __construct(protected DirectoriesInterface $directories)
+    public function __construct(protected DirectoriesInterface|string $directories)
     {
+    }
+
+    /**
+     * Get cache base directory.
+     *
+     * @return string
+     */
+    protected function getCacheBaseDir(): string
+    {
+        if (is_string($this->directories)) {
+            return $this->directories;
+        }
+
+        return $this->directories->getCacheDir();
     }
 
     /**
@@ -143,7 +157,7 @@ class FileCacheDriver extends AbstractCacheDriver implements CacheInterface
     public function clear(): bool
     {
         $cacheDir =
-            $this->directories->getCacheDir() .
+            $this->getCacheBaseDir() .
             DIRECTORY_SEPARATOR .
             static::CACHE_DIRECTORY;
 
@@ -166,7 +180,7 @@ class FileCacheDriver extends AbstractCacheDriver implements CacheInterface
         $name = md5($name);
 
         return
-            $this->directories->getCacheDir() .
+            $this->getCacheBaseDir() .
             DIRECTORY_SEPARATOR .
             static::CACHE_DIRECTORY .
             DIRECTORY_SEPARATOR .

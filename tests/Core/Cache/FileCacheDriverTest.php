@@ -41,4 +41,21 @@ class FileCacheDriverTest extends AbstractCacheDriverTestCase
         $this->assertTrue($this->getCacheDriver()->clear());
         $this->assertFalse(is_dir($cacheDirectory));
     }
+
+    public function testConstructWithStringPath()
+    {
+        $path = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'berlioz-cache-test-' . uniqid();
+        $driver = new FileCacheDriver($path);
+
+        $cacheDirectory = $path . DIRECTORY_SEPARATOR . FileCacheDriver::CACHE_DIRECTORY;
+
+        $this->assertTrue($driver->set('foo', 'bar'));
+        $this->assertTrue($driver->has('foo'));
+        $this->assertEquals('bar', $driver->get('foo'));
+        $this->assertTrue(is_dir($cacheDirectory));
+
+        $this->assertTrue($driver->clear());
+        $this->assertFalse($driver->has('foo'));
+        $this->assertFalse(is_dir($cacheDirectory));
+    }
 }

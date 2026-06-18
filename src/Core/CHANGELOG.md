@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- `FileCacheDriver` now also accepts a directory path string in addition to `DirectoriesInterface`
+
 ## [3.1.1] - 2026-06-10
 
 _No changes in this release._
