@@ -141,25 +141,13 @@
                     <h5 class="modal-title" id="twigDetailTitle">Profile</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="modal-body">
-                    <pre></pre>
-                </div>
+                <div class="modal-body"></div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
                 </div>
             </div>
         </div>
     </div>
-{% endblock %}
-
-{% block inlineJscripts %}
-    <script>
-        var modalEl = document.getElementById('twigDetail');
-        modalEl.addEventListener('show.bs.modal', function (event) {
-            console.log(event.relatedTarget.dataset.detail);
-            modalEl.querySelector('.modal-body pre').innerHTML = event.relatedTarget.dataset.detail;
-        })
-    </script>
 {% endblock %}
 
 {% block profile %}
@@ -189,9 +177,10 @@
 {% endblock %}
 
 {% block profileDetailLink -%}
-    <a href="#twigDetail"
-       data-bs-toggle="modal"
-       data-detail="{{ block('profileDetail')|spaceless|escape }}">{{ profile.name }}</a>
+    <a href="#"
+       data-toggle="detail"
+       data-type="twig"
+       data-content="{{ block('profileDetail')|spaceless|e('html_attr') }}">{{ profile.name }}</a>
 {%- endblock %}
 
 {% block profileDetail %}

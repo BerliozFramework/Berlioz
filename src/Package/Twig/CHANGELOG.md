@@ -11,6 +11,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Copy-to-clipboard buttons on template and name values in debug console Twig page
 
+### Fixed
+
+- Twig profile detail modal now reuses the shared debug console detail mechanism, restoring interactive components (copy buttons) in the modal
+- Removed a leftover `console.log` from the Twig debug console template
+
 ## [3.1.1] - 2026-06-10
 
 _No changes in this release._
