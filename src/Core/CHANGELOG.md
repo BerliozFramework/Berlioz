@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `RedisCacheDriver`, a PSR-16 cache driver backed by phpredis (ext-redis)
 - `FallbackCacheDriver`, a resilience decorator that falls back to the next driver when one fails
 - `CacheDriverFactory` to build a cache driver from an array of options, a JSON file (`fromFile()`) or environment variables (`fromEnv()`/`auto()`)
+- `SnapshotCleaner` to garbage collect debug snapshots according to a retention policy (max age in days and/or max number of files)
+- Automatic, probabilistic garbage collection of debug snapshots on write, configurable via `berlioz.debug.gc` (`probability`, `divisor`, `max_age`, `max_files`)
 
 ### Changed
 
