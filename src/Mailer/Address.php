@@ -34,7 +34,7 @@ class Address
      *
      * @throws InvalidArgumentException if email address isn\'t valid.
      */
-    public function __construct(string $mail = null, string $name = null)
+    public function __construct(?string $mail = null, ?string $name = null)
     {
         if (null !== $mail) {
             $this->setMail($mail);

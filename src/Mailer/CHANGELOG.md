@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Add explicit nullable types to parameters with `null` default to fix PHP 8.4 implicit nullable deprecation
+
 ### Security
 
 - Reject CR/LF in subject, address display name and bulk headers to prevent email header injection

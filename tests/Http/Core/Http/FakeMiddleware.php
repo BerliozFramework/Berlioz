@@ -24,7 +24,7 @@ class FakeMiddleware implements MiddlewareInterface
     private bool $processed = false;
     private $callback;
 
-    public function __construct(callable $callback = null)
+    public function __construct(?callable $callback = null)
     {
         $this->callback = $callback;
     }

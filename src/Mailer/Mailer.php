@@ -168,7 +168,7 @@ class Mailer implements LoggerAwareInterface
      * @return mixed Depends of transport
      * @throws TransportException if an error occurred during sending of mail.
      */
-    public function massSend(Mail $mail, array $addresses, callable $callback = null)
+    public function massSend(Mail $mail, array $addresses, ?callable $callback = null)
     {
         return $this->getTransport()->massSend($mail, $addresses, $callback);
     }
