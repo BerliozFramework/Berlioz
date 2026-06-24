@@ -9,6 +9,10 @@ on:
   schedule:
     - cron: '0 0 * * *'
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   phpunit:
     runs-on: ubuntu-latest
@@ -40,10 +44,13 @@ jobs:
 
     steps:
       - name: 'Checkout code'
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: 'Setup PHP'
         uses: shivammathur/setup-php@v2
+        env:
+          # Temporary workaround while setup-php@v2 is still Node 20.
+          ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: 'true'
         with:
           php-version: ${{ matrix.php-versions }}
           extensions: fileinfo, intl, mbstring, xml, pdo, pdo-mysql, yaml, amqp, redis
