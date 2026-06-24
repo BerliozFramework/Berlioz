@@ -100,7 +100,8 @@ abstract class AbstractCacheDriverTestCase extends TestCase
         $this->assertEquals($value, $this->getCacheDriver()->get($key));
 
         if (!is_null($ttl)) {
-            sleep($ttl);
+            // Sleep slightly longer than the TTL to avoid an expiry race at the exact boundary.
+            usleep($ttl * 1_000_000 + 500_000);
             $this->assertNull($this->getCacheDriver()->get($key));
             $this->assertEquals('test', $this->getCacheDriver()->get($key, 'test'));
         }
