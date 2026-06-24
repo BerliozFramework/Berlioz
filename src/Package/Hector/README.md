@@ -29,6 +29,64 @@ recommended installation.
 $ composer require berlioz/hector-package
 ```
 
+## Migrations
+
+This package integrates the Hector ORM
+[migration component](https://gethectororm.com/docs/current/components/migration) and exposes it through CLI commands.
+
+Configure the migration source and tracker under the `hector.migration` key:
+
+```json5
+{
+  hector: {
+    migration: {
+      // Provider supplying the migrations: 'directory' | 'psr4' | a container-resolvable FQCN
+      provider: {
+        type: 'directory',
+        directory: '{config: berlioz.directories.app}/migrations',
+        namespace: null, // required when type='psr4'
+        pattern: '*.php',
+        depth: 0
+      },
+      // Tracker recording applied migrations: 'db' | 'file' | a container-resolvable FQCN
+      tracker: {
+        type: 'db',
+        table: 'hector_migrations',
+        file: '{config: berlioz.directories.var}/hector.migrations.json'
+      },
+      schema: null // optional schema name to enable schema introspection
+    }
+  }
+}
+```
+
+### Commands
+
+| Command                  | Description                          |
+|--------------------------|--------------------------------------|
+| `hector:migrate`         | Apply pending migrations             |
+| `hector:migrate:down`    | Revert applied migrations            |
+| `hector:migrate:status`  | Show the status of all migrations    |
+
+Both `hector:migrate` and `hector:migrate:down` accept `--dry-run` and `--interactive` (`-i`):
+
+```shell
+# Apply all pending migrations
+$ php berlioz hector:migrate
+
+# Apply at most N pending migrations
+$ php berlioz hector:migrate --steps=3
+
+# Dry-run: compile and dispatch events without executing (native runner dry-run)
+$ php berlioz hector:migrate --dry-run
+
+# Interactive: ask for confirmation before each migration
+$ php berlioz hector:migrate --interactive
+
+# Revert the last migration, asking for confirmation
+$ php berlioz hector:migrate:down --interactive
+```
+
 ## Documentation
 
 For usage and examples, visit the

@@ -33,4 +33,16 @@ class HectorException extends BerliozException
     {
         return new self('Types config error', previous: $previous);
     }
+
+    /**
+     * Migration config.
+     *
+     * @param Throwable|null $previous
+     *
+     * @return self
+     */
+    public static function migrationConfig(?Throwable $previous = null): self
+    {
+        return new self('Migration config error', previous: $previous);
+    }
 }
