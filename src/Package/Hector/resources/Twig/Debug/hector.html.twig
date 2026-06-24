@@ -25,6 +25,12 @@
             {% endif %}
         </p>
     </div>
+    {% if section.countDuplicates > 0 %}
+        <div class="d-flex align-items-center mt-3">
+            <i class="bi bi-files fs-1 me-3 text-warning"></i>
+            <p class="card-value ms-3 mb-0 text-warning">{{ section.countDuplicates }} <small>duplicates</small></p>
+        </div>
+    {% endif %}
 {% endblock %}
 
 {% block main %}
@@ -64,6 +70,15 @@
                     </div>
                 </div>
             </div>
+            <div class="col-12 col-sm-6 col-md-4 mb-3">
+                <div class="card text-center {{ section.countDuplicates > 0 ? 'text-bg-warning' : 'text-bg-dark' }}">
+                    <div class="card-body">
+                        <i class="bi bi-files fs-1"></i>
+                        <p class="card-value mb-0">{{ section.countDuplicates }}</p>
+                        <p class="card-text">Duplicate queries</p>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <div class="table-responsive">
@@ -79,21 +94,19 @@
                 </tr>
                 </thead>
                 <tbody>
-                {% set avgDuration = section.duration / (section.logs|length) %}
-                {% set limitWarning = avgDuration * 1.15 %}
-                {% set limitDanger = 0.1 %}
                 {% for logEntry in section.logs %}
+                    {% set severity = section.getSeverity(logEntry) %}
                     <tr>
                         <th>{{ loop.index }}</th>
                         <td>{{ logEntry.connection }}</td>
                         <td class="text-nowrap">
-                            {% if logEntry.duration > limitDanger %}
+                            {% if severity == 'danger' %}
                                 <i data-bs-toggle="tooltip"
-                                   title="Very slow query"
+                                   title="Very slow query (>= {{ section.verySlowThreshold|round }}ms)"
                                    class="bi bi-exclamation-triangle-fill text-danger"></i>
-                            {% elseif logEntry.duration > limitWarning %}
+                            {% elseif severity == 'warning' %}
                                 <i data-bs-toggle="tooltip"
-                                   title="Slow query"
+                                   title="Slow query (>= {{ section.slowThreshold|round }}ms)"
                                    class="bi bi-exclamation-triangle-fill text-warning"></i>
                             {% endif %}
                             {{ (logEntry.duration * 1000)|round(3) }}ms
@@ -122,6 +135,27 @@
                                 <pre><code class="sql max-vh-50"
                                            id="hector-statement-{{ loop.index }}">{{ logEntry.statement }}</code></pre>
                             </div>
+                            {% if severity == 'danger' %}
+                                <span class="badge bg-danger mt-2"
+                                      data-bs-toggle="tooltip"
+                                      title="Very slow query (>= {{ section.verySlowThreshold|round }}ms)">
+                                    <i class="bi bi-exclamation-triangle-fill"></i> Very slow query
+                                </span>
+                            {% elseif severity == 'warning' %}
+                                <span class="badge bg-warning mt-2"
+                                      data-bs-toggle="tooltip"
+                                      title="Slow query (>= {{ section.slowThreshold|round }}ms)">
+                                    <i class="bi bi-exclamation-triangle-fill"></i> Slow query
+                                </span>
+                            {% endif %}
+                            {% set duplicateCount = section.getDuplicateCount(loop.index0) %}
+                            {% if duplicateCount is not null %}
+                                <span class="badge bg-warning mt-2"
+                                      data-bs-toggle="tooltip"
+                                      title="This query was executed {{ duplicateCount }} times with the same values">
+                                    <i class="bi bi-files"></i> Executed {{ duplicateCount }}&times;
+                                </span>
+                            {% endif %}
                         </td>
                         <td>
                             <div class="max-vh-50">

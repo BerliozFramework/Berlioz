@@ -10,6 +10,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Copy-to-clipboard buttons on debug console SQL queries (raw and with interpolated values)
+- Detection and highlighting of duplicate SQL queries in the debug console
+- Configurable debug thresholds via `hector.debug` (`slow_query`, `very_slow_query`, `duplicate_threshold`)
+
+### Changed
+
+- Slow-query detection now uses absolute, configurable thresholds instead of a per-request average
+- `HectorSection` now accepts a single `Logger` (the variadic constructor argument has been removed)
 
 ## [3.1.1] - 2026-06-10
 
