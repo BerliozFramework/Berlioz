@@ -410,6 +410,17 @@ What it does:
 After running it, commit everything as `chore(release): prepare v<version>`, then tag `v<version>` to trigger the
 subsplit publication to all mirrors.
 
+## Issues & Pull Requests
+
+`CONTRIBUTING.md` is the source of truth; this is the working convention used in this repo.
+
+- **One issue per bug/feature**, one branch, one PR — keep each PR atomic (a single fix or feature).
+- **Branch naming:** `fix/<slug>` for bugfixes, `feat/<slug>` (or `feature/<slug>`) for features, branched from `3.x`.
+- **Issues** use the templates in `.github/ISSUE_TEMPLATE/`; tag the affected package with a `package: <name>` label (e.g. `package: router`) and include a confirmed reproduction.
+- **PRs** target `3.x`, follow `.github/PULL_REQUEST_TEMPLATE.md`, and link the issue with `closes #N`. A good description has **Summary / Fix / Tests / Validation** sections (test + assertion counts, Rector result).
+- **Do not push fixes directly to `3.x`** — go through a branch + PR even for small changes, so the issue/PR trail stays consistent.
+- Sub-package repos are read-only mirrors: **everything goes through the monorepo.**
+
 ## Tooling
 
 | Tool         | Command                       | Purpose                      |
