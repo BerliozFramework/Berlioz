@@ -59,7 +59,7 @@ class Mail
      * @param array $headers
      *
      * @return static
-     * @throws InvalidArgumentException if one reserved headers is used.
+     * @throws InvalidArgumentException if one reserved headers is used, or a name/value contains CR or LF.
      */
     public function setHeaders(array $headers): Mail
     {
@@ -81,6 +81,18 @@ class Mail
                 },
                 $headers
             );
+
+        // Prevent header injection on each name and value
+        foreach ($headers as $name => $values) {
+            foreach ($values as $value) {
+                if (preg_match('/[\r\n]/', $name . $value)) {
+                    throw new InvalidArgumentException(
+                        'Header name or value must not contain CR or LF characters'
+                    );
+                }
+            }
+        }
+
         $this->headers = $headers;
 
         return $this;
@@ -249,9 +261,15 @@ class Mail
      * @param string $subject
      *
      * @return static
+     * @throws InvalidArgumentException if subject contains CR or LF characters.
      */
     public function setSubject(string $subject): Mail
     {
+        // Prevent header injection
+        if (preg_match('/[\r\n]/', $subject)) {
+            throw new InvalidArgumentException('Subject must not contain CR or LF characters');
+        }
+
         $this->subject = $subject;
 
         return $this;

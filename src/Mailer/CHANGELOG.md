@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+
+- Reject CR/LF in subject, address display name and bulk headers to prevent email header injection
+- Always encode MIME headers (subject, address display name) with a deterministic `UTF-8` charset instead of `mb_detect_encoding()`
+
 ## [3.1.1] - 2026-06-10
 
 _No changes in this release._

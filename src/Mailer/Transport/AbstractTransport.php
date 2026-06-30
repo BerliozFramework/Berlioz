@@ -88,7 +88,7 @@ abstract class AbstractTransport implements TransportInterface
             $headers['Subject'] = [
                 mb_encode_mimeheader(
                     $mail->getSubject(),
-                    mb_detect_encoding($mail->getSubject()),
+                    'UTF-8',
                     'Q'
                 )
             ];
