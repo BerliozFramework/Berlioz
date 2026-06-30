@@ -16,6 +16,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - `FileCacheDriver` now also accepts a directory path string in addition to `DirectoriesInterface`
+- Bump `berlioz/helpers` requirement to `^1.14` (network helpers)
+
+### Security
+
+- Stop trusting `X-Forwarded-For` for the debug IP allow-list; use `REMOTE_ADDR` unless a trusted proxy is configured (`berlioz.proxies.trusted`)
 
 ## [3.1.1] - 2026-06-10
 

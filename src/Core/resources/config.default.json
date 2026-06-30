@@ -6,6 +6,9 @@
       "enable": false,
       "ip": []
     },
+    "proxies": {
+      "trusted": []
+    },
     "directories": {
       "app": "{var: berlioz.directories.app}",
       "cache": "{var: berlioz.directories.cache}",
