@@ -251,4 +251,41 @@ class MessageTest extends TestCase
 
         $this->assertEquals($expected, (string)$message);
     }
+
+    public function testWithHeaderRejectsCRLFInValue()
+    {
+        $message = $this->newMessageObj();
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('must not contain CR, LF or NUL');
+
+        $message->withHeader('X-Foo', "value\r\nX-Injected: evil");
+    }
+
+    public function testWithAddedHeaderRejectsCRLFInValue()
+    {
+        $message = $this->newMessageObj();
+
+        $this->expectException(InvalidArgumentException::class);
+
+        $message->withAddedHeader('X-Foo', "value\r\nX-Injected: evil");
+    }
+
+    public function testWithHeaderRejectsInvalidName()
+    {
+        $message = $this->newMessageObj();
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('not a valid header name');
+
+        $message->withHeader('Bad Name', 'value');
+    }
+
+    public function testWithHeaderAllowsHttp2PseudoHeader()
+    {
+        $message = $this->newMessageObj();
+        $message = $message->withHeader(':method', 'GET');
+
+        $this->assertSame(['GET'], $message->getHeader(':method'));
+    }
 }
