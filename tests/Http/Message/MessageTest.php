@@ -21,6 +21,7 @@ namespace Berlioz\Http\Message\Tests;
 
 use Berlioz\Http\Message\Message;
 use Berlioz\Http\Message\Stream;
+use Berlioz\Http\Message\Stream\MemoryStream;
 use Berlioz\Http\Message\Tests\Parser\FakeParser;
 use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
@@ -270,7 +271,7 @@ class MessageTest extends TestCase
     public function testToString()
     {
         $message = $this->newMessageObj();
-        $message = $message->withBody(new Stream\MemoryStream($expected = '{"foo":"bar"}'));
+        $message = $message->withBody(new MemoryStream($expected = '{"foo":"bar"}'));
 
         $this->assertEquals($expected, (string)$message);
     }
