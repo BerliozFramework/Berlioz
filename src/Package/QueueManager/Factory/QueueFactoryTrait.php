@@ -15,7 +15,7 @@ trait QueueFactoryTrait
         return match (true) {
             is_string($rateLimits) => MultiRateLimiter::createFromString($rateLimits),
             is_array($rateLimits) => new MultiRateLimiter(...array_map(
-                fn(string $rateLimit) => self::getRateLimiterFromConfig($rateLimit),
+                self::getRateLimiterFromConfig(...),
                 $rateLimits,
             )),
             default => new NullRateLimiter(),

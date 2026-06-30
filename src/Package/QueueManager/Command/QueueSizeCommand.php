@@ -80,7 +80,8 @@ class QueueSizeCommand extends AbstractCommand
 
                     if (null !== $queueStats['delayed']) {
                         $env->console()->out(
-                            sprintf('job_queue_delayed{queue_name="%s"%s} %d', $queueName, $labels, $queueStats['delayed'])
+                            sprintf('job_queue_delayed{queue_name="%s"%s} %d', $queueName, $labels,
+                                $queueStats['delayed'])
                         );
                     }
                 }
@@ -97,7 +98,7 @@ class QueueSizeCommand extends AbstractCommand
                 break;
             // RAW format
             default:
-                $padding = $env->console()->padding(max(array_map(fn($v) => strlen($v), array_keys($sizes))));
+                $padding = $env->console()->padding(max(array_map(strlen(...), array_keys($sizes))));
                 foreach ($stats as $queueName => $queueStats) {
                     $waitTime = match ($queueStats['waitTime']) {
                         null => 'n/a',
