@@ -341,7 +341,7 @@ class ClientTest extends TestCase
     public function testRequestWithCallback()
     {
         $nbCallback = 0;
-        $callback = function () use (&$nbCallback) {
+        $callback = function () use (&$nbCallback): void {
             $nbCallback++;
         };
         $client = new Client();
@@ -507,7 +507,7 @@ class ClientTest extends TestCase
     {
         $this->expectException(NetworkException::class);
 
-        $test = function ($request) {
+        $test = function ($request): void {
             throw new NetworkException(message: 'Error', request: $request);
         };
         $client = new Client(adapter: new FakeAdapter($test));

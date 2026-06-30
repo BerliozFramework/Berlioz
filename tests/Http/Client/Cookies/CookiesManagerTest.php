@@ -61,7 +61,7 @@ class CookiesManagerTest extends TestCase
 
         $uri = new Uri('http', 'getberlioz.com');
         $response = new Response(
-        null,
+            null,
             200,
             [
                 'Set-Cookie' =>

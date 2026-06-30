@@ -21,7 +21,7 @@ use Psr\Http\Message\ResponseInterface;
 
 class FakeAdapter implements AdapterInterface
 {
-    public function __construct(private Closure $closure)
+    public function __construct(private readonly Closure $closure)
     {
     }
 
