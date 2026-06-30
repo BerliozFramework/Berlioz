@@ -69,7 +69,7 @@ abstract class AbstractFormTestCase extends TestCase
                         'data_type' => ArrayObject::class,
                         'prototype' => clone $address,
                         'callbacks' => [
-                            'delete' => function () {
+                            'delete' => function (): void {
                                 print 'Callback deletion';
                             },
                         ],

@@ -34,10 +34,10 @@ class CallbackTest extends TestCase
                         'data_type' => ArrayObject::class,
                         'prototype' => new Text(),
                         'callbacks' => [
-                            'add' => function ($collection, $element) use (&$callbackAddCalled) {
+                            'add' => function ($collection, $element) use (&$callbackAddCalled): void {
                                 $callbackAddCalled = $element->getValue();
                             },
-                            'remove' => function ($collection, $element) use (&$callbackRemoveCalled) {
+                            'remove' => function ($collection, $element) use (&$callbackRemoveCalled): void {
                                 $callbackRemoveCalled = $element->getValue();
                             },
                         ],
