@@ -45,9 +45,7 @@ class ServiceProvider extends AbstractServiceProvider
         $container->addService(
             new Service(
                 class: CommandManager::class,
-                factory: function (Config $config) {
-                    return new CommandManager($config->get('commands', []));
-                },
+                factory: fn(Config $config) => new CommandManager($config->get('commands', [])),
                 cacheStrategy: new CacheStrategy($this->core->getCache())
             )
         );

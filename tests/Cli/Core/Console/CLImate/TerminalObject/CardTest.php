@@ -33,11 +33,11 @@ EOF
 
         $this->assertMatchesRegularExpression('/^\s+$/', $firstLine = array_shift($result));
         $this->assertMatchesRegularExpression('/^\s+$/', $lastLine = array_pop($result));
-        $this->assertEquals(strlen($firstLine), strlen($lastLine));
+        $this->assertEquals(strlen((string)$firstLine), strlen((string)$lastLine));
 
         foreach ($result as $line) {
-            $this->assertTrue(str_starts_with($line, '  '));
-            $this->assertTrue(str_ends_with($line, '  '));
+            $this->assertTrue(str_starts_with((string)$line, '  '));
+            $this->assertTrue(str_ends_with((string)$line, '  '));
         }
     }
 }

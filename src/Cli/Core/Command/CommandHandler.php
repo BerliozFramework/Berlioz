@@ -122,7 +122,7 @@ class CommandHandler
         $iException = 0;
 
         do {
-            $text = ($iException > 0 ? 'Next ' : '') . sprintf('[%s] ', get_class($exception)) . PHP_EOL;
+            $text = ($iException > 0 ? 'Next ' : '') . sprintf('[%s] ', $exception::class) . PHP_EOL;
             $text .= $exception->getMessage();
             if (true === $this->core->getDebug()->isEnabled()) {
                 $text .= sprintf(

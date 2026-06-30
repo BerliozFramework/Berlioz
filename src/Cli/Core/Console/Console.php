@@ -15,7 +15,8 @@ declare(strict_types=1);
 namespace Berlioz\Cli\Core\Console;
 
 use Berlioz\Cli\Core\Console\CLImate\ArgumentsManager;
-use Berlioz\Cli\Core\Console\CLImate\TerminalObject;
+use Berlioz\Cli\Core\Console\CLImate\TerminalObject\Card;
+use Berlioz\Cli\Core\Console\CLImate\TerminalObject\Tab;
 use Berlioz\Cli\Core\Exception\CliException;
 use League\CLImate\CLImate;
 
@@ -33,8 +34,8 @@ class Console extends CLImate
         $this->setArgumentManager(new ArgumentsManager());
 
         // Extensions
-        $this->extend(TerminalObject\Card::class, 'card');
-        $this->extend(TerminalObject\Tab::class, 'tab');
+        $this->extend(Card::class, 'card');
+        $this->extend(Tab::class, 'tab');
     }
 
     /**
