@@ -312,6 +312,53 @@ class RouteTest extends AbstractTestCase
         $this->assertFalse($route2->test($this->getServerRequest('/my-path/12-3/value2')));
     }
 
+    public function testTestRouteWithInlineRegexContainingBraces()
+    {
+        $route = new Route('/{param:([0-9]{2}\.?[0-9]{2}[a-zA-Z]{1})}');
+
+        $this->assertEquals('([0-9]{2}\.?[0-9]{2}[a-zA-Z]{1})', $route->getAttribute('param')->getRegex());
+        $this->assertTrue($route->test($this->getServerRequest('/12.34A')));
+        $this->assertTrue($route->test($this->getServerRequest('/1234a')));
+        $this->assertFalse($route->test($this->getServerRequest('/12.34')));
+        $this->assertFalse($route->test($this->getServerRequest('/abcde')));
+    }
+
+    public function testTestRouteWithInlineRegexBracesMatchesRequirements()
+    {
+        $inline = new Route('/{param:([0-9]{2}\.?[0-9]{2}[a-zA-Z]{1})}');
+        $withRequirements = new Route(
+            '/{param}',
+            requirements: ['param' => '([0-9]{2}\.?[0-9]{2}[a-zA-Z]{1})'],
+        );
+
+        foreach (['/12.34A', '/1234a', '/12.34', '/abcde'] as $path) {
+            $this->assertSame(
+                $withRequirements->test($this->getServerRequest($path)),
+                $inline->test($this->getServerRequest($path)),
+                sprintf('Mismatch between inline and requirements form for path "%s"', $path),
+            );
+        }
+    }
+
+    public function testTestRouteWithInlineRegexBracesAndAttributes()
+    {
+        $route = new Route('/{param:[0-9]{2}\.[0-9]{2}}');
+
+        $attributes = [];
+        $this->assertTrue($route->test($this->getServerRequest('/12.34'), $attributes));
+        $this->assertEquals(['param' => '12.34'], $attributes);
+        $this->assertFalse($route->test($this->getServerRequest('/1234')));
+    }
+
+    public function testTestRouteWithInlineRegexBracedQuantifierRange()
+    {
+        $route = new Route('/{page:[0-9]{1,3}}');
+
+        $this->assertTrue($route->test($this->getServerRequest('/7')));
+        $this->assertTrue($route->test($this->getServerRequest('/123')));
+        $this->assertFalse($route->test($this->getServerRequest('/1234')));
+    }
+
     public function testTestRouteWithFloatType()
     {
         $route = new Route('/price/{amount::float}');
