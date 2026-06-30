@@ -75,7 +75,7 @@ class Core
         // Save debug report
         if ($this->debugHandler->isEnabled()) {
             try {
-                $snapshotLoader = new SnapshotLoader($this->filesystem);
+                $snapshotLoader = new SnapshotLoader($this->filesystem, $this->config ?? null);
                 $snapshotLoader->save($this->debugHandler->getSnapshot());
             } catch (Throwable) {
                 trigger_error('Unable to save debug snapshot', E_USER_WARNING);

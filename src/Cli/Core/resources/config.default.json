@@ -1,6 +1,7 @@
 {
   "commands": {
     "berlioz:cache-clear": "Berlioz\\Cli\\Core\\Command\\Berlioz\\CacheClearCommand",
-    "berlioz:config": "Berlioz\\Cli\\Core\\Command\\Berlioz\\ConfigCommand"
+    "berlioz:config": "Berlioz\\Cli\\Core\\Command\\Berlioz\\ConfigCommand",
+    "berlioz:debug-clear": "Berlioz\\Cli\\Core\\Command\\Berlioz\\DebugClearCommand"
   }
 }

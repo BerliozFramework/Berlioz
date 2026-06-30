@@ -16,6 +16,7 @@ namespace Berlioz\Cli\Core;
 
 use Berlioz\Cli\Core\Command\Berlioz\CacheClearCommand;
 use Berlioz\Cli\Core\Command\Berlioz\ConfigCommand;
+use Berlioz\Cli\Core\Command\Berlioz\DebugClearCommand;
 use Berlioz\Cli\Core\Container\ServiceProvider;
 use Berlioz\Config\Adapter\ArrayAdapter;
 use Berlioz\Config\ConfigInterface;
@@ -39,6 +40,7 @@ class BerliozPackage extends AbstractPackage
                 'commands' => [
                     'berlioz:cache-clear' => CacheClearCommand::class,
                     'berlioz:config' => ConfigCommand::class,
+                    'berlioz:debug-clear' => DebugClearCommand::class,
                 ],
             ]
         );

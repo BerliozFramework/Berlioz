@@ -4,7 +4,13 @@
     "locale": null,
     "debug": {
       "enable": false,
-      "ip": []
+      "ip": [],
+      "gc": {
+        "probability": 1,
+        "divisor": 100,
+        "max_age": 7,
+        "max_files": 100
+      }
     },
     "proxies": {
       "trusted": []

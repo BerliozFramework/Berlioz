@@ -14,17 +14,21 @@ declare(strict_types=1);
 
 namespace Berlioz\Core\Debug;
 
+use Berlioz\Config\ConfigInterface;
 use Berlioz\Core\Exception\BerliozException;
 use Berlioz\Core\Filesystem\FilesystemInterface;
 use League\Flysystem\FilesystemException;
+use Throwable;
 
 /**
  * Class SnapshotLoader.
  */
 class SnapshotLoader
 {
-    public function __construct(protected FilesystemInterface $filesystem)
-    {
+    public function __construct(
+        protected FilesystemInterface $filesystem,
+        protected ?ConfigInterface $config = null,
+    ) {
     }
 
     /**
@@ -73,6 +77,45 @@ class SnapshotLoader
             $this->filesystem->write(sprintf('debug://%s.debug', basename($uniqid)), $snapshot);
         } catch (FilesystemException $exception) {
             throw new BerliozException('Filesystem error', 0, $exception);
+        }
+
+        $this->collectGarbage();
+    }
+
+    /**
+     * Run garbage collection on debug snapshots, according to configuration.
+     *
+     * Triggered probabilistically (gc.probability / gc.divisor) to avoid an I/O
+     * cost on every request. Never throws: garbage collection must not break the
+     * application.
+     */
+    protected function collectGarbage(): void
+    {
+        if (null === $this->config) {
+            return;
+        }
+
+        try {
+            $probability = (int)$this->config->get('berlioz.debug.gc.probability', 0);
+            $divisor = (int)$this->config->get('berlioz.debug.gc.divisor', 0);
+
+            if ($probability <= 0 || $divisor <= 0) {
+                return;
+            }
+
+            if (random_int(1, $divisor) > $probability) {
+                return;
+            }
+
+            $maxAge = $this->config->get('berlioz.debug.gc.max_age');
+            $maxFiles = $this->config->get('berlioz.debug.gc.max_files');
+
+            (new SnapshotCleaner($this->filesystem))->clean(
+                null !== $maxAge ? (int)$maxAge : null,
+                null !== $maxFiles ? (int)$maxFiles : null,
+            );
+        } catch (Throwable) {
+            trigger_error('Unable to collect debug snapshots garbage', E_USER_WARNING);
         }
     }
 }
