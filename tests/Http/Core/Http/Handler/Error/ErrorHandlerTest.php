@@ -32,7 +32,7 @@ class ErrorHandlerTest extends TestCase
 
     private function getApp(?Core $core = null): HttpApp
     {
-        $core = $core ?? new Core(new FakeDefaultDirectories(), cache: false);
+        $core ??= new Core(new FakeDefaultDirectories(), cache: false);
         $core->getContainer()->addProvider(new ServiceProvider($core));
         $app = new HttpApp($core);
         $app->getCore()->getConfig()->addConfig(
