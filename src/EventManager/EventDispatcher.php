@@ -140,7 +140,8 @@ class EventDispatcher implements Psr\EventDispatcherInterface, ListenerProviderI
 
             // Delegate (skip if propagation was stopped)
             if (!$event instanceof Psr\StoppableEventInterface || !$event->isPropagationStopped()) {
-                array_walk($this->dispatchers, fn(Psr\EventDispatcherInterface $dispatcher) => $dispatcher->dispatch($event));
+                array_walk($this->dispatchers,
+                    fn(Psr\EventDispatcherInterface $dispatcher) => $dispatcher->dispatch($event));
             }
 
             return $event;

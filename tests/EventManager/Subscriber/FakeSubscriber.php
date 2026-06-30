@@ -46,7 +46,7 @@ class FakeSubscriber extends AbstractSubscriber
                 10
             )
         );
-        $provider->addEventListener($this->subscribed[] = stdClass::class, [$this, 'callEvent']);
+        $provider->addEventListener($this->subscribed[] = stdClass::class, $this->callEvent(...));
     }
 
     public function callEvent(object $event): void
