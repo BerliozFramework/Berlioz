@@ -41,7 +41,7 @@ class DefaultExtension extends AbstractExtension
     public function getFilters(): array
     {
         $filters = [];
-        $filters[] = new TwigFilter('date_format', [$this, 'filterDateFormat']);
+        $filters[] = new TwigFilter('date_format', $this->filterDateFormat(...));
         $filters[] = new TwigFilter('truncate', 'b_str_truncate');
         $filters[] = new TwigFilter('nl2p', 'b_nl2p', ['is_safe' => ['html']]);
         $filters[] = new TwigFilter('human_file_size', 'b_human_file_size');
@@ -59,7 +59,7 @@ class DefaultExtension extends AbstractExtension
     public function getTests(): array
     {
         return [
-            new TwigTest('instance of', [$this, 'testInstanceOf'])
+            new TwigTest('instance of', $this->testInstanceOf(...))
         ];
     }
 

@@ -34,8 +34,8 @@ use Twig\RuntimeLoader\ContainerRuntimeLoader;
 
 class Twig
 {
-    private ChainLoader $loader;
-    private Environment $twig;
+    private readonly ChainLoader $loader;
+    private readonly Environment $twig;
     private ?Profile $profile = null;
 
     /**

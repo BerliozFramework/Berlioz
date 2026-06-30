@@ -105,7 +105,7 @@ class AssetRuntimeExtension
 
         foreach ($entryPoints as $type => $entryPointsByType) {
             foreach ($entryPointsByType as $entryPoint) {
-                $entryPoint = strip_tags($entryPoint);
+                $entryPoint = strip_tags((string)$entryPoint);
 
                 // Preload option
                 $preloadOptions = [];
@@ -232,7 +232,7 @@ class AssetRuntimeExtension
                 continue;
             }
 
-            $output .= ' ' . $key . (true !== $value ? '="' . htmlspecialchars($value) . '"' : '');
+            $output .= ' ' . $key . (true !== $value ? '="' . htmlspecialchars((string)$value) . '"' : '');
         }
 
         return $output;
