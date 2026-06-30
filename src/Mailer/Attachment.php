@@ -101,7 +101,7 @@ class Attachment
             $id .= $source[mt_rand(1, $n) - 1];
         }
 
-        $id .= "@" . (null === $domainName ? "berlioz" : $domainName);
+        $id .= "@" . ($domainName ?? "berlioz");
 
         $this->id = $id;
 

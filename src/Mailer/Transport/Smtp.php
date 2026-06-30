@@ -35,10 +35,6 @@ class Smtp extends AbstractTransport implements TransportInterface, LoggerAwareI
     private $port;
     /** @var int Timeout */
     private $timeout;
-    /** @var string Username */
-    private $username;
-    /** @var string Password */
-    private $password;
     /** @var resource|false Resource */
     private $resource;
 
@@ -53,16 +49,14 @@ class Smtp extends AbstractTransport implements TransportInterface, LoggerAwareI
      */
     public function __construct(
         ?string $host = null,
-        ?string $username = null,
-        ?string $password = null,
+        private ?string $username = null,
+        private ?string $password = null,
         int $port = 25,
         array $options = []
     ) {
         // Defaults
         $this->host = $host ?? 'localhost';
         $this->port = $port ?? 25;
-        $this->username = $username;
-        $this->password = $password;
         $this->timeout = $options['timeout'] ?? 10;
     }
 
@@ -372,7 +366,7 @@ class Smtp extends AbstractTransport implements TransportInterface, LoggerAwareI
             array_merge(
                 $context,
                 [
-                    'class' => __CLASS__,
+                    'class' => self::class,
                     'host' => $this->host
                 ]
             )

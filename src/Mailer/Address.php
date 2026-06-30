@@ -15,11 +15,12 @@ declare(strict_types=1);
 namespace Berlioz\Mailer;
 
 use Berlioz\Mailer\Exception\InvalidArgumentException;
+use Stringable;
 
 /**
  * Class Address.
  */
-class Address
+class Address implements Stringable
 {
     /** @var string Name */
     private $name;
