@@ -16,6 +16,13 @@ namespace Berlioz\Config;
 
 use ArrayObject;
 use Berlioz\Config\Adapter\AdapterInterface;
+use Berlioz\Config\ConfigFunction\ConfigFunction;
+use Berlioz\Config\ConfigFunction\ConfigFunctionInterface;
+use Berlioz\Config\ConfigFunction\ConfigFunctionSet;
+use Berlioz\Config\ConfigFunction\ConstantFunction;
+use Berlioz\Config\ConfigFunction\EnvFunction;
+use Berlioz\Config\ConfigFunction\FileFunction;
+use Berlioz\Config\ConfigFunction\VarFunction;
 use Berlioz\Config\Exception\ConfigException;
 
 /**
@@ -28,7 +35,7 @@ class Config implements ConfigInterface
 
     protected array $configs = [];
     protected ArrayObject $variables;
-    protected ConfigFunction\ConfigFunctionSet $functions;
+    protected ConfigFunctionSet $functions;
 
     /**
      * Config constructor.
@@ -43,13 +50,13 @@ class Config implements ConfigInterface
         $this->addConfig(...$configs);
         $this->variables = new ArrayObject($variables);
 
-        $this->functions = new ConfigFunction\ConfigFunctionSet(
+        $this->functions = new ConfigFunctionSet(
             [
-                new ConfigFunction\ConfigFunction($this),
-                new ConfigFunction\ConstantFunction(),
-                new ConfigFunction\EnvFunction(),
-                new ConfigFunction\FileFunction(),
-                new ConfigFunction\VarFunction($this),
+                new ConfigFunction($this),
+                new ConstantFunction(),
+                new EnvFunction(),
+                new FileFunction(),
+                new VarFunction($this),
             ]
         );
     }
@@ -67,9 +74,9 @@ class Config implements ConfigInterface
     /**
      * Add functions.
      *
-     * @param ConfigFunction\ConfigFunctionInterface ...$function
+     * @param ConfigFunctionInterface ...$function
      */
-    public function addFunction(ConfigFunction\ConfigFunctionInterface ...$function): void
+    public function addFunction(ConfigFunctionInterface ...$function): void
     {
         $this->functions->add(...$function);
     }
@@ -215,7 +222,7 @@ class Config implements ConfigInterface
 
         // Treat recursive values
         if (is_array($value)) {
-            array_walk_recursive($value, [$this, 'treatValue']);
+            array_walk_recursive($value, $this->treatValue(...));
             return;
         }
 
@@ -236,15 +243,15 @@ class Config implements ConfigInterface
         $shift = 0;
         foreach ($matches[0] as $key => $match) {
             $function = $matches['function'][$key][0] ?? 'var';
-            $result = $this->functions->execute($function, trim($matches['value'][$key][0]));
+            $result = $this->functions->execute($function, trim((string) $matches['value'][$key][0]));
 
-            if (strlen($match[0]) == strlen($value)) {
+            if (strlen((string) $match[0]) == strlen($value)) {
                 $value = $result;
                 return;
             }
 
             $result = (string)$result;
-            $value = substr_replace($value, $result, $match[1] + $shift, $length = strlen($match[0]));
+            $value = substr_replace($value, $result, $match[1] + $shift, $length = strlen((string) $match[0]));
             $shift += strlen($result) - $length;
         }
     }
