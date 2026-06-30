@@ -57,7 +57,7 @@ class AutoWiringContainer implements ContainerInterface
             $object = $this->instantiator->newInstanceOf($id);
 
             if (false !== ($implements = class_implements($object))) {
-                array_unshift($implements, get_class($object));
+                array_unshift($implements, $object::class);
                 array_walk($implements, fn(string $implement) => $this->cache[$implement][] = $object);
             }
 

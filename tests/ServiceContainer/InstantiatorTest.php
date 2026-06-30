@@ -23,6 +23,7 @@ use Berlioz\ServiceContainer\Tests\Asset\Service3;
 use Berlioz\ServiceContainer\Tests\Asset\Service4;
 use Berlioz\ServiceContainer\Tests\Asset\Service7;
 use Berlioz\ServiceContainer\Tests\Asset\Service9;
+use Berlioz\ServiceContainer\Tests\Asset\ServiceInterface;
 use Berlioz\ServiceContainer\Tests\Asset\WithDependency2;
 use Berlioz\ServiceContainer\Tests\Asset\WithIntersectionType;
 use Berlioz\ServiceContainer\Tests\Asset\WithoutConstructor;
@@ -305,7 +306,7 @@ class InstantiatorTest extends TestCase
         $instantiator = new Instantiator();
 
         // ServiceInterface is not instantiable, WithoutConstructor is
-        $callback = fn(\Berlioz\ServiceContainer\Tests\Asset\ServiceInterface|WithoutConstructor $dep) => $dep;
+        $callback = fn(ServiceInterface|WithoutConstructor $dep) => $dep;
         $result = $instantiator->call($callback);
 
         $this->assertInstanceOf(WithoutConstructor::class, $result);

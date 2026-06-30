@@ -38,6 +38,6 @@ class Service2 implements ServiceInterface
 
     public static function testStatic(Service1 $service1)
     {
-        return sprintf('It\'s a test "%s"', get_class($service1));
+        return sprintf('It\'s a test "%s"', $service1::class);
     }
 }

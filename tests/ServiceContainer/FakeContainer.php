@@ -13,18 +13,20 @@
 namespace Berlioz\ServiceContainer\Tests;
 
 use Berlioz\ServiceContainer\Container;
+use Berlioz\ServiceContainer\Container\DefaultContainer;
+use Berlioz\ServiceContainer\Container\ProviderContainer;
 use Berlioz\ServiceContainer\Inflector\Inflector;
 use Berlioz\ServiceContainer\Instantiator;
 use Generator;
 
 class FakeContainer extends Container
 {
-    public function getDefaultContainer(): Container\DefaultContainer
+    public function getDefaultContainer(): DefaultContainer
     {
         return $this->container;
     }
 
-    public function getProviderContainer(): Container\ProviderContainer
+    public function getProviderContainer(): ProviderContainer
     {
         return $this->providers;
     }

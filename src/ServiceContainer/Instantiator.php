@@ -26,7 +26,6 @@ use ReflectionFunctionAbstract;
 use ReflectionMethod;
 use ReflectionNamedType;
 use ReflectionParameter;
-use ReflectionType;
 use ReflectionUnionType;
 
 class Instantiator
@@ -220,6 +219,7 @@ class Instantiator
             }
 
             // Search with types
+            $previousException = null;
             if (true === $reflectionParameter->hasType()) {
                 try {
                     foreach ($this->getParameterTypes($reflectionParameter) as $reflectionType) {
@@ -244,6 +244,8 @@ class Instantiator
                         }
                     }
                 } catch (ArgumentException $exception) {
+                    // Reused below to chain the missing sub-parameter as the previous exception.
+                    $previousException = $exception;
                 }
             }
 
@@ -263,7 +265,7 @@ class Instantiator
                 continue;
             }
 
-            throw ArgumentException::missingArgument($parameterName, $reflectionFunction, $exception ?? null);
+            throw ArgumentException::missingArgument($parameterName, $reflectionFunction, $previousException);
         }
 
         return array_intersect_key($arguments, array_fill_keys($parameters, null));
