@@ -418,6 +418,7 @@ subsplit publication to all mirrors.
 - **Branch naming:** `fix/<slug>` for bugfixes, `feat/<slug>` (or `feature/<slug>`) for features, branched from `3.x`.
 - **Issues** use the templates in `.github/ISSUE_TEMPLATE/`; tag the affected package with a `package: <name>` label (e.g. `package: router`) and include a confirmed reproduction.
 - **PRs** target `3.x`, follow `.github/PULL_REQUEST_TEMPLATE.md`, and link the issue with `closes #N`. A good description has **Summary / Fix / Tests / Validation** sections (test + assertion counts, Rector result).
+- **Merging/closing PRs:** prefer **squash merge** to keep a clean, linear history on `3.x` (one commit per PR). The squash commit message must follow Conventional Commits.
 - **Do not push fixes directly to `3.x`** — go through a branch + PR even for small changes, so the issue/PR trail stays consistent.
 - Sub-package repos are read-only mirrors: **everything goes through the monorepo.**
 
