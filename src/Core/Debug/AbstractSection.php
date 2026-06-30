@@ -28,7 +28,7 @@ abstract class AbstractSection implements Section
     {
         $name = mb_strtolower($this->getSectionName());
         $name = preg_replace('#[^\w\-\s]#i', '', $name);
-        $name = preg_replace(['#\s+#', '#-{2,}#', '#_{2,}#i'], ['-', '-', '_'], $name);
+        $name = preg_replace(['#\s+#', '#-{2,}#', '#_{2,}#i'], ['-', '-', '_'], (string)$name);
 
         return $name;
     }

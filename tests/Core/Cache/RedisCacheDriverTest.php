@@ -16,6 +16,7 @@ use Berlioz\Core\Cache\RedisCacheDriver;
 use PHPUnit\Framework\Attributes\RequiresPhpExtension;
 use Psr\SimpleCache\CacheInterface;
 use Redis;
+use Throwable;
 
 #[RequiresPhpExtension('redis')]
 class RedisCacheDriverTest extends AbstractCacheDriverTestCase
@@ -41,7 +42,7 @@ class RedisCacheDriverTest extends AbstractCacheDriverTestCase
             if (false === @$redis->ping()) {
                 return null;
             }
-        } catch (\Throwable) {
+        } catch (Throwable) {
             return null;
         }
 

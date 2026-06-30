@@ -27,7 +27,9 @@ class AbstractAppTest extends TestCase
     {
         $core = new Core(new FakeDefaultDirectories(), false);
         $app = new class($core) extends AbstractApp {
-            protected function boot(): void {}
+            protected function boot(): void
+            {
+            }
         };
 
         return [$app, $core];
@@ -36,7 +38,7 @@ class AbstractAppTest extends TestCase
     public function testGetCore()
     {
         /** @var AbstractApp $app */
-        list($app, $core) = $this->getApp();
+        [$app, $core] = $this->getApp();
 
         $this->assertSame($app->getCore(), $core);
     }
@@ -44,7 +46,7 @@ class AbstractAppTest extends TestCase
     public function testGet()
     {
         /** @var AbstractApp $app */
-        list($app, $core) = $this->getApp();
+        [$app, $core] = $this->getApp();
 
         $this->assertSame($app->get(Assets::class), $core->getContainer()->get(Assets::class));
     }
@@ -52,7 +54,7 @@ class AbstractAppTest extends TestCase
     public function testCall()
     {
         /** @var AbstractApp $app */
-        list($app, $core) = $this->getApp();
+        [$app, $core] = $this->getApp();
         $function = fn(string $value) => 'foo' . $value;
 
         $this->assertEquals('foobar', $app->call($function, ['value' => 'bar']));
@@ -65,7 +67,7 @@ class AbstractAppTest extends TestCase
     public function testGetAssets()
     {
         /** @var AbstractApp $app */
-        list($app, $core) = $this->getApp();
+        [$app, $core] = $this->getApp();
 
         $this->assertSame($app->getAssets(), $core->getContainer()->get(Assets::class));
     }
@@ -73,7 +75,7 @@ class AbstractAppTest extends TestCase
     public function testGetConfig()
     {
         /** @var AbstractApp $app */
-        list($app, $core) = $this->getApp();
+        [$app, $core] = $this->getApp();
 
         $this->assertSame($app->getConfig(), $core->getConfig());
     }
@@ -81,7 +83,7 @@ class AbstractAppTest extends TestCase
     public function testGetConfigKey()
     {
         /** @var AbstractApp $app */
-        list($app, $core) = $this->getApp();
+        [$app, $core] = $this->getApp();
 
         $this->assertEquals($app->getConfigKey('berlioz.http'), $core->getConfig()->get('berlioz.http'));
     }
@@ -89,7 +91,7 @@ class AbstractAppTest extends TestCase
     public function testGetConfigKey_withDefaultValue()
     {
         /** @var AbstractApp $app */
-        list($app, $core) = $this->getApp();
+        [$app, $core] = $this->getApp();
 
         $this->assertEquals('foo', $app->getConfigKey('berlioz.fake', 'foo'));
         $this->assertEquals($app->getConfigKey('berlioz.fake', 'foo'), $core->getConfig()->get('berlioz.fake', 'foo'));
@@ -98,7 +100,7 @@ class AbstractAppTest extends TestCase
     public function testGetDebug()
     {
         /** @var AbstractApp $app */
-        list($app, $core) = $this->getApp();
+        [$app, $core] = $this->getApp();
 
         $this->assertSame($app->getDebug(), $core->getDebug());
     }

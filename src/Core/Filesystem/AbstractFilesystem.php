@@ -37,7 +37,7 @@ abstract class AbstractFilesystem implements FilesystemInterface
             throw UnableToResolveFilesystemMount::becauseTheSeparatorIsMissing($path);
         }
 
-        list($identifier, $path) = explode('://', $path, 2);
+        [$identifier, $path] = explode('://', $path, 2);
 
         return [
             'identifier' => $identifier,
@@ -51,7 +51,7 @@ abstract class AbstractFilesystem implements FilesystemInterface
      */
     public function fileExists(string $location): bool
     {
-        list('path' => $path, 'filesystem' => $filesystem) = $this->determineFilesystemAndPath($location);
+        ['path' => $path, 'filesystem' => $filesystem] = $this->determineFilesystemAndPath($location);
 
         return $filesystem->fileExists($path);
     }
@@ -61,7 +61,7 @@ abstract class AbstractFilesystem implements FilesystemInterface
      */
     public function directoryExists(string $location): bool
     {
-        list('path' => $path, 'filesystem' => $filesystem) = $this->determineFilesystemAndPath($location);
+        ['path' => $path, 'filesystem' => $filesystem] = $this->determineFilesystemAndPath($location);
 
         if (false === method_exists($filesystem, 'directoryExists')) {
             throw new RuntimeException('Need library league/flysystem ^3.0');
@@ -75,7 +75,7 @@ abstract class AbstractFilesystem implements FilesystemInterface
      */
     public function has(string $location): bool
     {
-        list('path' => $path, 'filesystem' => $filesystem) = $this->determineFilesystemAndPath($location);
+        ['path' => $path, 'filesystem' => $filesystem] = $this->determineFilesystemAndPath($location);
 
         if (false === method_exists($filesystem, 'has')) {
             throw new RuntimeException('Need library league/flysystem ^3.0');
@@ -89,7 +89,7 @@ abstract class AbstractFilesystem implements FilesystemInterface
      */
     public function write(string $location, string $contents, array $config = []): void
     {
-        list('path' => $path, 'filesystem' => $filesystem) = $this->determineFilesystemAndPath($location);
+        ['path' => $path, 'filesystem' => $filesystem] = $this->determineFilesystemAndPath($location);
 
         $filesystem->write($path, $contents, $config);
     }
@@ -99,7 +99,7 @@ abstract class AbstractFilesystem implements FilesystemInterface
      */
     public function writeStream(string $location, $contents, array $config = []): void
     {
-        list('path' => $path, 'filesystem' => $filesystem) = $this->determineFilesystemAndPath($location);
+        ['path' => $path, 'filesystem' => $filesystem] = $this->determineFilesystemAndPath($location);
 
         $filesystem->writeStream($path, $contents, $config);
     }
@@ -109,7 +109,7 @@ abstract class AbstractFilesystem implements FilesystemInterface
      */
     public function read(string $location): string
     {
-        list('path' => $path, 'filesystem' => $filesystem) = $this->determineFilesystemAndPath($location);
+        ['path' => $path, 'filesystem' => $filesystem] = $this->determineFilesystemAndPath($location);
 
         return $filesystem->read($path);
     }
@@ -119,7 +119,7 @@ abstract class AbstractFilesystem implements FilesystemInterface
      */
     public function readStream(string $location)
     {
-        list('path' => $path, 'filesystem' => $filesystem) = $this->determineFilesystemAndPath($location);
+        ['path' => $path, 'filesystem' => $filesystem] = $this->determineFilesystemAndPath($location);
 
         return $filesystem->readStream($path);
     }
@@ -129,7 +129,7 @@ abstract class AbstractFilesystem implements FilesystemInterface
      */
     public function delete(string $location): void
     {
-        list('path' => $path, 'filesystem' => $filesystem) = $this->determineFilesystemAndPath($location);
+        ['path' => $path, 'filesystem' => $filesystem] = $this->determineFilesystemAndPath($location);
 
         $filesystem->delete($path);
     }
@@ -139,7 +139,7 @@ abstract class AbstractFilesystem implements FilesystemInterface
      */
     public function deleteDirectory(string $location): void
     {
-        list('path' => $path, 'filesystem' => $filesystem) = $this->determineFilesystemAndPath($location);
+        ['path' => $path, 'filesystem' => $filesystem] = $this->determineFilesystemAndPath($location);
 
         $filesystem->deleteDirectory($path);
     }
@@ -149,7 +149,7 @@ abstract class AbstractFilesystem implements FilesystemInterface
      */
     public function createDirectory(string $location, array $config = []): void
     {
-        list('path' => $path, 'filesystem' => $filesystem) = $this->determineFilesystemAndPath($location);
+        ['path' => $path, 'filesystem' => $filesystem] = $this->determineFilesystemAndPath($location);
 
         $filesystem->createDirectory($path, $config);
     }
@@ -159,7 +159,7 @@ abstract class AbstractFilesystem implements FilesystemInterface
      */
     public function setVisibility(string $path, string $visibility): void
     {
-        list('path' => $path, 'filesystem' => $filesystem) = $this->determineFilesystemAndPath($path);
+        ['path' => $path, 'filesystem' => $filesystem] = $this->determineFilesystemAndPath($path);
 
         $filesystem->setVisibility($path, $visibility);
     }
@@ -169,7 +169,7 @@ abstract class AbstractFilesystem implements FilesystemInterface
      */
     public function visibility(string $path): string
     {
-        list('path' => $path, 'filesystem' => $filesystem) = $this->determineFilesystemAndPath($path);
+        ['path' => $path, 'filesystem' => $filesystem] = $this->determineFilesystemAndPath($path);
 
         return $filesystem->visibility($path);
     }
@@ -179,7 +179,7 @@ abstract class AbstractFilesystem implements FilesystemInterface
      */
     public function mimeType(string $path): string
     {
-        list('path' => $path, 'filesystem' => $filesystem) = $this->determineFilesystemAndPath($path);
+        ['path' => $path, 'filesystem' => $filesystem] = $this->determineFilesystemAndPath($path);
 
         return $filesystem->mimeType($path);
     }
@@ -189,7 +189,7 @@ abstract class AbstractFilesystem implements FilesystemInterface
      */
     public function lastModified(string $path): int
     {
-        list('path' => $path, 'filesystem' => $filesystem) = $this->determineFilesystemAndPath($path);
+        ['path' => $path, 'filesystem' => $filesystem] = $this->determineFilesystemAndPath($path);
 
         return $filesystem->lastModified($path);
     }
@@ -199,7 +199,7 @@ abstract class AbstractFilesystem implements FilesystemInterface
      */
     public function fileSize(string $path): int
     {
-        list('path' => $path, 'filesystem' => $filesystem) = $this->determineFilesystemAndPath($path);
+        ['path' => $path, 'filesystem' => $filesystem] = $this->determineFilesystemAndPath($path);
 
         return $filesystem->fileSize($path);
     }
@@ -209,18 +209,17 @@ abstract class AbstractFilesystem implements FilesystemInterface
      */
     public function listContents(string $location, bool $deep = self::LIST_SHALLOW): DirectoryListing
     {
-        list(
+        [
             'identifier' => $identifier,
             'path' => $path,
             'filesystem' => $filesystem
-            ) = $this->determineFilesystemAndPath($location);
+        ] = $this->determineFilesystemAndPath($location);
 
         return $filesystem
             ->listContents($path, $deep)
             ->map(
-                function (StorageAttributes $attributes) use ($identifier) {
-                    return $attributes->withPath(sprintf('%s://%s', $identifier, $attributes->path()));
-                }
+                fn(StorageAttributes $attributes) => $attributes->withPath(sprintf('%s://%s', $identifier,
+                    $attributes->path()))
             );
     }
 
@@ -229,8 +228,8 @@ abstract class AbstractFilesystem implements FilesystemInterface
      */
     public function move(string $source, string $destination, array $config = []): void
     {
-        list('path' => $sourcePath, 'filesystem' => $sourceFs) = $this->determineFilesystemAndPath($source);
-        list('path' => $destPath, 'filesystem' => $destFs) = $this->determineFilesystemAndPath($destination);
+        ['path' => $sourcePath, 'filesystem' => $sourceFs] = $this->determineFilesystemAndPath($source);
+        ['path' => $destPath, 'filesystem' => $destFs] = $this->determineFilesystemAndPath($destination);
 
         if ($sourceFs === $destFs) {
             $sourceFs->move($sourcePath, $destPath, $config);
@@ -246,8 +245,8 @@ abstract class AbstractFilesystem implements FilesystemInterface
      */
     public function copy(string $source, string $destination, array $config = []): void
     {
-        list('path' => $sourcePath, 'filesystem' => $sourceFs) = $this->determineFilesystemAndPath($source);
-        list('path' => $destPath, 'filesystem' => $destFs) = $this->determineFilesystemAndPath($destination);
+        ['path' => $sourcePath, 'filesystem' => $sourceFs] = $this->determineFilesystemAndPath($source);
+        ['path' => $destPath, 'filesystem' => $destFs] = $this->determineFilesystemAndPath($destination);
 
         if ($sourceFs === $destFs) {
             $sourceFs->copy($sourcePath, $destPath, $config);

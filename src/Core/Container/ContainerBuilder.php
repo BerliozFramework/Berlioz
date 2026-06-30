@@ -14,6 +14,8 @@ declare(strict_types=1);
 
 namespace Berlioz\Core\Container;
 
+use Berlioz\Core\Container\Provider\AppServiceProvider;
+use Berlioz\Core\Container\Provider\CoreServiceProvider;
 use Berlioz\Core\Core;
 use Berlioz\Core\Exception\BerliozException;
 use Berlioz\Core\Exception\ConfigException as BConfigException;
@@ -64,8 +66,8 @@ class ContainerBuilder
     public function addDefaultProviders(): void
     {
         $this->container->addProvider(
-            new Provider\CoreServiceProvider($this->core),
-            new Provider\AppServiceProvider($this->core)
+            new CoreServiceProvider($this->core),
+            new AppServiceProvider($this->core)
         );
     }
 
@@ -80,7 +82,7 @@ class ContainerBuilder
             $providers = (array)$this->core->getConfig()->get('container.providers', []);
             array_walk(
                 $providers,
-                function (&$provider) {
+                function (&$provider): void {
                     if (false === is_string($provider)) {
                         throw BConfigException::serviceProvidersConfig();
                     }

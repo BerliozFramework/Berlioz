@@ -91,7 +91,7 @@ class PackageSet
     {
         array_walk(
             $package,
-            function ($class) {
+            function ($class): void {
                 if (!is_a($class, PackageInterface::class, true)) {
                     throw PackageException::invalidPackage($class);
                 }

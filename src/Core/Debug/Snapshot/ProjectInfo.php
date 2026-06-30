@@ -24,7 +24,7 @@ class ProjectInfo
     private array $declaredClasses;
     private array $includedFiles;
 
-    public function __construct(private Composer $composer)
+    public function __construct(private readonly Composer $composer)
     {
         $this->snap();
     }

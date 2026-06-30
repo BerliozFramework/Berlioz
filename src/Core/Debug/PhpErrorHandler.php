@@ -50,7 +50,7 @@ class PhpErrorHandler
      */
     public function handle(): void
     {
-        set_error_handler([$this, 'handler']);
+        set_error_handler($this->handler(...));
     }
 
     /**

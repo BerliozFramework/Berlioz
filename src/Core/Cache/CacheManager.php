@@ -42,7 +42,7 @@ class CacheManager implements CacheInterface
                     return new FileCacheDriver($directories);
                 }
 
-                $this->class = get_class($cache);
+                $this->class = $cache::class;
 
                 return $cache;
             })(

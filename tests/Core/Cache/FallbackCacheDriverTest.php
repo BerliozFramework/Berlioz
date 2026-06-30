@@ -18,6 +18,7 @@ use Berlioz\Core\Exception\CacheException;
 use Berlioz\Core\Exception\InvalidArgumentCacheException;
 use PHPUnit\Framework\TestCase;
 use Psr\SimpleCache\CacheInterface;
+use stdClass;
 
 class FallbackCacheDriverTest extends TestCase
 {
@@ -32,7 +33,7 @@ class FallbackCacheDriverTest extends TestCase
     {
         $this->expectException(InvalidArgumentCacheException::class);
 
-        new FallbackCacheDriver([new \stdClass()]);
+        new FallbackCacheDriver([new stdClass()]);
     }
 
     public function testGetFallsBackOnFailure()

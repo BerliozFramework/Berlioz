@@ -73,7 +73,7 @@ abstract class JsonAsset
 
         // Standardize directory separator
         $standardizeSeparator =
-            function (&$value) {
+            function (&$value): void {
                 $value = str_replace('\\', '/', $value);
             };
         $keys = (array)array_keys($assets);

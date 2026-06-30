@@ -70,7 +70,7 @@ class EntryPoints extends JsonAsset
 
             array_walk(
                 $tmp,
-                function (&$value) {
+                function (&$value): void {
                     if (!is_array($value)) {
                         $value = [$value];
                     }
