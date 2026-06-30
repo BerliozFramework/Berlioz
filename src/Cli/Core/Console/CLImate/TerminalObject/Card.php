@@ -36,7 +36,7 @@ class Card extends BasicTerminalObject
         $width = $this->util->width() - 1;
         $strMaxWidth = $width - (2 * $this->xPadding);
         $str = preg_split('/\r\n|\r|\n/', $this->str);
-        array_walk($str, fn(&$line) => $line = mb_str_split($line, $strMaxWidth));
+        array_walk($str, fn(&$line) => $line = mb_str_split((string)$line, $strMaxWidth));
         $str = array_merge(...$str);
 
         $yPaddingArray = array_fill(0, $this->yPadding, str_repeat(' ', $width));
@@ -45,7 +45,7 @@ class Card extends BasicTerminalObject
             $str,
             fn(&$line) => $line =
                 str_repeat(' ', $this->xPadding) .
-                $line . str_repeat(' ', max(0, $strMaxWidth - mb_strlen($line))) .
+                $line . str_repeat(' ', max(0, $strMaxWidth - mb_strlen((string)$line))) .
                 str_repeat(' ', $this->xPadding)
         );
         array_unshift($str, ...$yPaddingArray);

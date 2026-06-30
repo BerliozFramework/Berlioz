@@ -23,14 +23,14 @@ use Attribute;
 class Argument
 {
     public function __construct(
-        private string $name,
-        private ?string $prefix = null,
-        private ?string $longPrefix = null,
-        private ?string $description = null,
-        private mixed $defaultValue = null,
-        private bool $required = false,
-        private bool $noValue = false,
-        private ?string $castTo = null,
+        private readonly string $name,
+        private readonly ?string $prefix = null,
+        private readonly ?string $longPrefix = null,
+        private readonly ?string $description = null,
+        private readonly mixed $defaultValue = null,
+        private readonly bool $required = false,
+        private readonly bool $noValue = false,
+        private readonly ?string $castTo = null,
     ) {
     }
 

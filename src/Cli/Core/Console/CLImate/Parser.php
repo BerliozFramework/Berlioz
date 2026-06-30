@@ -35,7 +35,7 @@ class Parser extends CLImateParser
         $executable = array_shift($arguments);
         $command = array_shift($arguments);
 
-        if (null !== $command && str_starts_with($command, '-')) {
+        if (null !== $command && str_starts_with((string)$command, '-')) {
             array_unshift($arguments, $command);
             $command = null;
         }

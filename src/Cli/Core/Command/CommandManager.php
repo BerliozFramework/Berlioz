@@ -106,9 +106,7 @@ class CommandManager implements Countable
             $reflectionClass = new RClass($class);
             $attributes =
                 array_map(
-                    function (RAttribute $reflectionAttribute) {
-                        return $reflectionAttribute->newInstance();
-                    },
+                    fn(RAttribute $reflectionAttribute) => $reflectionAttribute->newInstance(),
                     $reflectionClass->getAttributes(Argument::class, RAttribute::IS_INSTANCEOF)
                 );
 
