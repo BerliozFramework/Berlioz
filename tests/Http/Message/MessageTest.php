@@ -202,6 +202,29 @@ class MessageTest extends TestCase
         $this->assertObjectHasProperty('json', $message->getParsedBody());
     }
 
+    public function testGetParsedBodyWithMalformedContentType()
+    {
+        $message = $this->newMessageObj();
+        $stream = new Stream();
+        $stream->write('{"json": true}');
+        // Content-Type without a subtype must not trigger a warning and must yield no parsed body.
+        $message = $message->withBody($stream)
+            ->withHeader('Content-Type', 'json');
+
+        $this->assertNull($message->getParsedBody());
+    }
+
+    public function testGetParsedBodyWithStructuredSyntaxSuffix()
+    {
+        $message = $this->newMessageObj();
+        $stream = new Stream();
+        $stream->write('{"json": true}');
+        $message = $message->withBody($stream)
+            ->withHeader('Content-Type', 'application/vnd.api+json; charset=utf-8');
+
+        $this->assertObjectHasProperty('json', $message->getParsedBody());
+    }
+
     public function testWithParsedBody()
     {
         $message = $this->newMessageObj();
