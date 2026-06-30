@@ -23,11 +23,12 @@ use Hector\Connection\Bind\BindParam;
 use Hector\Connection\Log\LogEntry;
 use Hector\Connection\Log\Logger;
 use PDO;
+use Stringable;
 
 /**
  * Class HectorSection.
  */
-class HectorSection extends AbstractSection implements Countable
+class HectorSection extends AbstractSection implements Countable, Stringable
 {
     private array $logs = [];
     private array $interpolated = [];
@@ -145,13 +146,13 @@ class HectorSection extends AbstractSection implements Countable
                 $statement = preg_replace(
                     '/' . preg_quote($placeholder, '/') . '\b/',
                     addcslashes($value, '\\$'),
-                    $statement,
+                    (string)$statement,
                     1,
                 );
                 continue;
             }
 
-            $statement = preg_replace('/\?/', addcslashes($value, '\\$'), $statement, 1);
+            $statement = preg_replace('/\?/', addcslashes($value, '\\$'), (string)$statement, 1);
         }
 
         return $statement;

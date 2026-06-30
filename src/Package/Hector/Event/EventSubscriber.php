@@ -59,7 +59,7 @@ class EventSubscriber extends AbstractSubscriber
     {
         $methods = [];
 
-        switch (get_class($event)) {
+        switch ($event::class) {
             case EntityBeforeSaveEvent::class:
                 $methods[] = 'onBeforeSave';
                 /** @var EntityBeforeSaveEvent $event */

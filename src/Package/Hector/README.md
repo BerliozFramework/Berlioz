@@ -31,4 +31,5 @@ $ composer require berlioz/hector-package
 
 ## Documentation
 
-For usage and examples, visit the [official documentation on **getberlioz.com**](https://getberlioz.com/docs/3.x/guides/orm/hector).
+For usage and examples, visit the
+[official documentation on **getberlioz.com**](https://getberlioz.com/docs/3.x/guides/orm/hector).
