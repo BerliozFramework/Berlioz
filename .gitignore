@@ -11,3 +11,7 @@ phpunit.xml
 /.idea
 /.vscode
 /.fleet
+
+# Local working files
+/.audit
+
