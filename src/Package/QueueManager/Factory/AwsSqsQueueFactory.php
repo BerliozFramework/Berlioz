@@ -50,7 +50,8 @@ class AwsSqsQueueFactory implements QueueFactory
 
             $queueUrl = $queue['url'] ?? null;
             if (!is_string($queueUrl) || '' === trim($queueUrl)) {
-                throw new ConfigException(sprintf('Missing or invalid SQS queue URL for queue "%s"', (string)$queueName));
+                throw new ConfigException(sprintf('Missing or invalid SQS queue URL for queue "%s"',
+                    (string)$queueName));
             }
 
             yield new AwsSqsQueue(
