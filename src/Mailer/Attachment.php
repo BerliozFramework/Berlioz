@@ -81,7 +81,7 @@ class Attachment
      *
      * @return string
      */
-    public function getId(string $domainName = null): string
+    public function getId(?string $domainName = null): string
     {
         if (null !== $this->id) {
             return $this->id;

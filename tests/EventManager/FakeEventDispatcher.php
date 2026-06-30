@@ -23,7 +23,7 @@ class FakeEventDispatcher extends EventDispatcher
     public function __construct(
         array $providers = [],
         array $dispatchers = [],
-        ListenerProviderInterface $defaultProvider = null
+        ?ListenerProviderInterface $defaultProvider = null
     ) {
         parent::__construct($providers, $dispatchers, $defaultProvider);
 

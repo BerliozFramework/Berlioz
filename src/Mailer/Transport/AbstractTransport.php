@@ -31,7 +31,7 @@ abstract class AbstractTransport implements TransportInterface
      * @inheritDoc
      * @return array
      */
-    public function massSend(Mail $mail, array $addresses, callable $callback = null): array
+    public function massSend(Mail $mail, array $addresses, ?callable $callback = null): array
     {
         $result = [];
 
@@ -270,7 +270,7 @@ abstract class AbstractTransport implements TransportInterface
      *
      * @return string
      */
-    protected function getBoundary(string $type, string $prefix = null, int $length = 12): string
+    protected function getBoundary(string $type, ?string $prefix = null, int $length = 12): string
     {
         if (!empty($this->boundaries[$type])) {
             return $this->boundaries[$type];

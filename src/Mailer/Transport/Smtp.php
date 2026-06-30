@@ -52,9 +52,9 @@ class Smtp extends AbstractTransport implements TransportInterface, LoggerAwareI
      * @param array $options
      */
     public function __construct(
-        string $host = null,
-        string $username = null,
-        string $password = null,
+        ?string $host = null,
+        ?string $username = null,
+        ?string $password = null,
         int $port = 25,
         array $options = []
     ) {
@@ -342,7 +342,7 @@ class Smtp extends AbstractTransport implements TransportInterface, LoggerAwareI
      * @inheritDoc
      * @return void
      */
-    public function massSend(Mail $mail, array $addresses, callable $callback = null): array
+    public function massSend(Mail $mail, array $addresses, ?callable $callback = null): array
     {
         if (!$this->isConnected()) {
             $this->connect();

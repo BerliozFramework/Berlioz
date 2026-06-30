@@ -17,7 +17,7 @@ class FakeTransport extends AbstractTransport
         return parent::getContents($mail);
     }
 
-    public function getBoundary(string $type, string $prefix = null, int $length = 12): string
+    public function getBoundary(string $type, ?string $prefix = null, int $length = 12): string
     {
         return parent::getBoundary($type, $prefix, $length);
     }

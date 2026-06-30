@@ -24,7 +24,7 @@ class FakeRequestHandler implements RequestHandlerInterface
     private bool $handled = false;
     private $callback;
 
-    public function __construct(callable $callback = null)
+    public function __construct(?callable $callback = null)
     {
         $this->callback = $callback;
     }
