@@ -49,13 +49,22 @@ class ServiceProvider extends AbstractServiceProvider
         $connectionService
             ->setFactory(
                 function (Core $core) {
-                    $options = $core->getConfig()->get('hector');
+                    $config = $core->getConfig();
+                    $options = $config->get('hector');
                     $options['log'] = $options['log'] ?? $core->getDebug()->isEnabled();
 
                     $connection = OrmFactory::connection($options);
 
                     if (true === $core->getDebug()->isEnabled()) {
-                        $core->getDebug()->addSection(new HectorSection($connection->getLogger()));
+                        $section = new HectorSection($connection->getLogger());
+                        $section
+                            ->setThresholds(
+                                (float)$config->get('hector.debug.slow_query', 50),
+                                (float)$config->get('hector.debug.very_slow_query', 100),
+                            )
+                            ->setDuplicateThreshold((int)$config->get('hector.debug.duplicate_threshold', 2));
+
+                        $core->getDebug()->addSection($section);
                     }
 
                     return $connection;

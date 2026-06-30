@@ -52,6 +52,13 @@ class BerliozPackage extends AbstractPackage
                     'schemas' => [],
                     'dynamic_events' => true,
                     'types' => [],
+                    'debug' => [
+                        // Thresholds in milliseconds for the debug console.
+                        'slow_query' => 50,
+                        'very_slow_query' => 100,
+                        // Number of identical executions from which a query is reported as duplicate.
+                        'duplicate_threshold' => 2,
+                    ],
                 ],
                 'commands' => [
                     'hector:cache-clear' => CacheClearCommand::class,

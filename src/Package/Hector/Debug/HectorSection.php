@@ -29,18 +29,51 @@ use PDO;
  */
 class HectorSection extends AbstractSection implements Countable
 {
-    private array $loggers;
     private array $logs = [];
     private array $interpolated = [];
+    private array $duplicates = [];
+    private int $redundant = 0;
+    private float $slowThreshold = 0.05;
+    private float $verySlowThreshold = 0.1;
+    private int $duplicateThreshold = 2;
 
     /**
      * Hector constructor.
      *
-     * @param Logger ...$logger
+     * @param Logger|null $logger
      */
-    public function __construct(Logger ...$logger)
+    public function __construct(private ?Logger $logger = null)
     {
-        $this->loggers = $logger;
+    }
+
+    /**
+     * Set slow-query thresholds.
+     *
+     * @param float $slowMs Threshold in milliseconds for a slow query (warning).
+     * @param float $verySlowMs Threshold in milliseconds for a very slow query (danger).
+     *
+     * @return static
+     */
+    public function setThresholds(float $slowMs, float $verySlowMs): static
+    {
+        $this->slowThreshold = $slowMs / 1000;
+        $this->verySlowThreshold = $verySlowMs / 1000;
+
+        return $this;
+    }
+
+    /**
+     * Set the duplicate threshold.
+     *
+     * @param int $threshold Number of identical executions from which a query is reported.
+     *
+     * @return static
+     */
+    public function setDuplicateThreshold(int $threshold): static
+    {
+        $this->duplicateThreshold = max(2, $threshold);
+
+        return $this;
     }
 
     /**
@@ -50,8 +83,14 @@ class HectorSection extends AbstractSection implements Countable
     {
         $sqlFormatter = new SqlFormatter(new NullHighlighter());
 
-        $this->logs = array_merge(...array_map(fn(Logger $logger) => $logger->getLogs(), $this->loggers));
+        $this->logs = array_values($this->logger?->getLogs() ?? []);
         $this->interpolated = [];
+        $this->duplicates = [];
+        $this->redundant = 0;
+
+        // Compute duplicate occurrences from the raw entries (before SQL formatting).
+        $this->computeDuplicates($this->logs);
+
         $this->logs = array_map(
             function (LogEntry $entry, int $index) use ($sqlFormatter) {
                 if ($entry->getType() !== LogEntry::TYPE_QUERY) {
@@ -119,6 +158,69 @@ class HectorSection extends AbstractSection implements Countable
     }
 
     /**
+     * Compute duplicate occurrences from the given log entries.
+     *
+     * Two queries are considered duplicates when they share the same connection,
+     * the same raw statement and the same bound parameter values. Each duplicated
+     * log index is mapped to the total number of times the query was executed.
+     * Unique queries are not stored.
+     *
+     * @param LogEntry[] $logs
+     */
+    private function computeDuplicates(array $logs): void
+    {
+        $signatures = [];
+
+        // First pass: gather log indexes sharing the same signature.
+        foreach ($logs as $index => $entry) {
+            if ($entry->getType() !== LogEntry::TYPE_QUERY) {
+                continue;
+            }
+
+            $signatures[$this->signature($entry)][] = $index;
+        }
+
+        // Second pass: map each duplicated index to its number of occurrences.
+        foreach ($signatures as $indexes) {
+            $count = count($indexes);
+            if ($count < $this->duplicateThreshold) {
+                continue;
+            }
+
+            // For a group of N identical queries, N-1 are redundant.
+            $this->redundant += $count - 1;
+
+            foreach ($indexes as $index) {
+                $this->duplicates[$index] = $count;
+            }
+        }
+    }
+
+    /**
+     * Compute the duplicate signature of a log entry.
+     *
+     * @param LogEntry $entry
+     *
+     * @return string
+     */
+    private function signature(LogEntry $entry): string
+    {
+        $values = [];
+
+        foreach ($entry->getParameters() as $parameter) {
+            if (!$parameter instanceof BindParam) {
+                continue;
+            }
+
+            $values[] = $parameter->getName()
+                . '=' . $parameter->getDataType()
+                . ':' . $this->quoteValue($parameter->getValue(), $parameter->getDataType());
+        }
+
+        return hash('xxh128', $entry->getConnection() . "\0" . $entry->getStatement() . "\0" . implode('|', $values));
+    }
+
+    /**
      * Quote value according to its PDO data type.
      *
      * @param mixed $value
@@ -156,6 +258,11 @@ class HectorSection extends AbstractSection implements Countable
         return [
             'logs' => $this->logs,
             'interpolated' => $this->interpolated,
+            'duplicates' => $this->duplicates,
+            'redundant' => $this->redundant,
+            'slowThreshold' => $this->slowThreshold,
+            'verySlowThreshold' => $this->verySlowThreshold,
+            'duplicateThreshold' => $this->duplicateThreshold,
         ];
     }
 
@@ -166,9 +273,14 @@ class HectorSection extends AbstractSection implements Countable
      */
     public function __unserialize(array $data): void
     {
-        $this->loggers = [];
+        $this->logger = null;
         $this->logs = $data['logs'] ?? [];
         $this->interpolated = $data['interpolated'] ?? [];
+        $this->duplicates = $data['duplicates'] ?? [];
+        $this->redundant = $data['redundant'] ?? 0;
+        $this->slowThreshold = $data['slowThreshold'] ?? 0.05;
+        $this->verySlowThreshold = $data['verySlowThreshold'] ?? 0.1;
+        $this->duplicateThreshold = $data['duplicateThreshold'] ?? 2;
     }
 
     /**
@@ -217,6 +329,80 @@ class HectorSection extends AbstractSection implements Countable
     public function getInterpolatedStatement(int $index): ?string
     {
         return $this->interpolated[$index] ?? null;
+    }
+
+    /**
+     * Get the number of occurrences of the query at the given log index.
+     *
+     * Returns how many times an identical query (same connection, statement and
+     * parameter values) was executed, or null if the query is unique.
+     *
+     * @param int $index
+     *
+     * @return int|null
+     */
+    public function getDuplicateCount(int $index): ?int
+    {
+        return $this->duplicates[$index] ?? null;
+    }
+
+    /**
+     * Count redundant query executions.
+     *
+     * Returns the number of queries that could have been saved, i.e. the
+     * occurrences beyond the first one of each duplicated query.
+     *
+     * @return int
+     */
+    public function countDuplicates(): int
+    {
+        return $this->redundant;
+    }
+
+    /**
+     * Get the severity of a log entry based on its duration.
+     *
+     * Returns 'danger' for a very slow query, 'warning' for a slow query, or
+     * null when the query is within acceptable bounds. The thresholds are
+     * absolute and independent of the other queries of the request.
+     *
+     * @param LogEntry $entry
+     *
+     * @return string|null
+     */
+    public function getSeverity(LogEntry $entry): ?string
+    {
+        $duration = $entry->getDuration();
+
+        if (null === $duration) {
+            return null;
+        }
+
+        return match (true) {
+            $duration >= $this->verySlowThreshold => 'danger',
+            $duration >= $this->slowThreshold => 'warning',
+            default => null,
+        };
+    }
+
+    /**
+     * Get the slow-query threshold in milliseconds.
+     *
+     * @return float
+     */
+    public function getSlowThreshold(): float
+    {
+        return $this->slowThreshold * 1000;
+    }
+
+    /**
+     * Get the very-slow-query threshold in milliseconds.
+     *
+     * @return float
+     */
+    public function getVerySlowThreshold(): float
+    {
+        return $this->verySlowThreshold * 1000;
     }
 
     /**
