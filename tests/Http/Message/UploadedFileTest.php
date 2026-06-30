@@ -132,6 +132,34 @@ class UploadedFileTest extends TestCase
         $uploadedFile->moveTo(tempnam(sys_get_temp_dir(), 'test'));
     }
 
+    public function testMoveToCreatesNonWorldWritableDirectory()
+    {
+        if (DIRECTORY_SEPARATOR === '\\') {
+            $this->markTestSkipped('POSIX permissions do not apply on Windows');
+        }
+
+        $directory = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'berlioz-upload-perm-' . uniqid();
+        $target = $directory . DIRECTORY_SEPARATOR . 'uploaded.txt';
+
+        $uploadedFile = new FakeUploadedFile(
+            __DIR__ . '/test.txt',
+            'test.txt',
+            'text/plain',
+            123456,
+            UPLOAD_ERR_OK
+        );
+
+        // The actual move_uploaded_file() returns false here (not a real upload), but the
+        // destination directory is created beforehand with restrictive permissions.
+        $uploadedFile->moveTo($target);
+
+        $this->assertTrue(is_dir($directory));
+        clearstatcache();
+        $this->assertSame(0, (fileperms($directory) & 0o002), 'Upload directory must not be world-writable');
+
+        rmdir($directory);
+    }
+
     public function testMoveToFail()
     {
         $this->expectException(RuntimeException::class);
