@@ -64,8 +64,8 @@ class Mail
     public function setHeaders(array $headers): Mail
     {
         // Check reserved headers (case-insensitive per RFC 5322)
-        $reservedLower = array_map('strtolower', self::RESERVED_HEADERS);
-        if (count(array_intersect(array_map('strtolower', array_keys($headers)), $reservedLower)) > 0) {
+        $reservedLower = array_map(strtolower(...), self::RESERVED_HEADERS);
+        if (count(array_intersect(array_map(strtolower(...), array_keys($headers)), $reservedLower)) > 0) {
             throw new InvalidArgumentException(
                 sprintf(
                     '"%s" are reserved headers, use internal functions instead',
@@ -76,9 +76,7 @@ class Mail
 
         $headers =
             array_map(
-                function ($value) {
-                    return (array)$value;
-                },
+                fn($value) => (array)$value,
                 $headers
             );
 
@@ -113,7 +111,7 @@ class Mail
     public function addHeader(string $name, string $value, bool $replace = false): Mail
     {
         // Check reserved headers (case-insensitive per RFC 5322)
-        if (in_array(strtolower($name), array_map('strtolower', self::RESERVED_HEADERS))) {
+        if (in_array(strtolower($name), array_map(strtolower(...), self::RESERVED_HEADERS))) {
             throw new InvalidArgumentException(
                 sprintf('"%s" is a reserved header, use internal functions instead', $name)
             );
@@ -435,9 +433,7 @@ EOD;
         return
             array_filter(
                 $objects,
-                function ($value) use ($classAttempted) {
-                    return $value instanceof $classAttempted;
-                }
+                fn($value) => $value instanceof $classAttempted
             );
     }
 }

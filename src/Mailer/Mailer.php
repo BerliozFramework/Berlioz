@@ -16,6 +16,9 @@ namespace Berlioz\Mailer;
 
 use Berlioz\Mailer\Exception\InvalidArgumentException;
 use Berlioz\Mailer\Exception\TransportException;
+use Berlioz\Mailer\Transport\PhpMail;
+use Berlioz\Mailer\Transport\Smtp;
+use Berlioz\Mailer\Transport\TransportInterface;
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
@@ -25,8 +28,8 @@ class Mailer implements LoggerAwareInterface
 {
     /** Default transports into the package. */
     public const DEFAULT_TRANSPORTS = [
-        'smtp' => Transport\Smtp::class,
-        'mail' => Transport\PhpMail::class,
+        'smtp' => Smtp::class,
+        'mail' => PhpMail::class,
     ];
     /** @var Transport\TransportInterface Transport */
     private $transport;
@@ -83,9 +86,9 @@ class Mailer implements LoggerAwareInterface
                 throw new InvalidArgumentException(sprintf('Class "%s" doesn\'t exists', $className));
             }
 
-            if (!is_a($className, Transport\TransportInterface::class, true)) {
+            if (!is_a($className, TransportInterface::class, true)) {
                 throw new InvalidArgumentException(
-                    sprintf('Transport class must be an instance of %s interface', Transport\TransportInterface::class)
+                    sprintf('Transport class must be an instance of %s interface', TransportInterface::class)
                 );
             }
 
@@ -117,10 +120,10 @@ class Mailer implements LoggerAwareInterface
      *
      * @return Transport\TransportInterface
      */
-    public function getTransport(): Transport\TransportInterface
+    public function getTransport(): TransportInterface
     {
         if (null === $this->transport) {
-            $this->transport = new Transport\PhpMail();
+            $this->transport = new PhpMail();
         }
 
         return $this->transport;
@@ -133,7 +136,7 @@ class Mailer implements LoggerAwareInterface
      *
      * @return static
      */
-    public function setTransport(Transport\TransportInterface $transport): Mailer
+    public function setTransport(TransportInterface $transport): Mailer
     {
         // Logger
         if ($transport instanceof LoggerAwareInterface && null !== $this->logger) {

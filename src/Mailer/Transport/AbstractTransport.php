@@ -78,7 +78,7 @@ abstract class AbstractTransport implements TransportInterface
      */
     protected function getHeaders(Mail $mail, array $exclude = []): array
     {
-        $exclude = array_map('mb_strtolower', $exclude);
+        $exclude = array_map(mb_strtolower(...), $exclude);
         $contents = [];
 
         // Get headers
@@ -114,9 +114,9 @@ abstract class AbstractTransport implements TransportInterface
 
         // Complete with headers
         foreach ($headers as $name => $values) {
-            if (!in_array(mb_strtolower($name), $exclude)) {
+            if (!in_array(mb_strtolower((string)$name), $exclude)) {
                 foreach ((array)$values as $value) {
-                    $contents[] = sprintf('%s: %s', $name, trim($value));
+                    $contents[] = sprintf('%s: %s', $name, trim((string)$value));
                 }
             }
         }
@@ -141,16 +141,12 @@ abstract class AbstractTransport implements TransportInterface
         $htmlAttachments =
             array_filter(
                 $attachments,
-                function ($attachment) {
-                    return $attachment->hasId();
-                }
+                fn($attachment) => $attachment->hasId()
             );
         $attachments =
             array_filter(
                 $attachments,
-                function ($attachment) {
-                    return !$attachment->hasId();
-                }
+                fn($attachment) => !$attachment->hasId()
             );
 
         // Contents
@@ -178,11 +174,11 @@ abstract class AbstractTransport implements TransportInterface
         if ($mail->hasText()) {
             $contents[] = sprintf(
                 'Content-Type: text/plain; charset="%s"; format=flowed; delsp=yes',
-                mb_detect_encoding($mail->getText())
+                mb_detect_encoding((string)$mail->getText())
             );
             $contents[] = 'Content-Transfer-Encoding: base64';
             $contents[] = '';
-            $contents = array_merge($contents, str_split(base64_encode($mail->getText()), 76));
+            $contents = array_merge($contents, str_split(base64_encode((string)$mail->getText()), 76));
             $contents[] = '';
         }
 
@@ -206,7 +202,7 @@ abstract class AbstractTransport implements TransportInterface
 
             $contents[] = sprintf(
                 'Content-Type: text/html; charset="%s"; format=flowed; delsp=yes',
-                mb_detect_encoding($mail->getHtml())
+                mb_detect_encoding((string)$mail->getHtml())
             );
             $contents[] = 'Content-Transfer-Encoding: quoted-printable';
             $contents[] = '';
