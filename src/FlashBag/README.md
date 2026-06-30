@@ -30,4 +30,5 @@ $ composer require berlioz/flash-bag
 
 ## Documentation
 
-For usage and examples, visit the [official documentation on **getberlioz.com**](https://getberlioz.com/docs/3.x/components/flash-bag).
+For usage and examples, visit the
+[official documentation on **getberlioz.com**](https://getberlioz.com/docs/3.x/components/flash-bag).
