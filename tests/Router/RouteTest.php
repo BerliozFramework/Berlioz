@@ -371,7 +371,7 @@ class RouteTest extends AbstractTestCase
     public function testTestRouteWithRequirementsInPath_deprecated()
     {
         set_error_handler(
-            function (int $errno, string $errstr) {
+            function (int $errno, string $errstr): void {
                 throw new Exception($errstr, $errno);
             },
             E_USER_DEPRECATED
