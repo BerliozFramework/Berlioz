@@ -17,7 +17,7 @@ namespace Berlioz\Package\QueueManager\Command;
 use Berlioz\Cli\Core\Command\AbstractCommand;
 use Berlioz\Cli\Core\Command\Argument;
 use Berlioz\Cli\Core\Console\Environment;
-use Berlioz\QueueManager\Queue\MonitorableQueueInterface;
+use Berlioz\Package\QueueManager\Metrics\QueueMetricsExporter;
 use Berlioz\QueueManager\QueueManager;
 
 #[Argument('queue', prefix: 'q', longPrefix: 'queue', description: 'Queue name', castTo: 'string')]
@@ -45,60 +45,32 @@ class QueueSizeCommand extends AbstractCommand
     public function run(Environment $env): int
     {
         $queueManager = $this->queueManager->filter(...$env->getArgumentMultiple('queue'));
-        $stats = [];
-        foreach ($queueManager->getQueues() as $queue) {
-            $stats[$queue->getName()] = [
-                'size' => $queue->size(),
-                'waitTime' => $queue instanceof MonitorableQueueInterface ? $queue->waitTime() : null,
-                'delayed' => $queue instanceof MonitorableQueueInterface ? $queue->delayed() : null,
-            ];
-        }
-        $sizes = array_column($stats, 'size');
-        $total = array_sum($sizes);
+        $exporter = new QueueMetricsExporter($queueManager);
+        $metrics = $exporter->collect();
+        $stats = $metrics['queues'];
+        $total = $metrics['total'];
+        $withTotal = (bool)$env->getArgument('total');
 
         switch ($env->getArgument('format')) {
             // Prometheus format
             case 'prometheus':
-                $labels = $env->getArgument('prometheusLabels') ?? '';
-                $labels = trim($labels, ' ,');
-                !empty($labels) && $labels = ',' . $labels;
-
-                foreach ($stats as $queueName => $queueStats) {
-                    $size = $queueStats['size'];
-                    $env->console()->out(sprintf('job_queue_length{queue_name="%s"%s} %d', $queueName, $labels, $size));
-
-                    if (null !== $queueStats['waitTime']) {
-                        $env->console()->out(
-                            sprintf(
-                                'job_queue_wait_time_seconds{queue_name="%s"%s} %d',
-                                $queueName,
-                                $labels,
-                                $queueStats['waitTime'],
-                            )
-                        );
-                    }
-
-                    if (null !== $queueStats['delayed']) {
-                        $env->console()->out(
-                            sprintf('job_queue_delayed{queue_name="%s"%s} %d', $queueName, $labels,
-                                $queueStats['delayed'])
-                        );
-                    }
-                }
-                if ($env->getArgument('total')) {
-                    $env->console()->out(sprintf('job_queue_length_total{%s} %d', trim($labels, ','), $total));
-                }
+                $env->console()->out(
+                    rtrim(
+                        $exporter->prometheus(
+                            QueueMetricsExporter::parseLabels($env->getArgument('prometheusLabels')),
+                            $withTotal,
+                        ),
+                        "\n",
+                    )
+                );
                 break;
             // JSON format
             case 'json':
-                $env->console()->json(match ($env->getArgument('total')) {
-                    false => $stats,
-                    true => ['queues' => $stats, 'total' => $total],
-                });
+                $env->console()->json($exporter->json($withTotal));
                 break;
             // RAW format
             default:
-                $padding = $env->console()->padding(max(array_map(strlen(...), array_keys($sizes))));
+                $padding = $env->console()->padding(max(array_map(strlen(...), array_keys($stats))));
                 foreach ($stats as $queueName => $queueStats) {
                     $waitTime = match ($queueStats['waitTime']) {
                         null => 'n/a',
