@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 
 - Stop trusting `X-Forwarded-For` for the debug IP allow-list; use `REMOTE_ADDR` unless a trusted proxy is configured (`berlioz.proxies.trusted`)
+- Create cache directories with restrictive permissions (`0750`) instead of world-writable `0777`, and write cache files as `0640`
 
 ## [3.1.1] - 2026-06-10
 

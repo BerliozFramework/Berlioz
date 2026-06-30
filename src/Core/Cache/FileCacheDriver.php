@@ -118,8 +118,9 @@ class FileCacheDriver extends AbstractCacheDriver implements CacheInterface
             'data' => $serialized,
         ];
 
-        if (!is_dir($directory = dirname($cacheFilename))) {
-            if (@mkdir($directory, 0777, true) === false) {
+        if (!is_dir($directory = dirname((string)$cacheFilename))) {
+            // Restrictive permissions (not world-writable) to prevent cache poisoning on shared hosts.
+            if (@mkdir($directory, 0750, true) === false && !is_dir($directory)) {
                 throw new CacheException(sprintf('Unable to write cache file "%s"', $cacheFilename));
             }
         }
@@ -127,6 +128,9 @@ class FileCacheDriver extends AbstractCacheDriver implements CacheInterface
         if (@file_put_contents($cacheFilename, @serialize($data)) === false) {
             throw new CacheException(sprintf('Unable to save file to cache "%s"', $cacheFilename));
         }
+
+        // Restrictive permissions on the cache file (owner read/write, group read).
+        @chmod($cacheFilename, 0640);
 
         return true;
     }
