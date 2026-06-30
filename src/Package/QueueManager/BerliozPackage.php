@@ -25,7 +25,6 @@ use Berlioz\Package\QueueManager\Factory\AwsSqsQueueFactory;
 use Berlioz\Package\QueueManager\Factory\DbQueueFactory;
 use Berlioz\Package\QueueManager\Factory\MemoryQueueFactory;
 use Berlioz\Package\QueueManager\Handler\BerliozCommandJobHandler;
-use Berlioz\Package\QueueManager\Handler\BerliozSystemJobHandler;
 use Berlioz\ServiceContainer\Container;
 
 class BerliozPackage extends AbstractPackage
@@ -42,7 +41,10 @@ class BerliozPackage extends AbstractPackage
                         'queues' => [],
                         'handlers' => [
                             'berlioz:command' => BerliozCommandJobHandler::class,
-                            'berlioz:system' => BerliozSystemJobHandler::class,
+                            // The `berlioz:system` handler executes system commands from the (untrusted)
+                            // job payload. It is intentionally NOT registered by default to avoid RCE.
+                            // Opt-in explicitly if you fully trust every queue producer:
+                            //   'berlioz:system' => \Berlioz\Package\QueueManager\Handler\BerliozSystemJobHandler::class,
                         ],
                         'factories' => [
                             MemoryQueueFactory::class,

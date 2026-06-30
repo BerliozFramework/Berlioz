@@ -35,6 +35,14 @@ class BerliozPackageTest extends TestCase
         $this->assertEquals($config->getArrayCopy(), $configFromPackage->getArrayCopy());
     }
 
+    public function testConfig_doesNotRegisterSystemHandlerByDefault()
+    {
+        $handlers = BerliozPackage::config()->get('berlioz.queues.handlers');
+
+        $this->assertArrayNotHasKey('berlioz:system', $handlers);
+        $this->assertArrayHasKey('berlioz:command', $handlers);
+    }
+
     public function testRegister()
     {
         $core = new Core(new TestEnvDirectories(), cache: false);
