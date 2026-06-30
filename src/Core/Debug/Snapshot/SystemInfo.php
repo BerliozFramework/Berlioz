@@ -26,6 +26,7 @@ class SystemInfo
     private ?int $pid;
     private ?int $inode;
     private string $tmpDir;
+    private int $openResources;
 
     public function __construct()
     {
@@ -44,6 +45,7 @@ class SystemInfo
         $this->pid = getmypid() ?: null;
         $this->inode = getmyinode() ?: null;
         $this->tmpDir = sys_get_temp_dir();
+        $this->openResources = count(get_resources());
     }
 
     /**
@@ -114,5 +116,18 @@ class SystemInfo
     public function getTmpDir(): string
     {
         return $this->tmpDir;
+    }
+
+    /**
+     * Get number of open PHP resources.
+     *
+     * Counts userland PHP resources (open file handles, connections, etc.) of
+     * the process, not raw OS file descriptors.
+     *
+     * @return int
+     */
+    public function getOpenResources(): int
+    {
+        return $this->openResources;
     }
 }
