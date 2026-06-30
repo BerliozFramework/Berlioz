@@ -51,7 +51,7 @@ class ServiceProvider extends AbstractServiceProvider
                 function (Core $core) {
                     $config = $core->getConfig();
                     $options = $config->get('hector');
-                    $options['log'] = $options['log'] ?? $core->getDebug()->isEnabled();
+                    $options['log'] ??= $core->getDebug()->isEnabled();
 
                     $connection = OrmFactory::connection($options);
 
