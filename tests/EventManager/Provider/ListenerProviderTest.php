@@ -107,21 +107,21 @@ class ListenerProviderTest extends TestCase
         $provider->addListener(
             new Listener(
                 'event.name',
-                function () use (&$executionOrder) {
+                function () use (&$executionOrder): void {
                     $executionOrder[] = 'low';
                 },
                 ListenerInterface::PRIORITY_LOW,
             ),
             new Listener(
                 'event.name',
-                function () use (&$executionOrder) {
+                function () use (&$executionOrder): void {
                     $executionOrder[] = 'high';
                 },
                 ListenerInterface::PRIORITY_HIGH,
             ),
             new Listener(
                 'event.name',
-                function () use (&$executionOrder) {
+                function () use (&$executionOrder): void {
                     $executionOrder[] = 'normal';
                 },
                 ListenerInterface::PRIORITY_NORMAL,
@@ -145,7 +145,7 @@ class ListenerProviderTest extends TestCase
         $provider = new ($this->getListenerProviderClass())();
         $provider->addEventListener(
             new stdClass(),
-            function () use (&$called) {
+            function () use (&$called): void {
                 $called = true;
             },
         );
@@ -164,7 +164,7 @@ class ListenerProviderTest extends TestCase
         $provider = new ($this->getListenerProviderClass())();
         $provider->addEventListener(
             new TestEvent('my.event'),
-            function () use (&$called) {
+            function () use (&$called): void {
                 $called = true;
             },
         );

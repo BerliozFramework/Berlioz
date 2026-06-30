@@ -157,9 +157,7 @@ class EventDispatcherTest extends ListenerProviderTest
         $dispatcher->addEventListener('event.name', fn(TestEvent $event) => $event->increaseCounter());
         $dispatcher->addEventListener(
             'event.name',
-            function (TestEvent $event) {
-                return false;
-            }
+            fn(TestEvent $event) => false
         );
         $dispatcher->addEventListener('event.name', fn(TestEvent $event) => $event->increaseCounter());
 
@@ -175,9 +173,7 @@ class EventDispatcherTest extends ListenerProviderTest
         $dispatcher->addEventListener('event.name', fn(TestEvent $event) => $event->increaseCounter());
         $dispatcher->addEventListener(
             'event.name',
-            function (TestEvent $event) {
-                return 'OK';
-            }
+            fn(TestEvent $event) => 'OK'
         );
         $dispatcher->addEventListener('event.name', fn(TestEvent $event) => $event->increaseCounter());
 
@@ -193,9 +189,7 @@ class EventDispatcherTest extends ListenerProviderTest
         $dispatcher->addEventListener('event.name', fn(TestEvent $event) => $event->increaseCounter());
         $dispatcher->addEventListener(
             'event.name',
-            function (TestEvent $event) {
-                return new TestEvent('event.test');
-            }
+            fn(TestEvent $event) => new TestEvent('event.test')
         );
         $dispatcher->addEventListener('event.test', fn(TestEvent $event) => $event->increaseCounter());
         $dispatcher->addEventListener('event.test', fn(TestEvent $event) => $event->increaseCounter());
