@@ -122,7 +122,7 @@ readonly class AwsSqsQueue extends AbstractQueue implements PurgeableQueueInterf
         }
 
         // Checksum
-        if ($result['MD5OfBody'] !== md5($result['Body'])) {
+        if ($result['MD5OfBody'] !== md5((string)$result['Body'])) {
             throw QueueException::checksum();
         }
 

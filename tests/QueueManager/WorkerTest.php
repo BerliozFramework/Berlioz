@@ -256,7 +256,7 @@ class WorkerTest extends TestCase
 
         // Handler deletes the job itself
         $this->jobHandlerMock->method('handle')->willReturnCallback(
-            function (JobInterface $job) use ($jobMock) {
+            function (JobInterface $job) use ($jobMock): void {
                 // Simulate that the handler called $job->delete()
                 $jobMock->method('isDeleted')->willReturn(true);
             }
@@ -280,7 +280,7 @@ class WorkerTest extends TestCase
 
         // Handler releases the job itself
         $this->jobHandlerMock->method('handle')->willReturnCallback(
-            function (JobInterface $job) use ($jobMock) {
+            function (JobInterface $job) use ($jobMock): void {
                 // Simulate that the handler called $job->release()
                 $jobMock->method('isReleased')->willReturn(true);
             }

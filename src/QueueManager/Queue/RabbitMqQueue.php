@@ -112,8 +112,8 @@ readonly class RabbitMqQueue extends AmqpQueue implements MonitorableQueueInterf
 
             return $this->normalizeTimestamp(
                 $queueData['head_message_timestamp']
-                    ?? $queueData['backing_queue_status']['head_message_timestamp']
-                    ?? null,
+                ?? $queueData['backing_queue_status']['head_message_timestamp']
+                ?? null,
             );
         } catch (Exception) {
             return null;

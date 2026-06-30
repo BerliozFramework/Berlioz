@@ -12,8 +12,8 @@
 
 namespace Berlioz\QueueManager\Tests\Queue;
 
-use Aws\Result;
 use Aws\CloudWatch\CloudWatchClient;
+use Aws\Result;
 use Aws\Sqs\SqsClient;
 use Berlioz\QueueManager\Exception\JobException;
 use Berlioz\QueueManager\Exception\QueueException;

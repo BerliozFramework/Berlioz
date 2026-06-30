@@ -35,7 +35,7 @@ readonly class MultiRateLimiter extends AbstractRateLimiter implements RateLimit
             )
         );
 
-        return new self(...array_map(fn($v) => TimeRateLimiter::createFromString($v), $str));
+        return new self(...array_map(TimeRateLimiter::createFromString(...), $str));
     }
 
     public function __construct(RateLimiterInterface $limiter, RateLimiterInterface ...$_limiter)

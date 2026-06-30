@@ -23,7 +23,7 @@ class SqsJob extends Job
         protected array $awsResult,
         protected readonly AwsSqsQueue $queue,
     ) {
-        $payload = json_decode($this->awsResult['Body'], true);
+        $payload = json_decode((string)$this->awsResult['Body'], true);
 
         if (!is_array($payload)) {
             throw new QueueException('Failed to decode SQS message body as JSON');
