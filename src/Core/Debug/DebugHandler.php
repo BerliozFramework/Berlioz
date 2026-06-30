@@ -27,6 +27,7 @@ use Berlioz\Core\Debug\Snapshot\SystemInfo;
 use Berlioz\Core\Debug\Snapshot\Timeline;
 use Berlioz\Core\Debug\Snapshot\TimelineActivity;
 use Berlioz\Core\Debug\Snapshot\TimelineEvent;
+use Berlioz\Helpers\NetworkHelper;
 use DateTime;
 use DateTimeImmutable;
 use DateTimeInterface;
@@ -122,25 +123,28 @@ class DebugHandler
             return true;
         }
 
-        // Get ip
-        $remoteIpAddresses = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['REMOTE_ADDR'] ?? null;
+        // Resolve the authoritative client IP. `X-Forwarded-For` is NOT trusted by default: it is only
+        // honoured when the direct peer (`REMOTE_ADDR`) is a configured trusted proxy. This prevents a
+        // remote client from spoofing an allow-listed IP to enable debug mode.
+        $trustedProxies = $config->get('berlioz.proxies.trusted', []);
+        if (!is_array($trustedProxies)) {
+            $trustedProxies = [];
+        }
 
-        if (null === $remoteIpAddresses) {
+        $clientIp = NetworkHelper::clientIp($trustedProxies);
+
+        if (null === $clientIp) {
             return false;
         }
 
-        foreach (explode(",", $remoteIpAddresses) as $ipAddress) {
-            $ipAddress = trim($ipAddress);
+        // Find ip
+        if (in_array($clientIp, $configIpAddresses, true)) {
+            return true;
+        }
 
-            // Find ip
-            if (in_array($ipAddress, $configIpAddresses)) {
-                return true;
-            }
-
-            // Find host
-            if (in_array(gethostbyaddr($ipAddress), $configIpAddresses)) {
-                return true;
-            }
+        // Find host (reverse-DNS is performed only on the validated client IP, never on raw input)
+        if (in_array(gethostbyaddr($clientIp), $configIpAddresses, true)) {
+            return true;
         }
 
         return false;

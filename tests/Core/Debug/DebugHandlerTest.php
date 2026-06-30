@@ -252,14 +252,6 @@ class DebugHandlerTest extends TestCase
 
         $this->assertFalse($debug->isEnabledInConfig($config));
 
-        $_SERVER['REMOTE_ADDR'] = '127.0.0.1,127.0.0.2';
-
-        $this->assertTrue($debug->isEnabledInConfig($config));
-
-        $_SERVER['REMOTE_ADDR'] = '127.0.0.3, 127.0.0.4';
-
-        $this->assertFalse($debug->isEnabledInConfig($config));
-
         $_SERVER['REMOTE_ADDR'] = '127.0.0.1';
 
         $config = new ArrayAdapter([
@@ -271,5 +263,62 @@ class DebugHandlerTest extends TestCase
             ]
         ]);
         $this->assertTrue($debug->isEnabledInConfig($config));
+
+        unset($_SERVER['REMOTE_ADDR'], $_SERVER['HTTP_X_FORWARDED_FOR']);
+    }
+
+    /**
+     * A spoofed `X-Forwarded-For` must not bypass the IP allow-list when the
+     * direct peer (`REMOTE_ADDR`) is not a trusted proxy.
+     */
+    public function testIsEnabledInConfig_doesNotTrustForwardedForByDefault()
+    {
+        $debug = new DebugHandler();
+        $debug->handle(new Core(new FakeDefaultDirectories()));
+
+        $config = new ArrayAdapter(['berlioz' => ['debug' => ['enable' => true, 'ip' => ['127.0.0.1']]]]);
+
+        // Attacker connects from a non-allow-listed address but spoofs the header.
+        $_SERVER['REMOTE_ADDR'] = '203.0.113.10';
+        $_SERVER['HTTP_X_FORWARDED_FOR'] = '127.0.0.1';
+
+        $this->assertFalse($debug->isEnabledInConfig($config));
+
+        unset($_SERVER['REMOTE_ADDR'], $_SERVER['HTTP_X_FORWARDED_FOR']);
+    }
+
+    /**
+     * `X-Forwarded-For` is honoured only when the direct peer is a configured
+     * trusted proxy.
+     */
+    public function testIsEnabledInConfig_honoursForwardedForBehindTrustedProxy()
+    {
+        $debug = new DebugHandler();
+        $debug->handle(new Core(new FakeDefaultDirectories()));
+
+        $config = new ArrayAdapter([
+            'berlioz' => [
+                'debug' => [
+                    'enable' => true,
+                    'ip' => ['198.51.100.5'],
+                ],
+                'proxies' => [
+                    'trusted' => ['203.0.113.0/24'],
+                ],
+            ],
+        ]);
+
+        // Request comes through a trusted proxy; the real client is forwarded.
+        $_SERVER['REMOTE_ADDR'] = '203.0.113.10';
+        $_SERVER['HTTP_X_FORWARDED_FOR'] = '198.51.100.5';
+
+        $this->assertTrue($debug->isEnabledInConfig($config));
+
+        // Same proxy, but the forwarded client is not allow-listed.
+        $_SERVER['HTTP_X_FORWARDED_FOR'] = '198.51.100.99';
+
+        $this->assertFalse($debug->isEnabledInConfig($config));
+
+        unset($_SERVER['REMOTE_ADDR'], $_SERVER['HTTP_X_FORWARDED_FOR']);
     }
 }
