@@ -23,8 +23,8 @@ use DateTimeInterface;
  */
 class Event
 {
-    private string $event;
-    private DateTimeImmutable $time;
+    private readonly string $event;
+    private readonly DateTimeImmutable $time;
 
     public function __construct(string|object $event, DateTimeInterface $time)
     {
@@ -32,7 +32,7 @@ class Event
             $event = $event->getName();
         }
         if (is_object($event)) {
-            $event = get_class($event);
+            $event = $event::class;
         }
         $this->event = $event;
         $this->time = DateTimeImmutable::createFromInterface($time);

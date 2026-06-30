@@ -80,13 +80,11 @@ class CoreServiceProvider extends AbstractServiceProvider
             new Service(
                 class: Assets::class,
                 alias: 'assets',
-                factory: function (Config $config): Assets {
-                    return new Assets(
-                        $config->get('berlioz.assets.manifest'),
-                        $config->get('berlioz.assets.entrypoints'),
-                        $config->get('berlioz.assets.entrypoints_key'),
-                    );
-                }
+                factory: fn(Config $config): Assets => new Assets(
+                    $config->get('berlioz.assets.manifest'),
+                    $config->get('berlioz.assets.entrypoints'),
+                    $config->get('berlioz.assets.entrypoints_key'),
+                )
             )
         );
         $container->addService(

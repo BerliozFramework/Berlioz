@@ -20,10 +20,10 @@ namespace Berlioz\Core\Debug\Snapshot;
 class PhpError
 {
     public function __construct(
-        private int $errno,
-        private string $message,
-        private ?string $file = null,
-        private ?int $line = null
+        private readonly int $errno,
+        private readonly string $message,
+        private readonly ?string $file = null,
+        private readonly ?int $line = null
     ) {
     }
 

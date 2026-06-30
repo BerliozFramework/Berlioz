@@ -31,17 +31,17 @@ use DateTimeImmutable;
 class Snapshot
 {
     public function __construct(
-        private string $uniqid,
-        private DateTimeImmutable $dateTime,
-        private PerformanceInfo $performanceInfo,
-        private PhpInfo $phpInfo,
-        private ProjectInfo $projectInfo,
-        private SystemInfo $systemInfo,
-        private ConfigInterface $config,
-        private Timeline $timeline,
-        private EventSet $events,
-        private PhpErrorSet $phpErrors,
-        private array $exceptions,
+        private readonly string $uniqid,
+        private readonly DateTimeImmutable $dateTime,
+        private readonly PerformanceInfo $performanceInfo,
+        private readonly PhpInfo $phpInfo,
+        private readonly ProjectInfo $projectInfo,
+        private readonly SystemInfo $systemInfo,
+        private readonly ConfigInterface $config,
+        private readonly Timeline $timeline,
+        private readonly EventSet $events,
+        private readonly PhpErrorSet $phpErrors,
+        private readonly array $exceptions,
         private array $sections,
     ) {
         $this->sections = array_filter($this->sections, fn($section) => $section instanceof Section);

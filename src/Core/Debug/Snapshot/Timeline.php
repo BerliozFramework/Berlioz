@@ -107,9 +107,7 @@ class Timeline implements Countable
     {
         $activities = $this->getActivities($group);
         $activities = array_map(
-            function (TimelineActivity $activity) {
-                return $activity->getStartMicroTime();
-            },
+            fn(TimelineActivity $activity) => $activity->getStartMicroTime(),
             $activities
         );
         $activities = array_filter($activities);
@@ -132,9 +130,7 @@ class Timeline implements Countable
     {
         $activities = $this->getActivities($group);
         $activities = array_map(
-            function (TimelineActivity $activity) {
-                return $activity->getEndMicroTime();
-            },
+            fn(TimelineActivity $activity) => $activity->getEndMicroTime(),
             $activities
         );
         $activities = array_filter($activities);
@@ -185,9 +181,8 @@ class Timeline implements Countable
         $activities = array_values(
             array_filter(
                 $activities,
-                function (TimelineActivity $activity) {
-                    return null !== $activity->getStartMicroTime() && null !== $activity->getEndMicroTime();
-                }
+                fn(TimelineActivity $activity
+                ) => null !== $activity->getStartMicroTime() && null !== $activity->getEndMicroTime()
             )
         );
         $nbActivities = count($activities);

@@ -22,7 +22,7 @@ use Generator;
  */
 class PhpErrorSet implements Countable
 {
-    private array $errors;
+    private readonly array $errors;
 
     public function __construct(PhpError ...$errors)
     {

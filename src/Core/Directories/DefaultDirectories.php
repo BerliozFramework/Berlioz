@@ -92,7 +92,7 @@ class DefaultDirectories implements DirectoriesInterface
         }
 
         // Search composer.json for app directory
-        $directories = [$this->getLibraryDirectory(), dirname($_SERVER['SCRIPT_FILENAME'])];
+        $directories = [$this->getLibraryDirectory(), dirname((string)$_SERVER['SCRIPT_FILENAME'])];
         do {
             $directory = current($directories);
             do {

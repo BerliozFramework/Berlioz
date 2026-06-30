@@ -39,8 +39,8 @@ class TimelineActivity
      * @param string|null $group
      */
     public function __construct(
-        private string $name,
-        private ?string $group = 'Application'
+        private readonly string $name,
+        private readonly ?string $group = 'Application'
     ) {
         $this->uniqid = uniqid();
     }
