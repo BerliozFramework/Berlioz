@@ -13,6 +13,8 @@
 namespace Berlioz\ServiceContainer\Tests;
 
 use Berlioz\ServiceContainer\Container;
+use Berlioz\ServiceContainer\Container\AutoWiringContainer;
+use Berlioz\ServiceContainer\Container\DefaultContainer;
 use Berlioz\ServiceContainer\ContainerAwareInterface;
 use Berlioz\ServiceContainer\ContainerAwareTrait;
 use Berlioz\ServiceContainer\Inflector\Inflector;
@@ -30,7 +32,7 @@ class ContainerTest extends TestCase
     public function test__construct()
     {
         $container = new FakeContainer(
-            [new Container\AutoWiringContainer()],
+            [new AutoWiringContainer()],
             [new Inflector(InstantiatorAwareInterface::class, 'setInstantiator')]
         );
 
@@ -145,7 +147,7 @@ class ContainerTest extends TestCase
     public function testAddContainer()
     {
         $container = new FakeContainer();
-        $container->addContainer(new Container\DefaultContainer(), new Container\DefaultContainer());
+        $container->addContainer(new DefaultContainer(), new DefaultContainer());
 
         $containers = iterator_to_array($container->getContainers(), false);
         $this->assertCount(4, $containers);

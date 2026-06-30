@@ -30,7 +30,7 @@ class InstantiatorException extends ContainerException
     public static function classError(object|string $class, Throwable $error): static
     {
         if (is_object($class)) {
-            $class = get_class($class);
+            $class = $class::class;
         }
 
         return new static(sprintf('Error during dependency injection of class "%s"', $class), 0, $error);
@@ -48,7 +48,7 @@ class InstantiatorException extends ContainerException
     public static function methodError(object|string $class, string $method, Throwable $error): static
     {
         if (is_object($class)) {
-            $class = get_class($class);
+            $class = $class::class;
         }
 
         return new static(sprintf('Error during dependency injection of method "%s::%s"', $class, $method), 0, $error);
