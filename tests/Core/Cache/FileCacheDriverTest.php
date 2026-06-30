@@ -42,6 +42,27 @@ class FileCacheDriverTest extends AbstractCacheDriverTestCase
         $this->assertFalse(is_dir($cacheDirectory));
     }
 
+    public function testSetCreatesNonWorldWritableDirectory()
+    {
+        if (DIRECTORY_SEPARATOR === '\\') {
+            $this->markTestSkipped('POSIX permissions do not apply on Windows');
+        }
+
+        $path = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'berlioz-cache-perm-' . uniqid();
+        $driver = new FileCacheDriver($path);
+
+        $this->assertTrue($driver->set('foo', 'bar'));
+
+        $cacheDirectory = $path . DIRECTORY_SEPARATOR . FileCacheDriver::CACHE_DIRECTORY;
+        $this->assertTrue(is_dir($cacheDirectory));
+
+        // Directory must not be world-writable (umask may further restrict the requested 0750).
+        clearstatcache();
+        $this->assertSame(0, (fileperms($cacheDirectory) & 0o002), 'Cache directory must not be world-writable');
+
+        $driver->clear();
+    }
+
     public function testConstructWithStringPath()
     {
         $path = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'berlioz-cache-test-' . uniqid();
