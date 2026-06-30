@@ -55,9 +55,7 @@ class TwigTest extends TestCase
         $this->assertContains(
             DefaultExtension::class,
             array_map(
-                function ($value) {
-                    return get_class($value);
-                },
+                fn($value) => $value::class,
                 $twig->getEnvironment()->getExtensions()
             )
         );

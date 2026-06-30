@@ -21,7 +21,7 @@ use Twig\Profiler\Profile;
 
 class TwigSection extends AbstractSection implements Countable
 {
-    public function __construct(private Profile $profile)
+    public function __construct(private readonly Profile $profile)
     {
     }
 

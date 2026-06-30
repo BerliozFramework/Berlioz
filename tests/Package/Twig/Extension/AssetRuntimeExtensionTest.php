@@ -271,12 +271,12 @@ class AssetRuntimeExtensionTest extends TestCase
             ->willReturnCallback(fn() => false);
         $assetRuntimeMock
             ->method('sendHeader')
-            ->willReturnCallback(function ($header) use (&$headerArguments) {
+            ->willReturnCallback(function ($header) use (&$headerArguments): void {
                 $headerArguments = $header;
             });
         $assetRuntimeMock
             ->method('setCookie')
-            ->willReturnCallback(function (...$args) use (&$cookieArguments) {
+            ->willReturnCallback(function (...$args) use (&$cookieArguments): void {
                 $cookieArguments = $args;
             });
 
