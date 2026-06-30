@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- `berlioz:system` job handler is now opt-in via configuration
+
+### Security
+
+- Disable the `berlioz:system` job handler by default and remove shell-string construction from job payloads (RCE)
+
 ## [3.1.1] - 2026-06-10
 
 _No changes in this release._

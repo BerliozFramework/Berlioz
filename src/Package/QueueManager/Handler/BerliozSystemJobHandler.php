@@ -54,18 +54,40 @@ class BerliozSystemJobHandler implements JobHandlerInterface
      */
     public function handle(JobInterface $job): void
     {
-        // Update working directory to app directory
-        chdir($this->core->getDirectories()->getAppDir());
+        // The command is taken from the (untrusted) job payload. It MUST be executed without a
+        // shell: passing an array of arguments to proc_open() runs the binary directly, so shell
+        // metacharacters (|, ;, &&, $(), >, ...) are treated as literal arguments, never interpreted.
+        $command = array_values(
+            array_map(strval(...), (array)$job->getPayload()->get('command', []))
+        );
 
-        $command = (array)$job->getPayload()->get('command', []);
-        $command = implode(' ', $command);
-
-        $result = 0;
-        ob_start();
-        if (false === passthru($command, $result)) {
-            $result === 0 && $result = 1;
+        if ([] === $command) {
+            throw new CliException('Empty command');
         }
-        $commandOutput = ob_get_clean() ?: '';
+
+        $descriptors = [
+            1 => ['pipe', 'w'],
+            2 => ['pipe', 'w'],
+        ];
+        $pipes = [];
+
+        $process = proc_open(
+            $command,
+            $descriptors,
+            $pipes,
+            $this->core->getDirectories()->getAppDir(),
+        );
+
+        if (!is_resource($process)) {
+            throw new CliException('Unable to start command');
+        }
+
+        $commandOutput = stream_get_contents($pipes[1]) ?: '';
+        $commandOutput .= stream_get_contents($pipes[2]) ?: '';
+        fclose($pipes[1]);
+        fclose($pipes[2]);
+
+        $result = proc_close($process);
         $this->result($commandOutput, $result);
 
         if ($result > 0) {

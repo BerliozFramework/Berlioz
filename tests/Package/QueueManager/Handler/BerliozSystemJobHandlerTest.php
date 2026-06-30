@@ -23,27 +23,50 @@ class BerliozSystemJobHandlerTest extends TestCase
 {
     use RestoresErrorHandler;
 
+    private function newCapturingHandler(Core $core): BerliozSystemJobHandler
+    {
+        return new class($core) extends BerliozSystemJobHandler {
+            public string $capturedOutput = '';
+
+            protected function result(false|string $output, int $result): void
+            {
+                $this->capturedOutput = (string)$output;
+            }
+        };
+    }
+
     public function testHandle()
     {
         $core = new Core(new TestEnvDirectories(), false);
-        $handler = new class($core) extends BerliozSystemJobHandler {
-            protected function result(false|string $output, int $result): void
-            {
-                print $output;
-                print getcwd();
-            }
-        };
+        $handler = $this->newCapturingHandler($core);
 
-        ob_start();
         $handler->handle(new FakeJob(
             'foo',
             'berlioz:system',
             0,
-            ['command' => ['echo "foo bar"']],
+            ['command' => ['echo', 'foo bar']],
         ));
-        $output = ob_get_clean();
 
-        $this->assertStringContainsString('foo bar', $output);
-        $this->assertStringEndsWith($core->getDirectories()->getAppDir(), $output);
+        $this->assertStringContainsString('foo bar', $handler->capturedOutput);
+    }
+
+    /**
+     * A payload must never be interpreted by a shell: metacharacters are literal arguments.
+     */
+    public function testHandle_doesNotInterpretShellMetacharacters()
+    {
+        $core = new Core(new TestEnvDirectories(), false);
+        $handler = $this->newCapturingHandler($core);
+
+        // With shell interpretation, the `;` would split the command and run `rm`.
+        // Without a shell, the whole string is a single literal argument echoed back verbatim.
+        $handler->handle(new FakeJob(
+            'foo',
+            'berlioz:system',
+            0,
+            ['command' => ['echo', '; rm -rf /']],
+        ));
+
+        $this->assertStringContainsString('; rm -rf /', $handler->capturedOutput);
     }
 }

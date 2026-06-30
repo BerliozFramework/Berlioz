@@ -4,7 +4,10 @@
       queues: [],
       handlers: {
         "berlioz:command": "Berlioz\\Package\\QueueManager\\Handler\\BerliozCommandJobHandler",
-        "berlioz:system": "Berlioz\\Package\\QueueManager\\Handler\\BerliozSystemJobHandler",
+        // The `berlioz:system` handler executes system commands from the (untrusted) job payload.
+        // It is intentionally NOT registered by default to avoid RCE. Opt-in explicitly if you
+        // fully trust every queue producer:
+        //   "berlioz:system": "Berlioz\\Package\\QueueManager\\Handler\\BerliozSystemJobHandler",
       },
       factories: [
         "Berlioz\\Package\\QueueManager\\Factory\\MemoryQueueFactory",
