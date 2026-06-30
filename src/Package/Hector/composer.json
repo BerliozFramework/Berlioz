@@ -22,7 +22,7 @@
   "require": {
     "php": "^8.2",
     "berlioz/core": "self.version",
-    "hectororm/hectororm": "^1.0",
+    "hectororm/hectororm": "^1.4",
     "doctrine/sql-formatter": "^1.1"
   },
   "extra": {

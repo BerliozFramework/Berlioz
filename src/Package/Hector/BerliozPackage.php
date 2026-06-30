@@ -20,6 +20,9 @@ use Berlioz\Core\Core;
 use Berlioz\Core\Package\AbstractPackage;
 use Berlioz\Package\Hector\Command\CacheClearCommand;
 use Berlioz\Package\Hector\Command\GenerateSchemaCommand;
+use Berlioz\Package\Hector\Command\MigrateCommand;
+use Berlioz\Package\Hector\Command\MigrateDownCommand;
+use Berlioz\Package\Hector\Command\MigrateStatusCommand;
 use Berlioz\Package\Hector\Container\ServiceProvider;
 use Berlioz\Package\Hector\Http\HectorMiddleware;
 use Berlioz\ServiceContainer\Container;
@@ -59,10 +62,28 @@ class BerliozPackage extends AbstractPackage
                         // Number of identical executions from which a query is reported as duplicate.
                         'duplicate_threshold' => 2,
                     ],
+                    'migration' => [
+                        'provider' => [
+                            'type' => 'directory',
+                            'directory' => '{config: berlioz.directories.app}/migrations',
+                            'namespace' => null,
+                            'pattern' => '*.php',
+                            'depth' => 0,
+                        ],
+                        'tracker' => [
+                            'type' => 'db',
+                            'table' => 'hector_migrations',
+                            'file' => '{config: berlioz.directories.var}/hector.migrations.json',
+                        ],
+                        'schema' => null,
+                    ],
                 ],
                 'commands' => [
                     'hector:cache-clear' => CacheClearCommand::class,
                     'hector:generate-schema' => GenerateSchemaCommand::class,
+                    'hector:migrate' => MigrateCommand::class,
+                    'hector:migrate:down' => MigrateDownCommand::class,
+                    'hector:migrate:status' => MigrateStatusCommand::class,
                 ],
                 'twig' => [
                     'paths' => [

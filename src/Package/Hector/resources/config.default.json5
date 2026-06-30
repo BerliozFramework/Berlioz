@@ -14,10 +14,33 @@
     schemas: [],
     dynamic_events: true,
     types: {},
+    migration: {
+      // Provider supplying the migrations.
+      // type: 'directory' | 'psr4' | a container-resolvable FQCN
+      provider: {
+        type: 'directory',
+        directory: '{config: berlioz.directories.app}/migrations',
+        namespace: null, // required when type='psr4'
+        pattern: '*.php',
+        depth: 0,
+      },
+      // Tracker recording applied migrations.
+      // type: 'db' | 'file' | a container-resolvable FQCN
+      tracker: {
+        type: 'db',
+        table: 'hector_migrations',
+        file: '{config: berlioz.directories.var}/hector.migrations.json',
+      },
+      // Optional schema name to enable schema introspection in Plan compilers.
+      schema: null,
+    },
   },
   "commands": {
     "hector:cache-clear": "Berlioz\\Package\\Hector\\Command\\CacheClearCommand",
-    "hector:generate-schema": "Berlioz\\Package\\Hector\\Command\\GenerateSchemaCommand"
+    "hector:generate-schema": "Berlioz\\Package\\Hector\\Command\\GenerateSchemaCommand",
+    "hector:migrate": "Berlioz\\Package\\Hector\\Command\\MigrateCommand",
+    "hector:migrate:down": "Berlioz\\Package\\Hector\\Command\\MigrateDownCommand",
+    "hector:migrate:status": "Berlioz\\Package\\Hector\\Command\\MigrateStatusCommand"
   },
   twig: {
     paths: {
