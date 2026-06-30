@@ -30,7 +30,7 @@ readonly class TimeRateLimiter extends AbstractRateLimiter implements RateLimite
      */
     public static function createFromString(string $str): self
     {
-        list($limit, $step) = RateLimitParser::parse($str);
+        [$limit, $step] = RateLimitParser::parse($str);
 
         return new self($limit, $step);
     }

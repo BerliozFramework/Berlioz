@@ -180,7 +180,7 @@ readonly class DbQueue extends AbstractQueue implements PurgeableQueueInterface,
      */
     protected function createJob(array $raw): DbJob
     {
-        $payload = json_decode($raw['payload'], true);
+        $payload = json_decode((string)$raw['payload'], true);
         $name = $payload['jobName'] ?? null;
         unset($payload['jobName']);
 

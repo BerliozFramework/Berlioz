@@ -268,6 +268,6 @@ class Worker implements LoggerAwareInterface
             return $options->backoffTime;
         }
 
-        return $options->backoffTime * pow(max($options->backoffMultiplier, 1), $job->getAttempts() - 1);
+        return $options->backoffTime * max($options->backoffMultiplier, 1) ** ($job->getAttempts() - 1);
     }
 }

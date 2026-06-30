@@ -161,7 +161,7 @@ readonly class RedisQueue extends AbstractQueue implements QueueInterface, Monit
      */
     protected function createJob(array $raw): RedisJob
     {
-        $payload = json_decode($raw['payload'], true);
+        $payload = json_decode((string)$raw['payload'], true);
 
         if (!is_array($payload)) {
             throw new QueueException('Failed to decode Redis job payload as JSON');

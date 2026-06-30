@@ -12,10 +12,10 @@
 
 namespace Berlioz\QueueManager\Tests\Queue;
 
+use Berlioz\QueueManager\Job\JobDescriptor;
 use Berlioz\QueueManager\Queue\DbQueue;
 use Berlioz\QueueManager\Queue\MonitorableQueueInterface;
 use Berlioz\QueueManager\Queue\QueueInterface;
-use Berlioz\QueueManager\Job\JobDescriptor;
 use Berlioz\QueueManager\RateLimiter\NullRateLimiter;
 use Berlioz\QueueManager\RateLimiter\RateLimiterInterface;
 use Hector\Connection\Connection;

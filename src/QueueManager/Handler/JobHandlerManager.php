@@ -99,13 +99,13 @@ class JobHandlerManager implements JobHandlerInterface
             }
 
             // No wildcard
-            if (false === str_ends_with($jobHandle, '*')) {
+            if (false === str_ends_with((string)$jobHandle, '*')) {
                 continue;
             }
 
             // Wildcard
-            $regex = '/^' . str_replace('\*', '.*', preg_quote($jobHandle, '/')) . '$/';
-            if (1 === preg_match($regex, $jobName)) {
+            $regex = '/^' . str_replace('\*', '.*', preg_quote((string)$jobHandle, '/')) . '$/';
+            if (1 === preg_match($regex, (string)$jobName)) {
                 return $handler;
             }
         }

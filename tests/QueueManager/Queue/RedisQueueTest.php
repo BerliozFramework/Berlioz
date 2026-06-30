@@ -12,12 +12,12 @@
 
 namespace Berlioz\QueueManager\Tests\Queue;
 
+use Berlioz\QueueManager\Job\RedisJob;
+use Berlioz\QueueManager\Queue\MonitorableQueueInterface;
 use Berlioz\QueueManager\Queue\QueueInterface;
 use Berlioz\QueueManager\Queue\RedisQueue;
-use Berlioz\QueueManager\Queue\MonitorableQueueInterface;
 use Berlioz\QueueManager\RateLimiter\NullRateLimiter;
 use Berlioz\QueueManager\RateLimiter\RateLimiterInterface;
-use Berlioz\QueueManager\Job\RedisJob;
 use PHPUnit\Framework\Attributes\RequiresPhpExtension;
 use Redis;
 use RedisException;
@@ -60,7 +60,12 @@ class RedisQueueTest extends QueueTestCase
     {
         $redisMock = $this->createMock(Redis::class);
         $queue = new RedisQueue($redisMock, 'testQueue');
-        $jobData = json_encode(['jobId' => '123', 'payload' => '{"key":"value"}', 'attempts' => 0, 'createdAt' => time()]);
+        $jobData = json_encode([
+            'jobId' => '123',
+            'payload' => '{"key":"value"}',
+            'attempts' => 0,
+            'createdAt' => time()
+        ]);
 
         $lockValue = null;
 
