@@ -14,6 +14,7 @@ namespace Berlioz\Http\Message\Tests;
 
 use Berlioz\Http\Message\Response;
 use Berlioz\Http\Message\Stream;
+use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 
 class ResponseTest extends TestCase
@@ -39,5 +40,22 @@ class ResponseTest extends TestCase
         $this->assertEquals(Response::HTTP_STATUS_OK, $response->getStatusCode());
         $this->assertEquals(Response::HTTP_STATUS_NOT_FOUND, $response2->getStatusCode());
         $this->assertEquals($reason, $response2->getReasonPhrase());
+    }
+
+    public function testConstructRejectsCRLFInReasonPhrase()
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Reason phrase must not contain CR, LF or NUL');
+
+        new Response(null, 200, [], "OK\r\nInjected: evil");
+    }
+
+    public function testWithStatusRejectsCRLFInReasonPhrase()
+    {
+        $response = new Response(null, 200);
+
+        $this->expectException(InvalidArgumentException::class);
+
+        $response->withStatus(404, "Not Found\r\nInjected: evil");
     }
 }
