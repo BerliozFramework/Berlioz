@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `CacheDriverFactory` to build a cache driver from an array of options, a JSON file (`fromFile()`) or environment variables (`fromEnv()`/`auto()`)
 - `SnapshotCleaner` to garbage collect debug snapshots according to a retention policy (max age in days and/or max number of files)
 - Automatic, probabilistic garbage collection of debug snapshots on write, configurable via `berlioz.debug.gc` (`probability`, `divisor`, `max_age`, `max_files`)
+- Number of open PHP resources in debug system info (`SystemInfo::getOpenResources()`)
 
 ### Changed
 

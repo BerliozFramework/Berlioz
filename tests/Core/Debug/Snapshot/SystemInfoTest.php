@@ -28,5 +28,8 @@ class SystemInfoTest extends TestCase
         $this->assertEquals(getmypid() ?: null, $systemInfo->getPid());
         $this->assertEquals(getmyinode() ?: null, $systemInfo->getInode());
         $this->assertEquals(sys_get_temp_dir(), $systemInfo->getTmpDir());
+
+        $this->assertIsInt($systemInfo->getOpenResources());
+        $this->assertGreaterThan(0, $systemInfo->getOpenResources());
     }
 }
