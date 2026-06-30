@@ -78,10 +78,23 @@ class RedisQueueTest extends QueueTestCase
             )
             ->willReturn(true);
 
+        // The queue evaluates time() internally; allow a small window to avoid a
+        // 1-second race between this assertion and the call under test.
+        $before = time();
+
         $redisMock
             ->expects($this->once())
             ->method('zrangebyscore')
-            ->with('testQueue:delayed', '-inf', (string)time())
+            ->with(
+                'testQueue:delayed',
+                '-inf',
+                $this->callback(
+                    fn($score): bool => is_string($score)
+                        && ctype_digit($score)
+                        && (int)$score >= $before
+                        && (int)$score <= $before + 2,
+                ),
+            )
             ->willReturn([$jobData]);
 
         $redisMock
