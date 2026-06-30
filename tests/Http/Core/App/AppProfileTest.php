@@ -29,42 +29,42 @@ class AppProfileTest extends AbstractTestCase
 
     public function testDebugInfo()
     {
-        list(1 => $profile) = $this->getAppAndProfile();
+        [1 => $profile] = $this->getAppAndProfile();
 
         $this->assertEmpty($profile->__debugInfo());
     }
 
     public function testGetEnv()
     {
-        list($app, $profile) = $this->getAppAndProfile();
+        [$app, $profile] = $this->getAppAndProfile();
 
         $this->assertSame($app->getCore()->getEnv(), $profile->getEnv());
     }
 
     public function testGetConfig()
     {
-        list($app, $profile) = $this->getAppAndProfile();
+        [$app, $profile] = $this->getAppAndProfile();
 
         $this->assertSame($app->getConfig(), $profile->getConfig());
     }
 
     public function testGetAssets()
     {
-        list($app, $profile) = $this->getAppAndProfile();
+        [$app, $profile] = $this->getAppAndProfile();
 
         $this->assertSame($app->getAssets(), $profile->getAssets());
     }
 
     public function testGetFlashBag()
     {
-        list($app, $profile) = $this->getAppAndProfile();
+        [$app, $profile] = $this->getAppAndProfile();
 
         $this->assertSame($app->get(FlashBag::class), $profile->getFlashBag());
     }
 
     public function testGetRequest_NULL()
     {
-        list($app, $profile) = $this->getAppAndProfile();
+        [$app, $profile] = $this->getAppAndProfile();
 
         $this->assertNull($app->getRequest());
         $this->assertSame($app->getRequest(), $profile->getRequest());
@@ -72,7 +72,7 @@ class AppProfileTest extends AbstractTestCase
 
     public function testGetRequest()
     {
-        list($app, $profile) = $this->getAppAndProfile();
+        [$app, $profile] = $this->getAppAndProfile();
         $app->handle($request = new ServerRequest('GET', '/controller1/method1?foo=bar&qux=quux'));
 
         $this->assertSame($request, $app->getRequest());
@@ -81,7 +81,7 @@ class AppProfileTest extends AbstractTestCase
 
     public function testGetRoute_NULL()
     {
-        list($app, $profile) = $this->getAppAndProfile();
+        [$app, $profile] = $this->getAppAndProfile();
 
         $this->assertNull($app->getRoute());
         $this->assertSame($app->getRoute(), $profile->getRoute());
@@ -89,7 +89,7 @@ class AppProfileTest extends AbstractTestCase
 
     public function testGetRoute()
     {
-        list($app, $profile) = $this->getAppAndProfile();
+        [$app, $profile] = $this->getAppAndProfile();
         $app->handle(new ServerRequest('GET', '/controller1/method1?foo=bar&qux=quux'));
 
         $this->assertEquals('c1m1', $app->getRoute()->getName());
@@ -98,7 +98,7 @@ class AppProfileTest extends AbstractTestCase
 
     public function testGetLocale()
     {
-        list($app, $profile) = $this->getAppAndProfile();
+        [$app, $profile] = $this->getAppAndProfile();
         $app->handle(new ServerRequest('GET', '/controller1/method1?foo=bar&qux=quux'));
 
         $this->assertEquals(Locale::getDefault(), $app->getCore()->getLocale());
@@ -107,7 +107,7 @@ class AppProfileTest extends AbstractTestCase
 
     public function testIsDebugEnabled_enabled()
     {
-        list($app, $profile) = $this->getAppAndProfile();
+        [$app, $profile] = $this->getAppAndProfile();
         $app->getCore()->getDebug()->setEnabled(true);
 
         $this->assertTrue($app->getCore()->getDebug()->isEnabled());
@@ -116,7 +116,7 @@ class AppProfileTest extends AbstractTestCase
 
     public function testIsDebugEnabled_disabled()
     {
-        list($app, $profile) = $this->getAppAndProfile();
+        [$app, $profile] = $this->getAppAndProfile();
 
         $this->assertFalse($app->getCore()->getDebug()->isEnabled());
         $this->assertSame($app->getCore()->getDebug()->isEnabled(), $profile->isDebugEnabled());
@@ -124,7 +124,7 @@ class AppProfileTest extends AbstractTestCase
 
     public function testGetDebugUniqid()
     {
-        list($app, $profile) = $this->getAppAndProfile();
+        [$app, $profile] = $this->getAppAndProfile();
 
         $this->assertNotEmpty($app->getCore()->getDebug()->getUniqid());
         $this->assertSame($app->getCore()->getDebug()->getUniqid(), $profile->getDebugUniqid());
