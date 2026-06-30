@@ -15,6 +15,7 @@ namespace Berlioz\Http\Message\Tests\Parser;
 use Berlioz\Http\Message\Parser\JsonParser;
 use Berlioz\Http\Message\Response;
 use PHPUnit\Framework\TestCase;
+use RuntimeException;
 
 class JsonParserTest extends TestCase
 {
@@ -25,5 +26,18 @@ class JsonParserTest extends TestCase
         $parsedBody = JsonParser::parseMessageBody($response);
 
         $this->assertEquals(json_decode($body), $parsedBody);
+    }
+
+    public function testParseMessageBodyRejectsTooDeepJson()
+    {
+        // One level deeper than the allowed maximum.
+        $depth = JsonParser::MAX_DEPTH + 1;
+        $body = str_repeat('[', $depth) . str_repeat(']', $depth);
+        $response = new Response($body, 200, ['Content-Type' => 'application/json']);
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Cannot parse JSON contents');
+
+        JsonParser::parseMessageBody($response);
     }
 }
