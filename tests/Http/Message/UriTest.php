@@ -13,6 +13,7 @@
 namespace Berlioz\Http\Message\Tests;
 
 use Berlioz\Http\Message\Uri;
+use InvalidArgumentException;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -447,5 +448,35 @@ class UriTest extends TestCase
     public function testToString(Uri $uri, array $uriValues, string $stringUri)
     {
         $this->assertEquals($stringUri, (string)$uri);
+    }
+
+    public function testWithHostRejectsControlCharacters()
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('must not contain CR, LF or NUL');
+
+        $this->getUriToTest()->withHost("evil.com\r\nHost: attacker.com");
+    }
+
+    public function testWithPathRejectsControlCharacters()
+    {
+        $this->expectException(InvalidArgumentException::class);
+
+        $this->getUriToTest()->withPath("/path\r\nInjected: header");
+    }
+
+    public function testWithQueryRejectsControlCharacters()
+    {
+        $this->expectException(InvalidArgumentException::class);
+
+        $this->getUriToTest()->withQuery("a=b\r\nInjected: header");
+    }
+
+    public function testWithSchemeRejectsInvalidScheme()
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('not a valid URI scheme');
+
+        $this->getUriToTest()->withScheme("ht\r\ntp");
     }
 }
