@@ -55,7 +55,7 @@ class Address
         if (null !== $this->name && mb_strlen($this->name) > 0) {
             return sprintf(
                 '%s <%s>',
-                mb_encode_mimeheader($this->name, mb_detect_encoding($this->name), 'Q'),
+                mb_encode_mimeheader($this->name, 'UTF-8', 'Q'),
                 $this->mail
             );
         }
@@ -79,9 +79,15 @@ class Address
      * @param string $name
      *
      * @return static
+     * @throws InvalidArgumentException if name contains CR or LF characters.
      */
     public function setName(string $name): Address
     {
+        // Prevent header injection
+        if (preg_match('/[\r\n]/', $name)) {
+            throw new InvalidArgumentException('Name must not contain CR or LF characters');
+        }
+
         $this->name = $name;
 
         return $this;

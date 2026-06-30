@@ -68,4 +68,21 @@ class AddressTest extends TestCase
         $this->assertEquals('ronan.giron@berlioz-framework.com', $address->getMail());
         $this->assertEquals('Ronan Giron', $address->getName());
     }
+
+    public function testSetNameRejectsCRLFInjection()
+    {
+        $address = new Address();
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('must not contain CR or LF');
+
+        $address->setName("Ronan\r\nBcc: attacker@evil.com");
+    }
+
+    public function testConstructorRejectsCRLFInName()
+    {
+        $this->expectException(InvalidArgumentException::class);
+
+        new Address('ronan.giron@berlioz-framework.com', "Ronan\r\nBcc: attacker@evil.com");
+    }
 }
