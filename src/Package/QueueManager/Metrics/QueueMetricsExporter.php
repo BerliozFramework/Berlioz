@@ -45,6 +45,11 @@ class QueueMetricsExporter
      * ]
      * </code>
      *
+     * For a monitorable queue, `waitTime` / `delayed` default to `0` when the backend returns no
+     * value (e.g. an empty queue): the queue exists and the metric is applicable, so the series
+     * must not disappear. For a non-monitorable queue both are `null` (metric not applicable) and
+     * are therefore omitted from the rendered output.
+     *
      * @return array{queues: array<string, array{size: int, waitTime: ?int, delayed: ?int}>, total: int}
      */
     public function collect(): array
@@ -52,10 +57,11 @@ class QueueMetricsExporter
         $queues = [];
 
         foreach ($this->queueManager->getQueues() as $queue) {
+            $monitorable = $queue instanceof MonitorableQueueInterface;
             $queues[$queue->getName()] = [
                 'size' => $queue->size(),
-                'waitTime' => $queue instanceof MonitorableQueueInterface ? $queue->waitTime() : null,
-                'delayed' => $queue instanceof MonitorableQueueInterface ? $queue->delayed() : null,
+                'waitTime' => $monitorable ? ($queue->waitTime() ?? 0) : null,
+                'delayed' => $monitorable ? ($queue->delayed() ?? 0) : null,
             ];
         }
 

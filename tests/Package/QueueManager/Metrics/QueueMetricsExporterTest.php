@@ -46,6 +46,25 @@ class QueueMetricsExporterTest extends TestCase
         );
     }
 
+    public function testCollect_monitorableEmptyQueueDefaultsToZero()
+    {
+        // A monitorable but empty queue: waitTime()/delayed() return null, coalesced to 0 so the
+        // known series are still rendered. Non-monitorable queues keep null (omitted on render).
+        $exporter = new QueueMetricsExporter(new QueueManager(new FakeMonitorableQueue('emails', 0, null, null)));
+
+        $this->assertSame(
+            [
+                'queues' => ['emails' => ['size' => 0, 'waitTime' => 0, 'delayed' => 0]],
+                'total' => 0,
+            ],
+            $exporter->collect(),
+        );
+
+        $output = $exporter->prometheus();
+        $this->assertStringContainsString('job_queue_wait_time_seconds{queue_name="emails"} 0', $output);
+        $this->assertStringContainsString('job_queue_delayed{queue_name="emails"} 0', $output);
+    }
+
     public function testPrometheus()
     {
         $output = $this->exporter()->prometheus();
