@@ -25,6 +25,7 @@ use Berlioz\Package\QueueManager\Factory\AwsSqsQueueFactory;
 use Berlioz\Package\QueueManager\Factory\DbQueueFactory;
 use Berlioz\Package\QueueManager\Factory\MemoryQueueFactory;
 use Berlioz\Package\QueueManager\Handler\BerliozCommandJobHandler;
+use Berlioz\Package\QueueManager\Http\QueueMetricsMiddleware;
 use Berlioz\ServiceContainer\Container;
 
 class BerliozPackage extends AbstractPackage
@@ -50,6 +51,25 @@ class BerliozPackage extends AbstractPackage
                             MemoryQueueFactory::class,
                             AwsSqsQueueFactory::class,
                             DbQueueFactory::class,
+                        ],
+                        // HTTP metrics endpoint. Opt-in: disabled by default. When `berlioz/http-core`
+                        // is installed, the middleware below serves queue metrics on `path`, gated by
+                        // the client IP allow-list (`ip`) and/or an optional bearer `token`.
+                        'metrics' => [
+                            'enable' => false,
+                            'path' => '/metrics/queues',
+                            'format' => 'prometheus',
+                            'ip' => [],
+                            'token' => null,
+                            'prometheus_labels' => [],
+                            'total' => false,
+                        ],
+                    ],
+                    'http' => [
+                        'middlewares' => [
+                            1 => [
+                                'queue_metrics' => QueueMetricsMiddleware::class,
+                            ],
                         ],
                     ],
                 ],

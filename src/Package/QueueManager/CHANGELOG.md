@@ -7,9 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- HTTP endpoint exposing queue metrics (`berlioz.queues.metrics`), opt-in and served by `QueueMetricsMiddleware` on a configurable path (default `/metrics/queues`), gated by a client IP allow-list and an optional bearer token, supporting `prometheus` and `json` formats; it never overrides an existing application route
+- Reusable `QueueMetricsExporter` shared by the `queue:size` command and the HTTP endpoint
+
 ### Changed
 
 - `berlioz:system` job handler is now opt-in via configuration
+- The `prometheus` output of `queue:size` now includes `# HELP` / `# TYPE` metadata lines
+
+### Fixed
+
+- Escape queue name label values in the Prometheus output
 
 ### Security
 

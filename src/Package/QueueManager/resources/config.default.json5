@@ -13,7 +13,26 @@
         "Berlioz\\Package\\QueueManager\\Factory\\MemoryQueueFactory",
         "Berlioz\\Package\\QueueManager\\Factory\\AwsSqsQueueFactory",
         "Berlioz\\Package\\QueueManager\\Factory\\DbQueueFactory"
-      ]
+      ],
+      // HTTP metrics endpoint. Opt-in: disabled by default. When `berlioz/http-core` is installed,
+      // the middleware below serves queue metrics on `path`, gated by the client IP allow-list
+      // (`ip`) and/or an optional bearer `token`.
+      metrics: {
+        enable: false,
+        path: "/metrics/queues",
+        format: "prometheus",
+        ip: [],
+        token: null,
+        prometheus_labels: {},
+        total: false
+      }
+    },
+    http: {
+      middlewares: {
+        "1": {
+          queue_metrics: "Berlioz\\Package\\QueueManager\\Http\\QueueMetricsMiddleware"
+        }
+      }
     }
   },
   commands: {

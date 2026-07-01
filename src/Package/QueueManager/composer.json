@@ -29,7 +29,8 @@
     "ext-redis": "To use Redis queue",
     "ext-amqp": "To use AMQP queue",
     "aws/aws-sdk-php": "To use AWS SQS service",
-    "hectororm/query": "To use database queue"
+    "hectororm/query": "To use database queue",
+    "berlioz/http-core": "To expose the queue metrics HTTP endpoint (/metrics/queues)"
   },
   "extra": {
     "branch-alias": {
