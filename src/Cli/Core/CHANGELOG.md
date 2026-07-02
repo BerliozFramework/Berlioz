@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.2.0] - 2026-07-02
+
 ### Added
 
 - Add `berlioz:debug-clear` command to clear debug reports (`--all`, `--days=N`, or configured retention policy by default)

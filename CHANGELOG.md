@@ -7,6 +7,71 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.2.0] - 2026-07-02
+
+### Added
+
+- [cli-core] Add `berlioz:debug-clear` command to clear debug reports (`--all`, `--days=N`, or configured retention policy by default)
+- [core] `RedisCacheDriver`, a PSR-16 cache driver backed by phpredis (ext-redis)
+- [core] `FallbackCacheDriver`, a resilience decorator that falls back to the next driver when one fails
+- [core] `CacheDriverFactory` to build a cache driver from an array of options, a JSON file (`fromFile()`) or environment variables (`fromEnv()`/`auto()`)
+- [core] `SnapshotCleaner` to garbage collect debug snapshots according to a retention policy (max age in days and/or max number of files)
+- [core] Automatic, probabilistic garbage collection of debug snapshots on write, configurable via `berlioz.debug.gc` (`probability`, `divisor`, `max_age`, `max_files`)
+- [core] Number of open PHP resources in debug system info (`SystemInfo::getOpenResources()`)
+- [hector-package] Copy-to-clipboard buttons on debug console SQL queries (raw and with interpolated values)
+- [hector-package] Detection and highlighting of duplicate SQL queries in the debug console
+- [hector-package] Configurable debug thresholds via `hector.debug` (`slow_query`, `very_slow_query`, `duplicate_threshold`)
+- [hector-package] Database migrations support with `hector:migrate`, `hector:migrate:down` and `hector:migrate:status` commands
+- [http-client] `AutoAdapter` selecting cURL by default and falling back to the stream transport automatically
+- [http-core] Copy-to-clipboard buttons on debug console code blocks and values
+- [http-core] "Clear all caches" button in debug console cache page (internal cache, OPcache and cache directories)
+- [http-core] Cache clear shortcuts on the debug console dashboard (clear internal cache or all caches)
+- [http-core] Support for inline modal content in the debug console via `data-content` on `data-toggle="detail"` triggers (in addition to remote `data-target`)
+- [http-core] Display the number of open PHP resources in the debug console environment page
+- [queue-manager-package] HTTP endpoint exposing queue metrics (`berlioz.queues.metrics`), opt-in and served by `QueueMetricsMiddleware` on a configurable path (default `/metrics/queues`), gated by a client IP allow-list and an optional bearer token, supporting `prometheus` and `json` formats; it never overrides an existing application route
+- [queue-manager-package] Reusable `QueueMetricsExporter` shared by the `queue:size` command and the HTTP endpoint; monitorable queues always expose `wait_time_seconds` / `delayed` (defaulting to `0` when the backend returns no value, e.g. an empty queue) so known series never disappear, while non-monitorable queues omit them
+- [twig-package] Copy-to-clipboard buttons on template and name values in debug console Twig page
+
+### Changed
+
+- [core] `FileCacheDriver` now also accepts a directory path string in addition to `DirectoriesInterface`
+- [core] Bump `berlioz/helpers` requirement to `^1.14` (network helpers)
+- [hector-package] Slow-query detection now uses absolute, configurable thresholds instead of a per-request average
+- [hector-package] `HectorSection` now accepts a single `Logger` (the variadic constructor argument has been removed)
+- [hector-package] Bumped `hectororm/hectororm` requirement to `^1.4`
+- [http-core] Use a more meaningful cache icon in the debug console (menu and dashboard)
+- [http-core] Use a distinct icon for the environment section in the debug console menu (avoid clash with Hector ORM section)
+- [http-core] Debug console cache-clearing actions now require `POST` (cache page and dashboard buttons are forms instead of links)
+- [queue-manager-package] `berlioz:system` job handler is now opt-in via configuration
+- [queue-manager-package] The `prometheus` output of `queue:size` now includes `# HELP` / `# TYPE` metadata lines
+
+### Fixed
+
+- [core] `DefaultDirectories::getLibraryDirectory()` no longer throws when the package is installed standalone: it now falls back to the package-root `composer.json` when the monorepo-relative path does not resolve
+- [http-core] Round load average values in debug performances page to avoid excessive decimals
+- [http-core] Re-initialize debug console JS components (copy buttons, tooltips, syntax highlighting) on content loaded into modals (remote or inline)
+- [http-core] Prevent `TypeError` ("Cannot read properties of null") in debug console when repeatedly clicking copy buttons, caused by accumulated `hidden.bs.tooltip` listeners disposing the tooltip twice
+- [http-message] Guard malformed `Content-Type` parsing in `getParsedBody()` (no more undefined-index warning on a type without a subtype)
+- [http-message] Pass an explicit nesting depth to `json_decode()` in `JsonParser`
+- [mailer] Add explicit nullable types to parameters with `null` default to fix PHP 8.4 implicit nullable deprecation
+- [queue-manager-package] Escape queue name label values in the Prometheus output
+- [router] Fix inline route attribute regex containing curly braces (quantifiers like `{2}` or `{1,3}`) is no longer truncated at the first closing brace
+- [twig-package] Twig profile detail modal now reuses the shared debug console detail mechanism, restoring interactive components (copy buttons) in the modal
+- [twig-package] Removed a leftover `console.log` from the Twig debug console template
+
+### Security
+
+- [core] Stop trusting `X-Forwarded-For` for the debug IP allow-list; use `REMOTE_ADDR` unless a trusted proxy is configured (`berlioz.proxies.trusted`)
+- [core] Create cache directories with restrictive permissions (`0750`) instead of world-writable `0777`, and write cache files as `0640`
+- [http-core] Gate the entire `/_console` debug surface (including `phpinfo`) behind debug-enabled + client IP allow-list via a new `DebugConsoleMiddleware`; non-allowed requests get a 404
+- [http-core] Require `POST` for cache-clearing actions, removing the unauthenticated GET trigger
+- [http-message] Reject CR/LF and invalid characters in header names/values and URI components (CRLF/header injection); HTTP/2 pseudo-headers are still allowed
+- [http-message] Reject CR/LF and NUL in the `Response` reason phrase (HTTP status-line injection)
+- [http-message] Create upload target directories with restrictive permissions (`0750`) in `UploadedFile::moveTo()`
+- [mailer] Reject CR/LF in subject, address display name and bulk headers to prevent email header injection
+- [mailer] Always encode MIME headers (subject, address display name) with a deterministic `UTF-8` charset instead of `mb_detect_encoding()`
+- [queue-manager-package] Disable the `berlioz:system` job handler by default and remove shell-string construction from job payloads (RCE)
+
 ## [3.1.1] - 2026-06-10
 
 ### Fixed
