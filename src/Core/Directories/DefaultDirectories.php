@@ -73,9 +73,15 @@ class DefaultDirectories implements DirectoriesInterface
      */
     protected function getLibraryDirectory(): string
     {
+        // Monorepo layout: src/Core/Directories/../../../composer.json points to the monorepo root.
+        // Standalone layout (PSR-4 maps "Berlioz\Core\" to the package root): the file lives in
+        // vendor/berlioz/core/Directories/, so the composer.json is one level up (../composer.json).
         $myComposerFilename = realpath(__DIR__ . '/../../../composer.json');
         if (false === $myComposerFilename) {
-            throw new BerliozException('Unable to find composer.json file of Core library');
+            $myComposerFilename = realpath(__DIR__ . '/../composer.json');
+            if (false === $myComposerFilename) {
+                throw new BerliozException('Unable to find composer.json file of Core library');
+            }
         }
 
         return dirname($myComposerFilename);
