@@ -5,6 +5,12 @@ on:
     branches:
       - main
       - '*.x'
+  # Tag propagation to sub-splits relies on the `create`/`delete` events:
+  # frankdejonge/use-subsplit-publish only propagates tags on `create` (never on `push: tags`).
+  create:
+    tags:
+      - 'v*.*'
+  delete:
     tags:
       - 'v*.*'
 
