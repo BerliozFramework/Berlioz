@@ -25,6 +25,12 @@ class RouterTest extends AbstractTestCase
     protected function setUp(): void
     {
         $_SERVER['HTTP_X_FORWARDED_PREFIX'] = null;
+        $_SERVER['REMOTE_ADDR'] = '10.0.0.1';
+    }
+
+    protected function tearDown(): void
+    {
+        unset($_SERVER['HTTP_X_FORWARDED_PREFIX'], $_SERVER['HTTP_X_FORWARDED_PREFIX_CUSTOM'], $_SERVER['REMOTE_ADDR']);
     }
 
     public function testSerialization()
@@ -117,7 +123,7 @@ class RouterTest extends AbstractTestCase
     {
         $_SERVER['HTTP_X_FORWARDED_PREFIX'] = '/super-prefix/';
 
-        $router = new Router(['X-Forwarded-Prefix' => true]);
+        $router = new Router(['X-Forwarded-Prefix' => true, 'trustedProxies' => ['10.0.0.1']]);
         $router->addRoute(new Route('/path/{attr1}/sub-path', name: 'route1'));
 
         $this->assertEquals(
@@ -133,7 +139,7 @@ class RouterTest extends AbstractTestCase
     {
         $_SERVER['HTTP_X_FORWARDED_PREFIX'] = '/super-prefix/';
 
-        $router = new Router(['X-Forwarded-Prefix' => false]);
+        $router = new Router(['X-Forwarded-Prefix' => false, 'trustedProxies' => ['10.0.0.1']]);
         $router->addRoute(new Route('/path/{attr1}/sub-path', name: 'route1'));
 
         $this->assertEquals(
@@ -149,7 +155,7 @@ class RouterTest extends AbstractTestCase
     {
         $_SERVER['HTTP_X_FORWARDED_PREFIX_CUSTOM'] = '/super-prefix/';
 
-        $router = new Router(['X-Forwarded-Prefix' => 'X-Forwarded-Prefix-Custom']);
+        $router = new Router(['X-Forwarded-Prefix' => 'X-Forwarded-Prefix-Custom', 'trustedProxies' => ['10.0.0.1']]);
         $router->addRoute(new Route('/path/{attr1}/sub-path', name: 'route1'));
 
         $this->assertEquals(
@@ -165,13 +171,112 @@ class RouterTest extends AbstractTestCase
     {
         $_SERVER['HTTP_X_FORWARDED_PREFIX'] = '/prefix/';
 
-        $router = new Router(['X-Forwarded-Prefix' => true]);
+        $router = new Router(['X-Forwarded-Prefix' => true, 'trustedProxies' => ['10.0.0.1']]);
         $router->addRoute(new Route('/redirect/{url}', name: 'redir'));
 
         $this->assertEquals(
             '/prefix/redirect/http://evil.com',
             $router->generate('redir', ['url' => 'http://evil.com'])
         );
+    }
+
+    public function testGenerate_withForwardedPrefix_untrustedProxy_isIgnored()
+    {
+        $_SERVER['HTTP_X_FORWARDED_PREFIX'] = '/super-prefix/';
+        $_SERVER['REMOTE_ADDR'] = '203.0.113.7';
+
+        $router = new Router(['X-Forwarded-Prefix' => true, 'trustedProxies' => ['10.0.0.1']]);
+        $router->addRoute(new Route('/path/{attr1}/sub-path', name: 'route1'));
+
+        // The forwarded header must be ignored when the direct peer is not trusted.
+        $this->assertEquals(
+            '/path/test/sub-path',
+            $router->generate('route1', ['attr1' => 'test'])
+        );
+    }
+
+    public function testGenerate_withForwardedPrefix_noTrustedProxyConfigured_isIgnored()
+    {
+        $_SERVER['HTTP_X_FORWARDED_PREFIX'] = '/super-prefix/';
+
+        $router = new Router(['X-Forwarded-Prefix' => true]);
+        $router->addRoute(new Route('/path/{attr1}/sub-path', name: 'route1'));
+
+        // Without any trusted proxy configured, the prefix is never applied.
+        $this->assertEquals(
+            '/path/test/sub-path',
+            $router->generate('route1', ['attr1' => 'test'])
+        );
+    }
+
+    public function testGenerate_withForwardedPrefix_catchAllAlias()
+    {
+        $_SERVER['HTTP_X_FORWARDED_PREFIX'] = '/super-prefix/';
+        $_SERVER['REMOTE_ADDR'] = '203.0.113.7';
+
+        $router = new Router(['X-Forwarded-Prefix' => true, 'trustedProxies' => ['*']]);
+        $router->addRoute(new Route('/path/{attr1}/sub-path', name: 'route1'));
+
+        $this->assertEquals(
+            '/super-prefix/path/test/sub-path',
+            $router->generate('route1', ['attr1' => 'test'])
+        );
+    }
+
+    public function testFinalizePath_withServerParamsArgument()
+    {
+        $router = new Router(['X-Forwarded-Prefix' => true, 'trustedProxies' => ['10.0.0.1']]);
+
+        $this->assertEquals(
+            '/app/articles',
+            $router->finalizePath('/articles', [
+                'REMOTE_ADDR' => '10.0.0.1',
+                'HTTP_X_FORWARDED_PREFIX' => '/app',
+            ])
+        );
+    }
+
+    public function testFinalizePath_isIdempotent()
+    {
+        $router = new Router(['X-Forwarded-Prefix' => true, 'trustedProxies' => ['10.0.0.1']]);
+
+        $serverParams = [
+            'REMOTE_ADDR' => '10.0.0.1',
+            'HTTP_X_FORWARDED_PREFIX' => '/app',
+        ];
+
+        // Already prefixed: must not double the prefix.
+        $this->assertEquals('/app/articles', $router->finalizePath('/app/articles', $serverParams));
+        $this->assertEquals('/app', $router->finalizePath('/app', $serverParams));
+    }
+
+    public function testFinalizePath_withEmptyHeader_isNoOp()
+    {
+        $router = new Router(['X-Forwarded-Prefix' => true, 'trustedProxies' => ['10.0.0.1']]);
+
+        $this->assertEquals(
+            '/articles',
+            $router->finalizePath('/articles', [
+                'REMOTE_ADDR' => '10.0.0.1',
+                'HTTP_X_FORWARDED_PREFIX' => '',
+            ])
+        );
+    }
+
+    public function testFinalizePath_normalizesSlashes()
+    {
+        $router = new Router(['X-Forwarded-Prefix' => true, 'trustedProxies' => ['10.0.0.1']]);
+
+        foreach (['app', '/app', 'app/', '/app/'] as $prefix) {
+            $this->assertEquals(
+                '/app/articles',
+                $router->finalizePath('/articles', [
+                    'REMOTE_ADDR' => '10.0.0.1',
+                    'HTTP_X_FORWARDED_PREFIX' => $prefix,
+                ]),
+                sprintf('Prefix "%s" should normalize to "/app"', $prefix)
+            );
+        }
     }
 
     public function testGenerateWithMissingAttributes()

@@ -36,6 +36,19 @@ interface RouterInterface extends RouteSetInterface
     public function generate(string|RouteInterface $route, array|RouteAttributes $parameters = []): string;
 
     /**
+     * Finalize path.
+     *
+     * Prepends the reverse-proxy prefix (`X-Forwarded-Prefix`) to the given path
+     * when the request comes from a trusted proxy.
+     *
+     * @param string $path
+     * @param array|null $serverParams Server parameters (defaults to `$_SERVER` when null)
+     *
+     * @return string
+     */
+    public function finalizePath(string $path, ?array $serverParams = null): string;
+
+    /**
      * Is valid request?
      *
      * @param ServerRequestInterface|string $request

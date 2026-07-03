@@ -22,6 +22,7 @@ use Berlioz\Http\Core\Debug\RouterSection;
 use Berlioz\Http\Core\Http\Handler\ControllerHandler;
 use Berlioz\Http\Core\Http\Handler\Error\ErrorHandler;
 use Berlioz\Http\Core\Http\HttpHandler;
+use Berlioz\Http\Core\Http\Middleware\ForwardedPrefixMiddleware;
 use Berlioz\Http\Message\HttpFactory;
 use Berlioz\Router\RouteInterface;
 use Berlioz\Router\Router;
@@ -113,6 +114,18 @@ class HttpApp extends AbstractApp implements RequestHandlerInterface
     }
 
     /**
+     * Set request.
+     *
+     * @param ServerRequestInterface $request
+     *
+     * @return void
+     */
+    public function setRequest(ServerRequestInterface $request): void
+    {
+        $this->request = $request;
+    }
+
+    /**
      * Get current route.
      *
      * @return RouteInterface|null
@@ -175,6 +188,11 @@ class HttpApp extends AbstractApp implements RequestHandlerInterface
         $middlewares = $this->getConfig()->get('berlioz.http.middlewares', []);
         uksort($middlewares, fn($key1, $key2) => (int)$key1 <=> (int)$key2);
         array_walk_recursive($middlewares, fn($middleware) => $this->httpHandler->addMiddleware($middleware));
+
+        // Applied last (closest to the controller): rewrites the request URI with the
+        // reverse-proxy prefix so any URL derived from it (pagination, self-URLs, ...)
+        // is correctly prefixed. Runs after routing, so route matching is never affected.
+        $this->httpHandler->addMiddleware(ForwardedPrefixMiddleware::class);
 
         $activity->end();
 
