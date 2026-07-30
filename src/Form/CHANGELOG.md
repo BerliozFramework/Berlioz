@@ -17,8 +17,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Mapping is now resolved uniformly through `FormMapping`. As a consequence, `mapped: false` also disables
-  collection (previously only hydration was skipped), making collect and hydrate consistent.
+- Mapping is now resolved uniformly through the `FormMapping` strategy in `TypeHydrator`, `TypeCollector`
+  and `AbstractElement::getMapped()`. No behavior change for the existing `bool`/`string` forms of the
+  `mapped` option.
 
 ## [3.2.0] - 2026-07-02
 
