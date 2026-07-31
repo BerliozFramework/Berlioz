@@ -29,7 +29,7 @@ final readonly class FormMapping
     /**
      * FormMapping constructor.
      *
-     * @param Closure $get fn(object $mapped, bool &$exists = null): mixed
+     * @param Closure $get fn(object $mapped, ?bool &$exists = null): mixed
      * @param Closure $set fn(object $mapped, mixed $value): bool
      */
     public function __construct(
@@ -52,7 +52,7 @@ final readonly class FormMapping
     public static function forProperty(string $property): self
     {
         return new self(
-            get: fn(object $mapped, bool &$exists = null): mixed
+            get: fn(object $mapped, ?bool &$exists = null): mixed
                 => b_get_property_value($mapped, $property, $exists),
             set: fn(object $mapped, mixed $value): bool
                 => b_set_property_value($mapped, $property, $value),
