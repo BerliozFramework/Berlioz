@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `FormMapping(get:, set:)` strategy accepted as the `mapped` option, allowing full control over how an
+  element reads from and writes to the mapped object (arbitrary internal target, nested properties, on-the-fly
+  transformations). The public `name` stays decoupled from the internal mapping target.
+- `ElementInterface::getMapping(): ?FormMapping` normalizing the `mapped` option (`false`/`string`/`true`/
+  `FormMapping`) into a single strategy.
+
+### Changed
+
+- Mapping is now resolved uniformly through the `FormMapping` strategy in `TypeHydrator`, `TypeCollector`
+  and `AbstractElement::getMapped()`. No behavior change for the existing `bool`/`string` forms of the
+  `mapped` option.
+
 ## [3.2.0] - 2026-07-02
 
 _No changes in this release._
