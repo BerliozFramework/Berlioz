@@ -26,10 +26,16 @@ class AssetRuntimeExtensionTest extends TestCase
     protected function setUp(): void
     {
         unset($_SERVER['HTTP_X_FORWARDED_PREFIX']);
+        $_SERVER['REMOTE_ADDR'] = '10.0.0.1';
         $this->assets = new Assets(
             __DIR__ . '/data/manifest.json',
             __DIR__ . '/data/entrypoints.json',
         );
+    }
+
+    protected function tearDown(): void
+    {
+        unset($_SERVER['HTTP_X_FORWARDED_PREFIX'], $_SERVER['REMOTE_ADDR']);
     }
 
     public function testAsset()
@@ -77,7 +83,7 @@ class AssetRuntimeExtensionTest extends TestCase
     public function testEntryPoints_withMultipleEntryAndRouterOptions()
     {
         $_SERVER['HTTP_X_FORWARDED_PREFIX'] = '/prefix';
-        $extensionRuntime = new AssetRuntimeExtension($this->assets, new Router(['X-Forwarded-Prefix' => true]));
+        $extensionRuntime = new AssetRuntimeExtension($this->assets, new Router(['X-Forwarded-Prefix' => true, 'trustedProxies' => ['10.0.0.1']]));
 
         $this->assertEquals(
             '<link rel="stylesheet" href="/prefix/assets/css/website.css">' . PHP_EOL .
@@ -103,7 +109,7 @@ class AssetRuntimeExtensionTest extends TestCase
     public function testEntryPoints_withTypeAndRouterOptions()
     {
         $_SERVER['HTTP_X_FORWARDED_PREFIX'] = '/prefix';
-        $extensionRuntime = new AssetRuntimeExtension($this->assets, new Router(['X-Forwarded-Prefix' => true]));
+        $extensionRuntime = new AssetRuntimeExtension($this->assets, new Router(['X-Forwarded-Prefix' => true, 'trustedProxies' => ['10.0.0.1']]));
 
         $this->assertEquals(
             '<script src="/prefix/assets/js/website.js"></script>' . PHP_EOL .
@@ -165,7 +171,7 @@ class AssetRuntimeExtensionTest extends TestCase
     public function testEntryPointsList_withMultipleEntryAndRouterOptions()
     {
         $_SERVER['HTTP_X_FORWARDED_PREFIX'] = '/prefix';
-        $extensionRuntime = new AssetRuntimeExtension($this->assets, new Router(['X-Forwarded-Prefix' => true]));
+        $extensionRuntime = new AssetRuntimeExtension($this->assets, new Router(['X-Forwarded-Prefix' => true, 'trustedProxies' => ['10.0.0.1']]));
 
         $this->assertEquals(
             ['/prefix/assets/js/website.js', '/prefix/assets/js/vendor.js', '/prefix/assets/js/admin.js'],
@@ -186,7 +192,7 @@ class AssetRuntimeExtensionTest extends TestCase
     public function testEntryPointsList_withTypeAndRouterOptions()
     {
         $_SERVER['HTTP_X_FORWARDED_PREFIX'] = '/prefix';
-        $extensionRuntime = new AssetRuntimeExtension($this->assets, new Router(['X-Forwarded-Prefix' => true]));
+        $extensionRuntime = new AssetRuntimeExtension($this->assets, new Router(['X-Forwarded-Prefix' => true, 'trustedProxies' => ['10.0.0.1']]));
 
         $this->assertEquals(
             ['/prefix/assets/js/website.js', '/prefix/assets/js/vendor.js'],
@@ -287,3 +293,4 @@ class AssetRuntimeExtensionTest extends TestCase
         $this->assertEquals($expectedCookie, $cookieArguments);
     }
 }
+

@@ -97,6 +97,50 @@ class HttpAppTest extends TestCase
         $this->assertNull($app->getRoute());
     }
 
+    public function testHandle_withForwardedPrefix_fromTrustedProxy()
+    {
+        $app = new HttpApp(new Core(new FakeDefaultDirectories(), false));
+
+        // The route is defined without the prefix and is matched on the bare path,
+        // while the request URI reaching the app is rewritten with the prefix.
+        $app->handle(
+            new ServerRequest(
+                'GET',
+                'http://getberlioz.com/controller1/method1',
+                serverParams: [
+                    'REMOTE_ADDR' => '10.0.0.1',
+                    'HTTP_X_FORWARDED_PREFIX' => '/app',
+                ],
+            )
+        );
+
+        // Route matching succeeded on the bare (unprefixed) path.
+        $this->assertInstanceOf(Route::class, $app->getRoute());
+        $this->assertEquals([ControllerOne::class, 'methodOne'], $app->getRoute()->getContext());
+
+        // The application-wide request now carries the prefixed URI.
+        $this->assertEquals('/app/controller1/method1', $app->getRequest()->getUri()->getPath());
+    }
+
+    public function testHandle_withForwardedPrefix_fromUntrustedProxy_isNoOp()
+    {
+        $app = new HttpApp(new Core(new FakeDefaultDirectories(), false));
+
+        $app->handle(
+            new ServerRequest(
+                'GET',
+                'http://getberlioz.com/controller1/method1',
+                serverParams: [
+                    'REMOTE_ADDR' => '203.0.113.7',
+                    'HTTP_X_FORWARDED_PREFIX' => '/app',
+                ],
+            )
+        );
+
+        $this->assertInstanceOf(Route::class, $app->getRoute());
+        $this->assertEquals('/controller1/method1', $app->getRequest()->getUri()->getPath());
+    }
+
     public function testHandle()
     {
         $app = new HttpApp(new Core(new FakeDefaultDirectories(), false));

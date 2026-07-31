@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `ForwardedPrefixMiddleware`, applied last in the pipeline, rewrites the current request URI with the reverse-proxy prefix (`X-Forwarded-Prefix`) so any URL derived from `getUri()` (pagination, self-URLs, redirections) is correctly prefixed; the resolved prefix is also exposed via the `berlioz.forwarded_prefix` request attribute
+- `HttpApp::setRequest()` to update the application-wide server request
+
+### Security
+
+- The reverse-proxy prefix is only applied when `REMOTE_ADDR` matches `berlioz.proxies.trusted`; the middleware delegates the trusted-proxy guard to `Router::finalizePath()`
+
 ## [3.2.0] - 2026-07-02
 
 ### Added

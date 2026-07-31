@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace Berlioz\Router;
 
+use Berlioz\Helpers\NetworkHelper;
 use Berlioz\Http\Message\Request;
 use Berlioz\Http\Message\ServerRequest;
 use Berlioz\Router\Exception\NotFoundException;
@@ -34,6 +35,7 @@ class Router implements RouterInterface
 
     private array $options = [
         'X-Forwarded-Prefix' => false,
+        'trustedProxies' => [],
     ];
 
     /**
@@ -115,26 +117,76 @@ class Router implements RouterInterface
     /**
      * Finalize path.
      *
+     * Prepends the reverse-proxy prefix (`X-Forwarded-Prefix`) to the given path
+     * when the request comes from a trusted proxy.
+     *
+     * The `$serverParams` argument lets a caller (e.g. a PSR-7 middleware) provide
+     * the server parameters explicitly; when `null`, the PHP `$_SERVER` superglobal
+     * is used as a fallback to preserve backward compatibility.
+     *
      * @param string $path
+     * @param array|null $serverParams Server parameters (defaults to `$_SERVER` when null)
      *
      * @return string
      */
-    public function finalizePath(string $path): string
+    public function finalizePath(string $path, ?array $serverParams = null): string
     {
         if (1 === preg_match('#^[a-z][a-z0-9+\-.]*://#i', $path)) {
             return $path;
         }
 
-        // X-Forwarded-Prefix
-        if (false !== $this->options['X-Forwarded-Prefix']) {
-            $xForwardedPrefix = $this->options['X-Forwarded-Prefix'] === true ? 'X-Forwarded-Prefix' : (string)$this->options['X-Forwarded-Prefix'];
-            $xForwardedPrefix = 'HTTP_' . strtoupper(str_replace('-', '_', $xForwardedPrefix));
-            if (!empty($prefix = $_SERVER[$xForwardedPrefix] ?? null)) {
-                $path = rtrim('/' . trim((string)$prefix, '/'), '/') . '/' . ltrim($path, '/');
-            }
+        $prefix = $this->resolveForwardedPrefix($serverParams ?? $_SERVER);
+
+        if (null === $prefix) {
+            return $path;
         }
 
-        return $path;
+        // Idempotence: do not prepend the prefix twice.
+        if ($path === $prefix || str_starts_with($path, $prefix . '/')) {
+            return $path;
+        }
+
+        return $prefix . '/' . ltrim($path, '/');
+    }
+
+    /**
+     * Resolve the reverse-proxy prefix from server parameters.
+     *
+     * Returns the normalized prefix (e.g. `/app`) when the `X-Forwarded-Prefix`
+     * feature is enabled and the direct peer (`REMOTE_ADDR`) is a trusted proxy;
+     * otherwise `null`.
+     *
+     * @param array $serverParams
+     *
+     * @return string|null
+     */
+    private function resolveForwardedPrefix(array $serverParams): ?string
+    {
+        // X-Forwarded-Prefix disabled
+        if (false === $this->options['X-Forwarded-Prefix']) {
+            return null;
+        }
+
+        // Trusted-proxy guard: never honour the header unless the direct peer is a trusted proxy.
+        $trustedProxies = (array)($this->options['trustedProxies'] ?? []);
+        $remoteAddr = isset($serverParams['REMOTE_ADDR']) ? trim((string)$serverParams['REMOTE_ADDR']) : '';
+
+        if ([] === $trustedProxies || false === NetworkHelper::isTrustedProxy($remoteAddr, $trustedProxies)) {
+            return null;
+        }
+
+        // Resolve the forwarded header value.
+        $header = $this->options['X-Forwarded-Prefix'] === true
+            ? 'X-Forwarded-Prefix'
+            : (string)$this->options['X-Forwarded-Prefix'];
+        $serverKey = 'HTTP_' . strtoupper(str_replace('-', '_', $header));
+        $prefix = trim((string)($serverParams[$serverKey] ?? ''), '/');
+
+        if ('' === $prefix) {
+            return null;
+        }
+
+        return '/' . $prefix;
     }
 
     private function generateParameters(array|RouteAttributes $parameters = []): array
