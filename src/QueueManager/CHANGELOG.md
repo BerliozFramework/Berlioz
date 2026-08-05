@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Fix `DbQueue::waitTime()` acquiring a needless `FOR UPDATE SKIP LOCKED` lock and skipping locked rows, distorting the monitoring metric
+
 ## [3.2.0] - 2026-07-02
 
 _No changes in this release._
