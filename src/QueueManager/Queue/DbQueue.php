@@ -90,7 +90,7 @@ readonly class DbQueue extends AbstractQueue implements PurgeableQueueInterface,
             ->orderBy('availability_time', Order::ORDER_ASC)
             ->orderBy('job_id', Order::ORDER_ASC)
             ->limit(1)
-            ->fetchOne(true);
+            ->fetchOne();
 
         if (null === $oldestJob || !isset($oldestJob['availability_time'])) {
             return null;
