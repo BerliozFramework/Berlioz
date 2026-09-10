@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Display response status, reason phrase, protocol and headers in the debug console's HTTP / Router section
+
 ## [3.2.0] - 2026-07-02
 
 ### Added
