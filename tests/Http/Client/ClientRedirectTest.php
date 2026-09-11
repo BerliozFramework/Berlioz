@@ -214,7 +214,10 @@ class ClientRedirectTest extends TestCase
 
     public static function provideRedirectBodies(): iterable
     {
+        yield '201 discards body' => [201, 'GET', ''];
+        yield '301 discards body' => [301, 'GET', ''];
         yield '302 discards body' => [302, 'GET', ''];
+        yield '303 discards body' => [303, 'GET', ''];
         yield '307 preserves body' => [307, 'POST', '{"message":"hello"}'];
         yield '308 preserves body' => [308, 'POST', '{"message":"hello"}'];
     }
