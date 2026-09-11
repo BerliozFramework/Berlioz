@@ -10,6 +10,8 @@
  * file that was distributed with this source code, to the root.
  */
 
+declare(strict_types=1);
+
 namespace Berlioz\Http\Client\Tests;
 
 use Berlioz\Http\Client\Options;
@@ -86,5 +88,24 @@ class OptionsTest extends TestCase
         );
         $this->assertEquals(['NewBarValue'], $options2->headers['Bar']);
         $this->assertEquals($expected, $options->headers['Bar']);
+    }
+
+    public function testMake_redirectSensitiveHeaders(): void
+    {
+        $initial = new Options(redirectSensitiveHeaders: ['x-api-key']);
+        $options = Options::make(
+            ['redirectSensitiveHeaders' => ['X-API-KEY', 'X-Access-Token']],
+            $initial,
+        );
+
+        self::assertSame(['X-Api-Key', 'X-Access-Token'], $options->redirectSensitiveHeaders);
+        self::assertSame(['x-api-key'], $initial->redirectSensitiveHeaders);
+        self::assertSame($options->redirectSensitiveHeaders, Options::make([], $options)->redirectSensitiveHeaders);
+        self::assertSame(
+            $options->redirectSensitiveHeaders,
+            Options::make(['redirectSensitiveHeaders' => []], $options)->redirectSensitiveHeaders,
+        );
+        self::assertSame($options->redirectSensitiveHeaders, Options::make(null, $options)->redirectSensitiveHeaders);
+        self::assertSame([], (new Options())->redirectSensitiveHeaders);
     }
 }
