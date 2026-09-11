@@ -21,10 +21,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Honor `cookies: false` when sending requests and collecting response cookies
 - Preserve content type for 307/308 request bodies and recalculate redirect content length
 
-### Docs
-
-- Document redirect origins, credential filtering, custom sensitive headers, referers, cookies and body replay
-
 ## [3.2.1] - 2026-09-11
 
 _No changes in this release._
