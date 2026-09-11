@@ -10,6 +10,8 @@
  * file that was distributed with this source code, to the root.
  */
 
+declare(strict_types=1);
+
 namespace Berlioz\Http\Client\Tests\Cookies;
 
 use Berlioz\Http\Client\Cookies\Cookie;
@@ -77,7 +79,8 @@ class CookiesManagerTest extends TestCase
         $this->assertEquals('test=value; test3=value3', implode('; ', $cookiesManager->getCookiesForUri($uri)));
 
         $uri = new Uri('http', 'www.getberlioz.fr');
-        $this->assertEquals('test2=value2', implode('; ', $cookiesManager->getCookiesForUri($uri)));
+        $this->assertEquals('', implode('; ', $cookiesManager->getCookiesForUri($uri)));
+        $this->assertCount(2, $cookiesManager);
     }
 
     public function testAddCookiesToRequest()
