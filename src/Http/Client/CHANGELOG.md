@@ -12,6 +12,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Redirect policy helpers for origin comparison, sensitive-header filtering and sanitized redirect URIs and referers
 - Additive `redirectSensitiveHeaders` option to configure application-specific credential headers
 
+### Security
+
+- Strip credential headers and URI credentials persistently after cross-origin redirects without modifying caller options
+- Sanitize redirect referers and omit them on HTTPS-to-HTTP redirects, preventing reapplication from default headers
+
+### Fixed
+
+- Honor disabled automatic cookie handling during redirects and preserve content type for 307/308 request bodies
+
 ## [3.2.1] - 2026-09-11
 
 _No changes in this release._
