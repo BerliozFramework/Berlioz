@@ -32,6 +32,7 @@ use Psr\Http\Client\ClientInterface;
 use Psr\Http\Client\NetworkExceptionInterface;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\UriInterface;
 use Psr\Log\LoggerAwareInterface;
 
 /**
@@ -203,6 +204,88 @@ class Client implements ClientInterface, LoggerAwareInterface
         }
 
         return $request;
+    }
+
+    /**
+     * Compare absolute HTTP origins, including effective default ports.
+     */
+    protected function isSameOrigin(UriInterface $source, UriInterface $target): bool
+    {
+        $scheme = strtolower($source->getScheme());
+        if (
+            !in_array($scheme, ['http', 'https'], true)
+            || $scheme !== strtolower($target->getScheme())
+            || $source->getHost() === ''
+            || strcasecmp($source->getHost(), $target->getHost()) !== 0
+        ) {
+            return false;
+        }
+
+        $defaultPort = $scheme === 'https' ? 443 : 80;
+
+        return ($source->getPort() ?? $defaultPort) === ($target->getPort() ?? $defaultPort);
+    }
+
+    /**
+     * Remove mandatory and application credentials from cross-origin redirect headers.
+     *
+     * @param array<string, string|string[]> $headers
+     * @return array<string, string|string[]>
+     */
+    protected function filterRedirectHeaders(array $headers, Options $options): array
+    {
+        $sensitiveHeaders = array_map(
+            strtolower(...),
+            array_merge(['Authorization', 'Proxy-Authorization', 'Cookie'], $options->redirectSensitiveHeaders),
+        );
+
+        foreach (array_keys($headers) as $name) {
+            if (in_array(strtolower($name), $sensitiveHeaders, true)) {
+                unset($headers[$name]);
+            }
+        }
+
+        return $headers;
+    }
+
+    /**
+     * Resolve Location before comparing origins; never accept credentials supplied by Location.
+     */
+    protected function prepareRedirectUri(string $location, UriInterface $source): UriInterface
+    {
+        $locationUri = Uri::createFromString($location);
+        $target = Uri::create($locationUri, $source)->withFragment('');
+
+        if ($locationUri->getUserInfo() !== '' || !$this->isSameOrigin($source, $target)) {
+            $target = $target->withUserInfo('');
+        }
+
+        return $target;
+    }
+
+    /**
+     * Generate a Referer using strict-origin-when-cross-origin semantics.
+     */
+    protected function createRedirectReferer(UriInterface $source, UriInterface $target): ?string
+    {
+        $sourceScheme = strtolower($source->getScheme());
+        $targetScheme = strtolower($target->getScheme());
+        if (
+            !in_array($sourceScheme, ['http', 'https'], true)
+            || !in_array($targetScheme, ['http', 'https'], true)
+            || $source->getHost() === ''
+            || $target->getHost() === ''
+            || ($sourceScheme === 'https' && $targetScheme === 'http')
+        ) {
+            return null;
+        }
+
+        $referer = $source->withUserInfo('')->withFragment('');
+        if (!$this->isSameOrigin($source, $target)) {
+            $referer = $referer->withPath('/')->withQuery('');
+        }
+
+        return (string)$referer;
     }
 
     /**

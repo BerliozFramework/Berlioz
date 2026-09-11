@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Redirect policy helpers for origin comparison, sensitive-header filtering and sanitized redirect URIs and referers
+- Additive `redirectSensitiveHeaders` option to configure application-specific credential headers
+
 ## [3.2.1] - 2026-09-11
 
 _No changes in this release._
