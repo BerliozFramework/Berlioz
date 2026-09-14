@@ -192,7 +192,10 @@ class HttpApp extends AbstractApp implements RequestHandlerInterface
         // Applied last (closest to the controller): rewrites the request URI with the
         // reverse-proxy prefix so any URL derived from it (pagination, self-URLs, ...)
         // is correctly prefixed. Runs after routing, so route matching is never affected.
-        $this->httpHandler->addMiddleware(ForwardedPrefixMiddleware::class);
+        if (true === $this->getConfig()->get('berlioz.router.rewriteRequestUri', false)
+            && false !== $this->getConfig()->get('berlioz.router.X-Forwarded-Prefix', false)) {
+            $this->httpHandler->addMiddleware(ForwardedPrefixMiddleware::class);
+        }
 
         $activity->end();
 

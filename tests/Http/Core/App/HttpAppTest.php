@@ -10,6 +10,8 @@
  * file that was distributed with this source code, to the root.
  */
 
+declare(strict_types=1);
+
 namespace Berlioz\Http\Core\Tests\App;
 
 use Berlioz\Config\Adapter\ArrayAdapter;
@@ -28,6 +30,7 @@ use Berlioz\Http\Message\Response;
 use Berlioz\Http\Message\ServerRequest;
 use Berlioz\Router\Route;
 use Berlioz\Router\RouterInterface;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 class HttpAppTest extends TestCase
@@ -99,7 +102,11 @@ class HttpAppTest extends TestCase
 
     public function testHandle_withForwardedPrefix_fromTrustedProxy()
     {
-        $app = new HttpApp(new Core(new FakeDefaultDirectories(), false));
+        $core = new Core(new FakeDefaultDirectories(), false);
+        $core->getConfig()->addConfig(new ArrayAdapter([
+            'berlioz' => ['router' => ['rewriteRequestUri' => true]],
+        ]));
+        $app = new HttpApp($core);
 
         // The route is defined without the prefix and is matched on the bare path,
         // while the request URI reaching the app is rewritten with the prefix.
@@ -124,7 +131,11 @@ class HttpAppTest extends TestCase
 
     public function testHandle_withForwardedPrefix_fromUntrustedProxy_isNoOp()
     {
-        $app = new HttpApp(new Core(new FakeDefaultDirectories(), false));
+        $core = new Core(new FakeDefaultDirectories(), false);
+        $core->getConfig()->addConfig(new ArrayAdapter([
+            'berlioz' => ['router' => ['rewriteRequestUri' => true]],
+        ]));
+        $app = new HttpApp($core);
 
         $app->handle(
             new ServerRequest(
@@ -139,6 +150,41 @@ class HttpAppTest extends TestCase
 
         $this->assertInstanceOf(Route::class, $app->getRoute());
         $this->assertEquals('/controller1/method1', $app->getRequest()->getUri()->getPath());
+    }
+
+    public static function provideDisabledRequestRewriting(): array
+    {
+        return [
+            'default' => [[]],
+            'explicitly disabled' => [['rewriteRequestUri' => false]],
+            'prefix disabled' => [['rewriteRequestUri' => true, 'X-Forwarded-Prefix' => false]],
+        ];
+    }
+
+    #[DataProvider('provideDisabledRequestRewriting')]
+    public function testHandle_withForwardedPrefix_rewritingDisabled(array $options): void
+    {
+        $core = new Core(new FakeDefaultDirectories(), false);
+        $core->getConfig()->addConfig(new ArrayAdapter(
+            ['berlioz' => ['router' => $options]],
+            priority: PHP_INT_MAX,
+        ));
+        $app = new HttpApp($core);
+
+        $response = $app->handle(new ServerRequest(
+            'GET',
+            'http://getberlioz.com/controller1/method1?page=2',
+            serverParams: [
+                'REMOTE_ADDR' => '10.0.0.1',
+                'HTTP_X_FORWARDED_PREFIX' => '/app',
+            ],
+        ));
+
+        $this->assertSame(200, $response->getStatusCode());
+        $this->assertInstanceOf(Route::class, $app->getRoute());
+        $this->assertSame('/controller1/method1', $app->getRequest()->getUri()->getPath());
+        $this->assertSame('page=2', $app->getRequest()->getUri()->getQuery());
+        $this->assertNull($app->getRequest()->getAttribute('berlioz.forwarded_prefix'));
     }
 
     public function testHandle()

@@ -9,7 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- `ForwardedPrefixMiddleware`, applied last in the pipeline, rewrites the current request URI with the reverse-proxy prefix (`X-Forwarded-Prefix`) so any URL derived from `getUri()` (pagination, self-URLs, redirections) is correctly prefixed; the resolved prefix is also exposed via the `berlioz.forwarded_prefix` request attribute
+- Optional `ForwardedPrefixMiddleware`, applied last in the pipeline when both `berlioz.router.rewriteRequestUri` and `X-Forwarded-Prefix` handling are enabled, rewrites the current request URI with the reverse-proxy prefix so URLs derived from `getUri()` are correctly prefixed; the resolved prefix is also exposed via the `berlioz.forwarded_prefix` request attribute
+- `berlioz.router.rewriteRequestUri` defaults to `false` in v3, preserving the internal request path unless rewriting is explicitly enabled
 - `HttpApp::setRequest()` to update the application-wide server request
 
 ### Security
