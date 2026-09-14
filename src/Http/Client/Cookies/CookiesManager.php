@@ -22,6 +22,7 @@ use IteratorAggregate;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\UriInterface;
+use TypeError;
 
 /**
  * Class CookiesManager.
@@ -34,15 +35,22 @@ class CookiesManager implements IteratorAggregate, Countable
     /**
      * CookiesManager constructor.
      *
-     * @param Cookie[] $cookies
+     * Restores an already deduplicated snapshot in its original order, without updating its cookies.
+     * Use addCookie() when replacement by name, domain and path is required.
      *
-     * @throws HttpClientException
+     * @param Cookie[] $cookies Cookies unique by name, domain and path
+     *
+     * @throws TypeError If an element is not a Cookie
      */
     public function __construct(array $cookies = [])
     {
         foreach ($cookies as $cookie) {
-            $this->addCookie($cookie);
+            if (!$cookie instanceof Cookie) {
+                throw new TypeError(sprintf('Expected a Cookie instance, %s given', get_debug_type($cookie)));
+            }
         }
+
+        $this->cookies = array_values($cookies);
     }
 
     /**
