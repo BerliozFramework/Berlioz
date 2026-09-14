@@ -26,6 +26,7 @@ class CookieDomainTest extends TestCase
 {
     public static function provideInvalidDomains(): iterable
     {
+        yield 'dot-only domain' => ['.'];
         yield 'double leading dot' => ['..example.test'];
         yield 'trailing dot' => ['example.test.'];
         yield 'empty label' => ['example..test'];

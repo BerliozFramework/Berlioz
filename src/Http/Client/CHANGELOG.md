@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Reject empty cookie hosts before IDNA conversion to avoid ValueError on PHP 8.4 and later
 - Ignore invalid cookie domains individually during HAR import and replay
 - Serialize session cookies as an array and discard cookies from legacy session formats
 - Preserve host-only and SameSite attributes when updating cookies

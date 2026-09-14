@@ -38,6 +38,10 @@ final class CookieDomain
             $domain = substr($domain, 1);
         }
 
+        if ('' === $domain) {
+            throw new InvalidCookieDomainException('Missing cookie domain');
+        }
+
         $ip = $domain;
         if (str_starts_with($domain, '[') && str_ends_with($domain, ']')) {
             $ip = substr($domain, 1, -1);
