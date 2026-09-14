@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.2.1] - 2026-09-11
+
+### Fixed
+
+- [form] Avoid "Array to string conversion" warning in `LengthValidator`, `IntervalValidator` and `FormatValidator` when the submitted value is not scalar (e.g. an array)
+- [http-message] `Base64Stream` now closes the base64 write filter after writing so the final quantum and padding are emitted (fixes truncated output on PHP 8.4/8.5 following php-src GH-22360)
+
+### Security
+
+- [http-core] Prevent debug console access-control bypass through case variants and alternate routes to the debug controller
+
 ## [3.2.0] - 2026-07-02
 
 ### Added
