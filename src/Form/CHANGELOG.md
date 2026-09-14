@@ -21,6 +21,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and `AbstractElement::getMapped()`. No behavior change for the existing `bool`/`string` forms of the
   `mapped` option.
 
+## [3.2.1] - 2026-09-11
+
+### Fixed
+
+- Avoid "Array to string conversion" warning in `LengthValidator`, `IntervalValidator` and `FormatValidator` when the submitted value is not scalar (e.g. an array)
+
 ## [3.2.0] - 2026-07-02
 
 _No changes in this release._
