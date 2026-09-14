@@ -10,6 +10,8 @@
  * file that was distributed with this source code, to the root.
  */
 
+declare(strict_types=1);
+
 namespace Berlioz\Http\Core\Tests\Http\Handler\Error;
 
 use Berlioz\Config\Adapter\ArrayAdapter;
@@ -25,10 +27,94 @@ use Berlioz\Http\Core\Http\Handler\Error\ErrorHandler;
 use Berlioz\Http\Core\TestProject\FakeDefaultDirectories;
 use Berlioz\Http\Message\ServerRequest;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\DataProvider;
+use RuntimeException;
+use Throwable;
 
 class ErrorHandlerTest extends TestCase
 {
     use RestoresErrorHandler;
+
+    private string $errorLog;
+    private string $previousErrorLog;
+
+    protected function setUp(): void
+    {
+        $this->errorLog = tempnam(sys_get_temp_dir(), 'berlioz-errors-');
+        $this->previousErrorLog = ini_set('error_log', $this->errorLog);
+    }
+
+    protected function tearDown(): void
+    {
+        ini_set('error_log', $this->previousErrorLog);
+        unlink($this->errorLog);
+    }
+
+    public static function provideLoggedExceptions(): iterable
+    {
+        yield 'production exception' => [false, new RuntimeException('Private application failure'), true];
+        yield 'debug exception' => [true, new RuntimeException('Private application failure'), true];
+        yield 'HTTP 500' => [false, new InternalServerErrorHttpException(), true];
+        yield 'HTTP 404' => [false, new NotFoundHttpException(), false];
+        yield 'HTTP 403' => [false, new ForbiddenHttpException(), false];
+        yield 'chained exception' => [
+            false,
+            new RuntimeException('Outer failure', previous: new RuntimeException('Original failure')),
+            true,
+        ];
+    }
+
+    #[DataProvider('provideLoggedExceptions')]
+    public function testHandle_logsExceptions(bool $debug, Throwable $exception, bool $logged): void
+    {
+        $app = $this->getApp();
+        $app->getDebug()->setEnabled($debug);
+        $phpErrors = count($app->getDebug()->getSnapshot()->getPhpErrors());
+        $response = (new ErrorHandler($app))->handle(new ServerRequest('GET', '/'), $exception);
+        $log = file_get_contents($this->errorLog);
+
+        $snapshot = $app->getDebug()->getSnapshot();
+        $this->assertSame($debug ? [(string)$exception] : [], $snapshot->getExceptions());
+        $this->assertCount($phpErrors, $snapshot->getPhpErrors());
+
+        if ($logged) {
+            $this->assertSame(1, substr_count($log, (string)$exception));
+        } else {
+            $this->assertSame('', $log);
+        }
+
+        if (!$debug) {
+            $this->assertStringNotContainsString($exception->getTraceAsString(), (string)$response->getBody());
+            $this->assertStringNotContainsString('Private application failure', (string)$response->getBody());
+            $this->assertStringNotContainsString('Original failure', (string)$response->getBody());
+        }
+    }
+
+    public function testHandle_logsErrorHandlerFailures(): void
+    {
+        $core = new Core(new FakeDefaultDirectories(), cache: false);
+        $app = $this->getMockBuilder(HttpApp::class)
+            ->setConstructorArgs([$core])
+            ->onlyMethods(['call', 'getConfigKey'])
+            ->getMock();
+        $app->method('getConfigKey')->willReturn(['default' => FakeErrorHandler::class]);
+        $customFailure = new NotFoundHttpException('Custom handler failure');
+        $renderFailure = new RuntimeException('Default renderer failure');
+        $app->expects($this->exactly(2))->method('call')->willReturnCallback(
+            static function (string $class) use ($customFailure, $renderFailure): never {
+                throw $class === FakeErrorHandler::class ? $customFailure : $renderFailure;
+            }
+        );
+        $original = new RuntimeException('Original application failure');
+        $response = (new ErrorHandler($app))->handle(new ServerRequest('GET', '/'), $original);
+        $log = file_get_contents($this->errorLog);
+
+        foreach ([$original, $customFailure, $renderFailure] as $exception) {
+            $this->assertSame(1, substr_count($log, (string)$exception));
+            $this->assertStringNotContainsString($exception->getMessage(), (string)$response->getBody());
+        }
+        $this->assertSame(500, $response->getStatusCode());
+    }
 
     private function getApp(?Core $core = null): HttpApp
     {
