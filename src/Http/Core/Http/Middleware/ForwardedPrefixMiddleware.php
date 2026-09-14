@@ -28,7 +28,7 @@ use Psr\Http\Server\RequestHandlerInterface;
  * self-URLs, redirections — is correctly prefixed, without the application code
  * having to know about the reverse-proxy topology.
  *
- * All the resolution logic (header lookup, trusted-proxy guard, idempotence) is
+ * All the resolution logic (header lookup, trusted-proxy guard) is
  * delegated to {@see \Berlioz\Router\Router::finalizePath()}, which is the single
  * source of truth for the prefix. The resolved prefix is also exposed as the
  * `berlioz.forwarded_prefix` request attribute for consumers that need the raw value.
@@ -39,6 +39,7 @@ use Psr\Http\Server\RequestHandlerInterface;
 class ForwardedPrefixMiddleware implements MiddlewareInterface
 {
     public const REQUEST_ATTRIBUTE = 'berlioz.forwarded_prefix';
+    private const PROCESSED_ATTRIBUTE = 'berlioz.forwarded_prefix.processed';
 
     public function __construct(
         protected HttpApp $app,
@@ -50,6 +51,10 @@ class ForwardedPrefixMiddleware implements MiddlewareInterface
      */
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
+        if (true === $request->getAttribute(self::PROCESSED_ATTRIBUTE)) {
+            return $handler->handle($request);
+        }
+
         $router = $this->app->getRouter();
         $uri = $request->getUri();
         $path = $uri->getPath();
@@ -62,7 +67,8 @@ class ForwardedPrefixMiddleware implements MiddlewareInterface
 
             $request = $request
                 ->withUri($uri->withPath($finalizedPath))
-                ->withAttribute(self::REQUEST_ATTRIBUTE, $prefix);
+                ->withAttribute(self::REQUEST_ATTRIBUTE, $prefix)
+                ->withAttribute(self::PROCESSED_ATTRIBUTE, true);
 
             // Keep the application-wide request in sync so helpers relying on
             // HttpApp::getRequest() (e.g. reload/self-redirect) see the prefixed URI.

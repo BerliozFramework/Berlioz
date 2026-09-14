@@ -33,6 +33,8 @@ class Router implements RouterInterface
     use LoggerAwareTrait;
     use RouteSetTrait;
 
+    private ?array $serverParams = null;
+
     private array $options = [
         'X-Forwarded-Prefix' => false,
         'trustedProxies' => [],
@@ -73,8 +75,17 @@ class Router implements RouterInterface
      */
     public function __unserialize(array $data): void
     {
+        $this->serverParams = null;
         $this->options = $data['options'] ?? [];
         $this->routes = $data['routes'] ?? [];
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function setServerParams(?array $serverParams): void
+    {
+        $this->serverParams = $serverParams;
     }
 
     /**
@@ -121,11 +132,11 @@ class Router implements RouterInterface
      * when the request comes from a trusted proxy.
      *
      * The `$serverParams` argument lets a caller (e.g. a PSR-7 middleware) provide
-     * the server parameters explicitly; when `null`, the PHP `$_SERVER` superglobal
-     * is used as a fallback to preserve backward compatibility.
+     * the server parameters explicitly; when `null`, the current router context is
+     * used, falling back to `$_SERVER` when no context has been set.
      *
      * @param string $path
-     * @param array|null $serverParams Server parameters (defaults to `$_SERVER` when null)
+     * @param array|null $serverParams Explicit parameters overriding the current context
      *
      * @return string
      */
@@ -135,14 +146,9 @@ class Router implements RouterInterface
             return $path;
         }
 
-        $prefix = $this->resolveForwardedPrefix($serverParams ?? $_SERVER);
+        $prefix = $this->resolveForwardedPrefix($serverParams ?? $this->serverParams ?? $_SERVER);
 
         if (null === $prefix) {
-            return $path;
-        }
-
-        // Idempotence: do not prepend the prefix twice.
-        if ($path === $prefix || str_starts_with($path, $prefix . '/')) {
             return $path;
         }
 

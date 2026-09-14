@@ -10,6 +10,8 @@
  * file that was distributed with this source code, to the root.
  */
 
+declare(strict_types=1);
+
 namespace Berlioz\Router\Tests;
 
 use Berlioz\Http\Message\Request;
@@ -236,7 +238,7 @@ class RouterTest extends AbstractTestCase
         );
     }
 
-    public function testFinalizePath_isIdempotent()
+    public function testFinalizePath_withInternalPathOverlappingPrefix()
     {
         $router = new Router(['X-Forwarded-Prefix' => true, 'trustedProxies' => ['10.0.0.1']]);
 
@@ -245,9 +247,62 @@ class RouterTest extends AbstractTestCase
             'HTTP_X_FORWARDED_PREFIX' => '/app',
         ];
 
-        // Already prefixed: must not double the prefix.
-        $this->assertEquals('/app/articles', $router->finalizePath('/app/articles', $serverParams));
-        $this->assertEquals('/app', $router->finalizePath('/app', $serverParams));
+        $this->assertEquals('/app/app/articles', $router->finalizePath('/app/articles', $serverParams));
+        $this->assertEquals('/app/app', $router->finalizePath('/app', $serverParams));
+        $this->assertEquals('/app/application', $router->finalizePath('/application', $serverParams));
+        $this->assertEquals('/app/app?page=2', $router->finalizePath('/app?page=2', $serverParams));
+    }
+
+    public function testFinalizePath_requestContextPrecedence(): void
+    {
+        $_SERVER['HTTP_X_FORWARDED_PREFIX'] = '/global';
+        $router = new Router(['X-Forwarded-Prefix' => true, 'trustedProxies' => ['10.0.0.1']]);
+        $router->addRoute(new Route('/articles', name: 'articles'));
+        $params = ['REMOTE_ADDR' => '10.0.0.1', 'HTTP_X_FORWARDED_PREFIX' => '/request'];
+
+        $this->assertSame('/global/articles', $router->generate('articles'));
+        $router->setServerParams($params);
+        $this->assertSame('/request/articles', $router->generate('articles'));
+        $this->assertSame('/request/assets/main.css', $router->finalizePath('/assets/main.css'));
+        $this->assertSame('/explicit/articles', $router->finalizePath('/articles', array_replace(
+            $params,
+            ['HTTP_X_FORWARDED_PREFIX' => '/explicit'],
+        )));
+        $this->assertSame('/articles', $router->finalizePath('/articles', []));
+        $this->assertSame('/request/articles', $router->generate('articles'));
+
+        $router->setServerParams([]);
+        $this->assertSame('/articles', $router->generate('articles'));
+        $router->setServerParams(null);
+        $this->assertSame('/global/articles', $router->generate('articles'));
+    }
+
+    public function testSerialization_excludesRequestContext(): void
+    {
+        $_SERVER['HTTP_X_FORWARDED_PREFIX'] = '/global';
+        $router = new Router(['X-Forwarded-Prefix' => true, 'trustedProxies' => ['10.0.0.1']]);
+        $router->addRoute(new Route('/articles', name: 'articles'));
+        $router->setServerParams([
+            'REMOTE_ADDR' => '10.0.0.1',
+            'HTTP_X_FORWARDED_PREFIX' => '/request',
+            'HTTP_AUTHORIZATION' => 'request-only-secret',
+        ]);
+
+        $serialized = serialize($router);
+        $this->assertStringNotContainsString('request-only-secret', $serialized);
+        $this->assertSame('/global/articles', unserialize($serialized)->generate('articles'));
+        $this->assertSame('/request/articles', $router->generate('articles'));
+        $router->__unserialize($router->__serialize());
+        $this->assertSame('/global/articles', $router->generate('articles'));
+    }
+
+    public function testGenerate_withInternalPathOverlappingPrefix(): void
+    {
+        $_SERVER['HTTP_X_FORWARDED_PREFIX'] = '/app';
+        $router = new Router(['X-Forwarded-Prefix' => true, 'trustedProxies' => ['10.0.0.1']]);
+        $router->addRoute(new Route('/app/articles', name: 'articles'));
+
+        $this->assertSame('/app/app/articles', $router->generate('articles'));
     }
 
     public function testFinalizePath_withEmptyHeader_isNoOp()

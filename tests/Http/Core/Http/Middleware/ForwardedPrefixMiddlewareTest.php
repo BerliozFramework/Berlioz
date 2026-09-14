@@ -10,14 +10,19 @@
  * file that was distributed with this source code, to the root.
  */
 
+declare(strict_types=1);
+
 namespace Berlioz\Http\Core\Tests\Http\Middleware;
 
 use Berlioz\Http\Core\Http\Middleware\ForwardedPrefixMiddleware;
 use Berlioz\Http\Core\Tests\AbstractTestCase;
 use Berlioz\Http\Core\Tests\Http\FakeRequestHandler;
+use Berlioz\Http\Message\Response;
 use Berlioz\Http\Message\ServerRequest;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
+use Psr\Http\Server\RequestHandlerInterface;
 
 class ForwardedPrefixMiddlewareTest extends AbstractTestCase
 {
@@ -100,5 +105,49 @@ class ForwardedPrefixMiddlewareTest extends AbstractTestCase
 
         $this->assertTrue($handler->isHandled());
     }
-}
 
+    public static function provideInternalPaths(): array
+    {
+        return [
+            'different segment' => ['/articles', '/app/articles'],
+            'same segment' => ['/app/articles', '/app/app/articles'],
+            'exact mount' => ['/app', '/app/app'],
+            'similar segment' => ['/application', '/app/application'],
+            'root' => ['/', '/app/'],
+        ];
+    }
+
+    #[DataProvider('provideInternalPaths')]
+    public function testProcess_rewritesOnlyOnce(string $path, string $expectedPath): void
+    {
+        $app = $this->getApp();
+        $middleware = new ForwardedPrefixMiddleware($app);
+        $request = $this->request($path . '?page=2', [
+            'REMOTE_ADDR' => '10.0.0.1',
+            'HTTP_X_FORWARDED_PREFIX' => '/app',
+        ]);
+        $captured = null;
+        $handler = $this->createMock(RequestHandlerInterface::class);
+        $handler->expects($this->exactly(2))->method('handle')->willReturnCallback(
+            function (ServerRequestInterface $request) use (&$captured): ResponseInterface {
+                $captured = $request;
+
+                return new Response();
+            },
+        );
+
+        $middleware->process($request, $handler);
+        $rewritten = $captured;
+        $this->assertSame($expectedPath, $rewritten->getUri()->getPath());
+        $this->assertSame('page=2', $rewritten->getUri()->getQuery());
+        $this->assertSame('/app', $rewritten->getAttribute(ForwardedPrefixMiddleware::REQUEST_ATTRIBUTE));
+        $this->assertSame($rewritten, $app->getRequest());
+        $this->assertSame($path, $request->getUri()->getPath());
+
+        // A new middleware instance must also recognize the rewritten request.
+        (new ForwardedPrefixMiddleware($app))->process($rewritten, $handler);
+
+        $this->assertSame($rewritten, $captured);
+        $this->assertSame($rewritten, $app->getRequest());
+    }
+}

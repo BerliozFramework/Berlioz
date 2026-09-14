@@ -9,12 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `RouterInterface::setServerParams()` supplies a non-serialized request context for URL generation; explicit `finalizePath()` parameters take precedence, and `$_SERVER` remains the fallback without a context
+
 - `Router::finalizePath()` accepts an optional `?array $serverParams` argument (falls back to `$_SERVER` when `null`), added to `RouterInterface`
 - New `trustedProxies` router option: `X-Forwarded-Prefix` is now only honoured when `REMOTE_ADDR` is a trusted proxy (IP, CIDR or alias via `NetworkHelper::isTrustedProxy()`)
 
 ### Changed
 
-- `Router::finalizePath()` is now idempotent (never prepends the `X-Forwarded-Prefix` twice) and normalizes leading/trailing slashes of the prefix
+- `Router::finalizePath()` normalizes leading/trailing slashes of the prefix and prefixes internal paths even when they start with the same segment as the proxy mount
 
 ### Security
 

@@ -178,6 +178,10 @@ class HttpApp extends AbstractApp implements RequestHandlerInterface
         $this->request = $request;
         $activity->end();
 
+        // Keep generated routes and assets aligned with the current PSR-7 request,
+        // independently of whether request URI rewriting is enabled.
+        $this->getRouter()->setServerParams($request->getServerParams());
+
         // Find route
         $this->route = $this->findRoute($this->request);
 

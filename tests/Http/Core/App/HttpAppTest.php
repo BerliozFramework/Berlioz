@@ -198,6 +198,53 @@ class HttpAppTest extends TestCase
         $this->assertEquals(['attribute1' => 'foo'], $app->getRequest()->getAttributes());
     }
 
+    public static function provideRequestContextRewriting(): array
+    {
+        return ['disabled' => [false], 'enabled' => [true]];
+    }
+
+    #[DataProvider('provideRequestContextRewriting')]
+    public function testHandle_refreshesRouterContext(bool $rewrite): void
+    {
+        $originalServer = $_SERVER;
+        $_SERVER['REMOTE_ADDR'] = '10.0.0.1';
+        $_SERVER['HTTP_X_FORWARDED_PREFIX'] = '/global';
+
+        try {
+            $core = new Core(new FakeDefaultDirectories(), false);
+            $core->getConfig()->addConfig(new ArrayAdapter(
+                ['berlioz' => ['router' => ['rewriteRequestUri' => $rewrite]]],
+                priority: PHP_INT_MAX,
+            ));
+            $app = new HttpApp($core);
+
+            foreach (['/first', '/second', null] as $prefix) {
+                $params = null === $prefix ? [] : [
+                    'REMOTE_ADDR' => '10.0.0.1',
+                    'HTTP_X_FORWARDED_PREFIX' => $prefix,
+                ];
+                $response = $app->handle(new ServerRequest(
+                    'GET',
+                    'http://getberlioz.com/controller1/method1',
+                    serverParams: $params,
+                ));
+
+                $this->assertSame(200, $response->getStatusCode());
+                $this->assertSame(
+                    ($prefix ?? '') . '/controller1/method1',
+                    $app->getRouter()->generate($app->getRoute()),
+                );
+                $this->assertSame(
+                    ($rewrite ? ($prefix ?? '') : '') . '/controller1/method1',
+                    $app->getRequest()->getUri()->getPath(),
+                );
+                $this->assertSame('/global', $_SERVER['HTTP_X_FORWARDED_PREFIX']);
+            }
+        } finally {
+            $_SERVER = $originalServer;
+        }
+    }
+
     public function testHandle_withMiddlewaresOrdered()
     {
         AbstractMiddleware::$calls = [];
