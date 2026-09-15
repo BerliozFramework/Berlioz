@@ -18,6 +18,9 @@
     },
     "router": {
       "X-Forwarded-Prefix": true
+    },
+    "proxies": {
+      "trusted": ["10.0.0.1"]
     }
   },
   "controllers": [

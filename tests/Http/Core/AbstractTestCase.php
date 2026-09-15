@@ -26,6 +26,12 @@ abstract class AbstractTestCase extends TestCase
     protected function setUp(): void
     {
         $_SERVER['HTTP_X_FORWARDED_PREFIX'] = null;
+        $_SERVER['REMOTE_ADDR'] = '10.0.0.1';
+    }
+
+    protected function tearDown(): void
+    {
+        unset($_SERVER['HTTP_X_FORWARDED_PREFIX'], $_SERVER['REMOTE_ADDR']);
     }
 
     /**

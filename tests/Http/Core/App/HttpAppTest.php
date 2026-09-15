@@ -29,8 +29,11 @@ use Berlioz\Http\Core\TestProject\Http\Middleware\FooMiddleware;
 use Berlioz\Http\Core\TestProject\Http\Middleware\QuxMiddleware;
 use Berlioz\Http\Message\Response;
 use Berlioz\Http\Message\ServerRequest;
+use Berlioz\Router\ForwardedPrefixResolver;
 use Berlioz\Router\Route;
+use Berlioz\Router\Router;
 use Berlioz\Router\RouterInterface;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Server\MiddlewareInterface;
@@ -41,6 +44,33 @@ use Twig\Loader\FilesystemLoader;
 class HttpAppTest extends TestCase
 {
     use RestoresErrorHandler;
+
+    private const REWRITE_DEPRECATION =
+        'Handling a trusted forwarded prefix without request URI rewriting is deprecated. '
+        . 'Set berlioz.router.rewriteRequestUri to true; rewriting will be mandatory in v4.';
+
+    private function handleWithDeprecations(
+        HttpApp $app,
+        ServerRequest $request,
+        array &$deprecations,
+    ): ResponseInterface {
+        $deprecations = [];
+        set_error_handler(static function (int $severity, string $message) use (&$deprecations): bool {
+            if (E_USER_DEPRECATED !== $severity) {
+                return false;
+            }
+
+            $deprecations[] = $message;
+
+            return true;
+        });
+
+        try {
+            return $app->handle($request);
+        } finally {
+            restore_error_handler();
+        }
+    }
 
     public function test__construct()
     {
@@ -105,6 +135,100 @@ class HttpAppTest extends TestCase
         $this->assertNull($app->getRoute());
     }
 
+    public function testHandle_withForwardedPrefix_fromTrustedProxy()
+    {
+        $core = new Core(new FakeDefaultDirectories(), false);
+        $core->getConfig()->addConfig(new ArrayAdapter([
+            'berlioz' => ['router' => ['rewriteRequestUri' => true]],
+        ]));
+        $app = new HttpApp($core);
+
+        // The route is defined without the prefix and is matched on the bare path,
+        // while the request URI reaching the app is rewritten with the prefix.
+        $app->handle(
+            new ServerRequest(
+                'GET',
+                'http://getberlioz.com/controller1/method1',
+                serverParams: [
+                    'REMOTE_ADDR' => '10.0.0.1',
+                    'HTTP_X_FORWARDED_PREFIX' => '/app',
+                ],
+            )
+        );
+
+        // Route matching succeeded on the bare (unprefixed) path.
+        $this->assertInstanceOf(Route::class, $app->getRoute());
+        $this->assertEquals([ControllerOne::class, 'methodOne'], $app->getRoute()->getContext());
+
+        // The application-wide request now carries the prefixed URI.
+        $this->assertEquals('/app/controller1/method1', $app->getRequest()->getUri()->getPath());
+    }
+
+    public function testHandle_withForwardedPrefix_fromUntrustedProxy_isNoOp()
+    {
+        $core = new Core(new FakeDefaultDirectories(), false);
+        $core->getConfig()->addConfig(new ArrayAdapter([
+            'berlioz' => ['router' => ['rewriteRequestUri' => true]],
+        ]));
+        $app = new HttpApp($core);
+
+        $app->handle(
+            new ServerRequest(
+                'GET',
+                'http://getberlioz.com/controller1/method1',
+                serverParams: [
+                    'REMOTE_ADDR' => '203.0.113.7',
+                    'HTTP_X_FORWARDED_PREFIX' => '/app',
+                ],
+            )
+        );
+
+        $this->assertInstanceOf(Route::class, $app->getRoute());
+        $this->assertEquals('/controller1/method1', $app->getRequest()->getUri()->getPath());
+    }
+
+    public static function provideDisabledRequestRewriting(): array
+    {
+        return [
+            'default' => [[]],
+            'explicitly disabled' => [['rewriteRequestUri' => false]],
+            'prefix disabled' => [['rewriteRequestUri' => true, 'X-Forwarded-Prefix' => false]],
+        ];
+    }
+
+    #[DataProvider('provideDisabledRequestRewriting')]
+    public function testHandle_withForwardedPrefix_rewritingDisabled(array $options): void
+    {
+        $core = new Core(new FakeDefaultDirectories(), false);
+        $core->getConfig()->addConfig(new ArrayAdapter(
+            ['berlioz' => ['router' => $options]],
+            priority: PHP_INT_MAX,
+        ));
+        $app = new HttpApp($core);
+
+        $request = new ServerRequest(
+            'GET',
+            'http://getberlioz.com/controller1/method1?page=2',
+            serverParams: [
+                'REMOTE_ADDR' => '10.0.0.1',
+                'HTTP_X_FORWARDED_PREFIX' => '/app',
+            ],
+        );
+        $deprecations = [];
+        $response = $this->handleWithDeprecations($app, $request, $deprecations);
+
+        $this->assertSame(
+            false === ($options['X-Forwarded-Prefix'] ?? true) ? [] : [self::REWRITE_DEPRECATION],
+            $deprecations,
+        );
+
+        $this->assertSame(200, $response->getStatusCode());
+        $this->assertInstanceOf(Route::class, $app->getRoute());
+        $this->assertSame('/controller1/method1', $app->getRequest()->getUri()->getPath());
+        $this->assertSame('page=2', $app->getRequest()->getUri()->getQuery());
+        $this->assertNull($app->getRequest()->getAttribute('berlioz.forwarded_prefix'));
+    }
+
     public function testHandle()
     {
         $app = new HttpApp(new Core(new FakeDefaultDirectories(), false));
@@ -114,6 +238,158 @@ class HttpAppTest extends TestCase
         $this->assertEquals('ControllerTwo::methodOne', (string)$response->getBody());
         $this->assertEmpty($serverRequest->getAttributes());
         $this->assertEquals(['attribute1' => 'foo'], $app->getRequest()->getAttributes());
+    }
+
+    public static function provideRequestsWithoutRewriteDeprecation(): array
+    {
+        return [
+            'no header' => [[], ['REMOTE_ADDR' => '10.0.0.1']],
+            'empty header' => [[], ['REMOTE_ADDR' => '10.0.0.1', 'HTTP_X_FORWARDED_PREFIX' => '']],
+            'root prefix' => [[], ['REMOTE_ADDR' => '10.0.0.1', 'HTTP_X_FORWARDED_PREFIX' => '/']],
+            'invalid prefix' => [[], ['REMOTE_ADDR' => '10.0.0.1', 'HTTP_X_FORWARDED_PREFIX' => '/app#fragment']],
+            'untrusted peer' => [[], ['REMOTE_ADDR' => '203.0.113.7', 'HTTP_X_FORWARDED_PREFIX' => '/app']],
+            'no peer' => [[], ['HTTP_X_FORWARDED_PREFIX' => '/app']],
+            'no trusted proxies' => [
+                ['trustedProxies' => []],
+                ['REMOTE_ADDR' => '10.0.0.1', 'HTTP_X_FORWARDED_PREFIX' => '/app'],
+            ],
+            'prefix disabled' => [
+                ['X-Forwarded-Prefix' => false],
+                ['REMOTE_ADDR' => '10.0.0.1', 'HTTP_X_FORWARDED_PREFIX' => '/app'],
+            ],
+        ];
+    }
+
+    #[DataProvider('provideRequestsWithoutRewriteDeprecation')]
+    public function testHandle_withoutTrustedPrefixDoesNotDeprecate(array $options, array $serverParams): void
+    {
+        $core = new Core(new FakeDefaultDirectories(), false);
+        $core->getConfig()->addConfig(new ArrayAdapter(
+            ['berlioz' => ['router' => $options]],
+            priority: PHP_INT_MAX,
+        ));
+        $app = new HttpApp($core);
+        $request = new ServerRequest('GET', '/controller1/method1', serverParams: $serverParams);
+        $deprecations = [];
+
+        $response = $this->handleWithDeprecations($app, $request, $deprecations);
+
+        $this->assertSame([], $deprecations);
+        $this->assertSame(200, $response->getStatusCode());
+        $this->assertSame('/controller1/method1', $app->getRequest()->getUri()->getPath());
+    }
+
+    public static function provideRequestContextRewriting(): array
+    {
+        return ['disabled' => [false], 'enabled' => [true]];
+    }
+
+    public function testHandle_overlappingPrefixPreservesRoutingAndResponseInfo(): void
+    {
+        $core = new Core(new FakeDefaultDirectories(), false);
+        $core->getConfig()->addConfig(new ArrayAdapter(
+            ['berlioz' => ['router' => ['rewriteRequestUri' => true]]],
+            priority: PHP_INT_MAX,
+        ));
+        $app = new HttpApp($core);
+        $route = new Route('/app/articles', context: [ControllerOne::class, 'methodOne']);
+        $app->getRouter()->addRoute($route);
+
+        $response = $app->handle(new ServerRequest(
+            'GET',
+            'http://getberlioz.com/app/articles?page=2',
+            serverParams: [
+                'REMOTE_ADDR' => '10.0.0.1',
+                'HTTP_X_FORWARDED_PREFIX' => '/app',
+            ],
+        ));
+
+        $this->assertSame($route, $app->getRoute());
+        $this->assertSame(200, $response->getStatusCode());
+        $this->assertSame('/app/app/articles', $app->getRouter()->generate($route));
+        $this->assertSame('/app/app/articles', $app->getRequest()->getUri()->getPath());
+        $this->assertSame('page=2', $app->getRequest()->getUri()->getQuery());
+        $this->assertSame($response->getStatusCode(), $app->getResponseInfo()['statusCode']);
+        $this->assertSame($response->getHeaders(), $app->getResponseInfo()['headers']);
+    }
+
+    public function testHandle_usesRouterSpecificResolverOptions(): void
+    {
+        $core = new Core(new FakeDefaultDirectories(), false);
+        $core->getConfig()->addConfig(new ArrayAdapter([
+            'berlioz' => [
+                'proxies' => ['trusted' => ['10.0.0.1']],
+                'router' => [
+                    'rewriteRequestUri' => true,
+                    'X-Forwarded-Prefix' => 'X-Custom-Prefix',
+                    'trustedProxies' => ['192.0.2.1'],
+                ],
+            ],
+        ], priority: PHP_INT_MAX));
+        $app = new HttpApp($core);
+        $router = $app->get(Router::class);
+        $this->assertSame($router->getForwardedPrefixResolver(), $app->get(ForwardedPrefixResolver::class));
+
+        foreach (['192.0.2.1' => '/custom', '10.0.0.1' => ''] as $peer => $prefix) {
+            $response = $app->handle(new ServerRequest(
+                'GET',
+                'http://getberlioz.com/controller1/method1',
+                serverParams: [
+                    'REMOTE_ADDR' => $peer,
+                    'HTTP_X_CUSTOM_PREFIX' => '/custom',
+                    'HTTP_X_FORWARDED_PREFIX' => '/ignored',
+                ],
+            ));
+            $this->assertSame(200, $response->getStatusCode());
+            $this->assertSame($prefix . '/controller1/method1', $app->getRequest()->getUri()->getPath());
+            $this->assertSame($prefix . '/controller1/method1', $router->generate($app->getRoute()));
+        }
+    }
+
+    #[DataProvider('provideRequestContextRewriting')]
+    public function testHandle_refreshesRouterContext(bool $rewrite): void
+    {
+        $originalServer = $_SERVER;
+        $_SERVER['REMOTE_ADDR'] = '10.0.0.1';
+        $_SERVER['HTTP_X_FORWARDED_PREFIX'] = '/global';
+
+        try {
+            $core = new Core(new FakeDefaultDirectories(), false);
+            $core->getConfig()->addConfig(new ArrayAdapter(
+                ['berlioz' => ['router' => ['rewriteRequestUri' => $rewrite]]],
+                priority: PHP_INT_MAX,
+            ));
+            $app = new HttpApp($core);
+
+            foreach (['/first', '/second', null] as $prefix) {
+                $params = null === $prefix ? [] : [
+                    'REMOTE_ADDR' => '10.0.0.1',
+                    'HTTP_X_FORWARDED_PREFIX' => $prefix,
+                ];
+                $request = new ServerRequest(
+                    'GET',
+                    'http://getberlioz.com/controller1/method1',
+                    serverParams: $params,
+                );
+                $deprecations = [];
+                $response = $this->handleWithDeprecations($app, $request, $deprecations);
+
+                $this->assertSame(!$rewrite && null !== $prefix ? [self::REWRITE_DEPRECATION] : [], $deprecations);
+
+                $this->assertSame(200, $response->getStatusCode());
+                $this->assertSame(
+                    ($prefix ?? '') . '/controller1/method1',
+                    $app->getRouter()->generate($app->getRoute()),
+                );
+                $this->assertSame(
+                    ($rewrite ? ($prefix ?? '') : '') . '/controller1/method1',
+                    $app->getRequest()->getUri()->getPath(),
+                );
+                $this->assertSame('/global', $_SERVER['HTTP_X_FORWARDED_PREFIX']);
+            }
+        } finally {
+            $_SERVER = $originalServer;
+        }
     }
 
     public function testHandle_withMiddlewaresOrdered()
