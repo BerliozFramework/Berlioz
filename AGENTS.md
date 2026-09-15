@@ -344,6 +344,19 @@ Some packages have `tests_env/` directories containing **fake Berlioz project en
 config, fake services, stub vendor). Found in: `tests/Core/`, `tests/Cli/Core/`, `tests/Http/Core/`, `tests/Package/*/`.
 Autoloaded under `TestProject` namespaces.
 
+## User Documentation
+
+**User documentation belongs in the dedicated
+[BerliozDocs repository](https://github.com/BerliozFramework/BerliozDocs), not in this monorepo's `README.md` files.**
+
+- Write feature documentation, configuration examples, upgrade notes and deprecation guidance in BerliozDocs
+  (e.g., `components/router.md`, `http/routing.md`, `http/middleware.md`).
+- Keep root and package READMEs focused on a short introduction, installation and links to the official documentation.
+  Do not add detailed usage guides or migration sections to them.
+- Follow BerliozDocs conventions and mark new behavior with the intended release version, for example:
+  `> 🆕 **Info**: *Since version 3.3*`.
+- Package changelogs remain in this monorepo and follow the workflow below; they do not replace user documentation.
+
 ## Changelogs & Releases
 
 Each package has its own `CHANGELOG.md` at the root of its directory (e.g., `src/Router/CHANGELOG.md`). The monorepo
