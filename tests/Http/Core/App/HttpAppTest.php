@@ -28,7 +28,9 @@ use Berlioz\Http\Core\TestProject\Http\Middleware\FooMiddleware;
 use Berlioz\Http\Core\TestProject\Http\Middleware\QuxMiddleware;
 use Berlioz\Http\Message\Response;
 use Berlioz\Http\Message\ServerRequest;
+use Berlioz\Router\ForwardedPrefixResolver;
 use Berlioz\Router\Route;
+use Berlioz\Router\Router;
 use Berlioz\Router\RouterInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -201,6 +203,39 @@ class HttpAppTest extends TestCase
     public static function provideRequestContextRewriting(): array
     {
         return ['disabled' => [false], 'enabled' => [true]];
+    }
+
+    public function testHandle_usesRouterSpecificResolverOptions(): void
+    {
+        $core = new Core(new FakeDefaultDirectories(), false);
+        $core->getConfig()->addConfig(new ArrayAdapter([
+            'berlioz' => [
+                'proxies' => ['trusted' => ['10.0.0.1']],
+                'router' => [
+                    'rewriteRequestUri' => true,
+                    'X-Forwarded-Prefix' => 'X-Custom-Prefix',
+                    'trustedProxies' => ['192.0.2.1'],
+                ],
+            ],
+        ], priority: PHP_INT_MAX));
+        $app = new HttpApp($core);
+        $router = $app->get(Router::class);
+        $this->assertSame($router->getForwardedPrefixResolver(), $app->get(ForwardedPrefixResolver::class));
+
+        foreach (['192.0.2.1' => '/custom', '10.0.0.1' => ''] as $peer => $prefix) {
+            $response = $app->handle(new ServerRequest(
+                'GET',
+                'http://getberlioz.com/controller1/method1',
+                serverParams: [
+                    'REMOTE_ADDR' => $peer,
+                    'HTTP_X_CUSTOM_PREFIX' => '/custom',
+                    'HTTP_X_FORWARDED_PREFIX' => '/ignored',
+                ],
+            ));
+            $this->assertSame(200, $response->getStatusCode());
+            $this->assertSame($prefix . '/controller1/method1', $app->getRequest()->getUri()->getPath());
+            $this->assertSame($prefix . '/controller1/method1', $router->generate($app->getRoute()));
+        }
     }
 
     #[DataProvider('provideRequestContextRewriting')]

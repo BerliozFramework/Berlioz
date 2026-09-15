@@ -15,6 +15,7 @@ declare(strict_types=1);
 namespace Berlioz\Http\Core\Http\Middleware;
 
 use Berlioz\Http\Core\App\HttpApp;
+use Berlioz\Router\ForwardedPrefixResolver;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
@@ -29,8 +30,8 @@ use Psr\Http\Server\RequestHandlerInterface;
  * having to know about the reverse-proxy topology.
  *
  * All the resolution logic (header lookup, trusted-proxy guard) is
- * delegated to {@see \Berlioz\Router\Router::finalizePath()}, which is the single
- * source of truth for the prefix. The resolved prefix is also exposed as the
+ * delegated to the injected ForwardedPrefixResolver, which is
+ * the single source of truth. The resolved prefix is also exposed as the
  * `berlioz.forwarded_prefix` request attribute for consumers that need the raw value.
  *
  * This middleware is applied last in the pipeline (closest to the controller),
@@ -43,6 +44,7 @@ class ForwardedPrefixMiddleware implements MiddlewareInterface
 
     public function __construct(
         protected HttpApp $app,
+        private readonly ForwardedPrefixResolver $prefixResolver,
     ) {
     }
 
@@ -55,15 +57,11 @@ class ForwardedPrefixMiddleware implements MiddlewareInterface
             return $handler->handle($request);
         }
 
-        $router = $this->app->getRouter();
-        $uri = $request->getUri();
-        $path = $uri->getPath();
-        $finalizedPath = $router->finalizePath($path, $request->getServerParams());
+        $prefix = $this->prefixResolver->resolve($request->getServerParams());
 
-        if ($finalizedPath !== $path) {
-            // Extract the applied prefix (finalizePath prepended it to the path).
-            $prefix = substr($finalizedPath, 0, strlen($finalizedPath) - strlen(ltrim($path, '/'))) ?: null;
-            $prefix = null !== $prefix ? rtrim($prefix, '/') : null;
+        if (null !== $prefix) {
+            $uri = $request->getUri();
+            $finalizedPath = $prefix . '/' . ltrim($uri->getPath(), '/');
 
             $request = $request
                 ->withUri($uri->withPath($finalizedPath))

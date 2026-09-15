@@ -21,6 +21,7 @@ use Berlioz\Router\Exception\RoutingException;
 use Berlioz\Router\Route;
 use Berlioz\Router\RouteAttributes;
 use Berlioz\Router\Router;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 class RouterTest extends AbstractTestCase
 {
@@ -253,6 +254,53 @@ class RouterTest extends AbstractTestCase
         $this->assertEquals('/app/app?page=2', $router->finalizePath('/app?page=2', $serverParams));
     }
 
+    public static function provideForwardedPrefixes(): array
+    {
+        return [
+            'plain' => ['app', '/app'],
+            'outer slashes' => ['//app/nested///', '/app/nested'],
+            'encoded space' => ['/my%20app', '/my%20app'],
+            'encoded UTF-8' => ['/caf%C3%A9', '/caf%C3%A9'],
+            'path punctuation' => ['/v1.0/@app;key=value', '/v1.0/@app;key=value'],
+            'empty' => ['', null],
+            'root' => ['/', null],
+            'array' => [['/app'], null],
+            'integer' => [42, null],
+            'query' => ['/app?x=1', null],
+            'fragment' => ['/app#x', null],
+            'backslash' => ['/app\\other', null],
+            'list' => ['/one,/two', null],
+            'space' => ['/my app', null],
+            'newline' => ["/app\r\n", null],
+            'dot' => ['/app/./nested', null],
+            'parent' => ['/app/../nested', null],
+            'encoded parent' => ['/app/%2e%2E/nested', null],
+            'encoded query' => ['/app%3Fx', null],
+            'encoded fragment' => ['/app%23x', null],
+            'encoded backslash' => ['/app%5Cx', null],
+            'encoded slash' => ['/app%2fx', null],
+            'encoded control' => ['/app%00', null],
+            'encoded list' => ['/one%2Ctwo', null],
+            'double encoding' => ['/app/%252e%252e', null],
+            'invalid escape' => ['/app%2Z', null],
+            'truncated escape' => ['/app%', null],
+            'internal slashes' => ['/app//nested', null],
+            'absolute URI' => ['https://example.com/app', null],
+        ];
+    }
+
+    #[DataProvider('provideForwardedPrefixes')]
+    public function testResolveForwardedPrefix_validation(mixed $value, ?string $expected): void
+    {
+        $router = new Router(['X-Forwarded-Prefix' => true, 'trustedProxies' => ['10.0.0.1']]);
+        $params = ['REMOTE_ADDR' => '10.0.0.1', 'HTTP_X_FORWARDED_PREFIX' => $value];
+
+        $this->assertSame($expected, $router->getForwardedPrefixResolver()->resolve($params));
+        $this->assertSame(($expected ?? '') . '/articles', $router->finalizePath('/articles', $params));
+        $params['REMOTE_ADDR'] = '203.0.113.7';
+        $this->assertNull($router->getForwardedPrefixResolver()->resolve($params));
+    }
+
     public function testFinalizePath_requestContextPrecedence(): void
     {
         $_SERVER['HTTP_X_FORWARDED_PREFIX'] = '/global';
@@ -294,6 +342,26 @@ class RouterTest extends AbstractTestCase
         $this->assertSame('/request/articles', $router->generate('articles'));
         $router->__unserialize($router->__serialize());
         $this->assertSame('/global/articles', $router->generate('articles'));
+    }
+
+    public function testSerialization_rebuildsResolverFromEffectiveOptions(): void
+    {
+        $router = new Router([
+            'X-Forwarded-Prefix' => 'X-Custom-Prefix',
+            'trustedProxies' => ['192.0.2.1'],
+        ]);
+        $params = ['REMOTE_ADDR' => '192.0.2.1', 'HTTP_X_CUSTOM_PREFIX' => '/custom'];
+        $resolver = $router->getForwardedPrefixResolver();
+        $this->assertSame('/custom', $resolver->resolve($params));
+
+        $restored = unserialize(serialize($router));
+        $this->assertNotSame($resolver, $restored->getForwardedPrefixResolver());
+        $this->assertSame('/custom', $restored->getForwardedPrefixResolver()->resolve($params));
+        $this->assertSame('/custom/articles', $restored->finalizePath('/articles', $params));
+        $this->assertNull($restored->getForwardedPrefixResolver()->resolve(array_replace(
+            $params,
+            ['REMOTE_ADDR' => '10.0.0.1'],
+        )));
     }
 
     public function testGenerate_withInternalPathOverlappingPrefix(): void

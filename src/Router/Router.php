@@ -14,7 +14,6 @@ declare(strict_types=1);
 
 namespace Berlioz\Router;
 
-use Berlioz\Helpers\NetworkHelper;
 use Berlioz\Http\Message\Request;
 use Berlioz\Http\Message\ServerRequest;
 use Berlioz\Router\Exception\NotFoundException;
@@ -34,6 +33,7 @@ class Router implements RouterInterface
     use RouteSetTrait;
 
     private ?array $serverParams = null;
+    private ?ForwardedPrefixResolver $forwardedPrefixResolver = null;
 
     private array $options = [
         'X-Forwarded-Prefix' => false,
@@ -76,6 +76,7 @@ class Router implements RouterInterface
     public function __unserialize(array $data): void
     {
         $this->serverParams = null;
+        $this->forwardedPrefixResolver = null;
         $this->options = $data['options'] ?? [];
         $this->routes = $data['routes'] ?? [];
     }
@@ -146,7 +147,7 @@ class Router implements RouterInterface
             return $path;
         }
 
-        $prefix = $this->resolveForwardedPrefix($serverParams ?? $this->serverParams ?? $_SERVER);
+        $prefix = $this->getForwardedPrefixResolver()->resolve($serverParams ?? $this->serverParams ?? $_SERVER);
 
         if (null === $prefix) {
             return $path;
@@ -156,43 +157,18 @@ class Router implements RouterInterface
     }
 
     /**
-     * Resolve the reverse-proxy prefix from server parameters.
+     * Get the resolver built from this router's effective options.
      *
-     * Returns the normalized prefix (e.g. `/app`) when the `X-Forwarded-Prefix`
-     * feature is enabled and the direct peer (`REMOTE_ADDR`) is a trusted proxy;
-     * otherwise `null`.
-     *
-     * @param array $serverParams
-     *
-     * @return string|null
+     * @return ForwardedPrefixResolver
      */
-    private function resolveForwardedPrefix(array $serverParams): ?string
+    public function getForwardedPrefixResolver(): ForwardedPrefixResolver
     {
-        // X-Forwarded-Prefix disabled
-        if (false === $this->options['X-Forwarded-Prefix']) {
-            return null;
-        }
+        $header = $this->options['X-Forwarded-Prefix'] ?? false;
 
-        // Trusted-proxy guard: never honour the header unless the direct peer is a trusted proxy.
-        $trustedProxies = (array)($this->options['trustedProxies'] ?? []);
-        $remoteAddr = isset($serverParams['REMOTE_ADDR']) ? trim((string)$serverParams['REMOTE_ADDR']) : '';
-
-        if ([] === $trustedProxies || false === NetworkHelper::isTrustedProxy($remoteAddr, $trustedProxies)) {
-            return null;
-        }
-
-        // Resolve the forwarded header value.
-        $header = $this->options['X-Forwarded-Prefix'] === true
-            ? 'X-Forwarded-Prefix'
-            : (string)$this->options['X-Forwarded-Prefix'];
-        $serverKey = 'HTTP_' . strtoupper(str_replace('-', '_', $header));
-        $prefix = trim((string)($serverParams[$serverKey] ?? ''), '/');
-
-        if ('' === $prefix) {
-            return null;
-        }
-
-        return '/' . $prefix;
+        return $this->forwardedPrefixResolver ??= new ForwardedPrefixResolver(
+            header: is_bool($header) ? $header : (string)$header,
+            trustedProxies: (array)($this->options['trustedProxies'] ?? []),
+        );
     }
 
     private function generateParameters(array|RouteAttributes $parameters = []): array
