@@ -10,6 +10,8 @@
  * file that was distributed with this source code, to the root.
  */
 
+declare(strict_types=1);
+
 namespace Berlioz\Http\Client\Tests\Cookies;
 
 use Berlioz\Http\Client\Cookies\Cookie;
@@ -17,10 +19,43 @@ use Berlioz\Http\Client\Cookies\CookiesManager;
 use Berlioz\Http\Message\Request;
 use Berlioz\Http\Message\Response;
 use Berlioz\Http\Message\Uri;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
+use stdClass;
+use TypeError;
 
 class CookiesManagerTest extends TestCase
 {
+    public function testConstructRestoresSnapshotWithoutUpdatingCookies(): void
+    {
+        $first = $this->createMock(Cookie::class);
+        $second = $this->createMock(Cookie::class);
+        $first->expects($this->never())->method('update');
+        $second->expects($this->never())->method('update');
+
+        $manager = new CookiesManager([7 => $first, 42 => $second]);
+
+        $this->assertSame([$first, $second], iterator_to_array($manager));
+        $this->assertCount(2, $manager);
+    }
+
+    public static function provideInvalidInitialCookies(): iterable
+    {
+        yield 'null' => [null];
+        yield 'scalar' => ['sid=value'];
+        yield 'array' => [['name' => 'sid', 'value' => 'value']];
+        yield 'unrelated object' => [new stdClass()];
+    }
+
+    #[DataProvider('provideInvalidInitialCookies')]
+    public function testConstructRejectsInvalidCookie(mixed $invalid): void
+    {
+        $valid = Cookie::parse('sid=value; Domain=example.test');
+
+        $this->expectException(TypeError::class);
+        new CookiesManager([$valid, $invalid]);
+    }
+
     public function testGetCookiesForUri()
     {
         $cookiesManager = new CookiesManager();
@@ -77,7 +112,8 @@ class CookiesManagerTest extends TestCase
         $this->assertEquals('test=value; test3=value3', implode('; ', $cookiesManager->getCookiesForUri($uri)));
 
         $uri = new Uri('http', 'www.getberlioz.fr');
-        $this->assertEquals('test2=value2', implode('; ', $cookiesManager->getCookiesForUri($uri)));
+        $this->assertEquals('', implode('; ', $cookiesManager->getCookiesForUri($uri)));
+        $this->assertCount(2, $cookiesManager);
     }
 
     public function testAddCookiesToRequest()

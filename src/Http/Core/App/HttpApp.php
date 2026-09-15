@@ -42,6 +42,8 @@ class HttpApp extends AbstractApp implements RequestHandlerInterface
     protected ?Maintenance $maintenance = null;
     protected ?ServerRequestInterface $request = null;
     protected ?RouteInterface $route = null;
+    /** @var array{statusCode: int, reasonPhrase: string, protocolVersion: string, headers: array<string, string[]>}|null */
+    protected ?array $responseInfo = null;
 
     /**
      * HttpApp constructor.
@@ -126,6 +128,31 @@ class HttpApp extends AbstractApp implements RequestHandlerInterface
     }
 
     /**
+     * Get response metadata without retaining the response body.
+     *
+     * @return array{statusCode: int, reasonPhrase: string, protocolVersion: string, headers: array<string, string[]>}|null
+     */
+    public function getResponseInfo(): ?array
+    {
+        return $this->responseInfo;
+    }
+
+    /**
+     * Capture response metadata without accessing its stream.
+     *
+     * @param ResponseInterface $response
+     */
+    protected function captureResponseInfo(ResponseInterface $response): void
+    {
+        $this->responseInfo = [
+            'statusCode' => $response->getStatusCode(),
+            'reasonPhrase' => $response->getReasonPhrase(),
+            'protocolVersion' => $response->getProtocolVersion(),
+            'headers' => $response->getHeaders(),
+        ];
+    }
+
+    /**
      * Get current route.
      *
      * @return RouteInterface|null
@@ -169,6 +196,7 @@ class HttpApp extends AbstractApp implements RequestHandlerInterface
      */
     public function handle(?ServerRequestInterface $request = null): ResponseInterface
     {
+        $this->responseInfo = null;
         $activity = $this->core->getDebug()->newActivity('Application handle', 'Berlioz')->start();
 
         if (null === $request) {
@@ -196,14 +224,19 @@ class HttpApp extends AbstractApp implements RequestHandlerInterface
         // Applied last (closest to the controller): rewrites the request URI with the
         // reverse-proxy prefix so any URL derived from it (pagination, self-URLs, ...)
         // is correctly prefixed. Runs after routing, so route matching is never affected.
-        if (true === $this->getConfig()->get('berlioz.router.rewriteRequestUri', false)
-            && false !== $this->getConfig()->get('berlioz.router.X-Forwarded-Prefix', false)) {
+        if (
+            true === $this->getConfig()->get('berlioz.router.rewriteRequestUri', false)
+            && false !== $this->getConfig()->get('berlioz.router.X-Forwarded-Prefix', false)
+        ) {
             $this->httpHandler->addMiddleware(ForwardedPrefixMiddleware::class);
         }
 
         $activity->end();
 
-        return $this->httpHandler->handle($this->request);
+        $response = $this->httpHandler->handle($this->request);
+        $this->captureResponseInfo($response);
+
+        return $response;
     }
 
     /**
@@ -237,6 +270,8 @@ class HttpApp extends AbstractApp implements RequestHandlerInterface
         if ($this->getDebug()->isEnabled()) {
             $response = $response->withAddedHeader('X-Berlioz-Debug', $this->getDebug()->getUniqid());
         }
+
+        $this->captureResponseInfo($response);
 
         // Headers
         if (!headers_sent()) {
