@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+
+- Use cryptographically secure randomness for MIME boundaries and attachment Content-IDs, preserving their existing formats
+
 ## [3.2.1] - 2026-09-11
 
 _No changes in this release._

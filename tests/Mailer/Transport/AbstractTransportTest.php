@@ -1,4 +1,16 @@
 <?php
+/*
+ * This file is part of Berlioz framework.
+ *
+ * @license   https://opensource.org/licenses/MIT MIT License
+ * @copyright 2026 Ronan GIRON
+ * @author    Ronan GIRON <https://github.com/ElGigi>
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code, to the root.
+ */
+
+declare(strict_types=1);
 
 namespace Berlioz\Mailer\Tests\Transport;
 
@@ -6,10 +18,34 @@ use Berlioz\Mailer\Attachment;
 use Berlioz\Mailer\Exception\TransportException;
 use Berlioz\Mailer\Mail;
 use Berlioz\Mailer\Transport\PhpMail;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 class AbstractTransportTest extends TestCase
 {
+    public static function provideBoundaries(): array
+    {
+        return [
+            [null, 12, 12],
+            ['mixed', 35, 35],
+            ['prefix', 17, 17],
+            [null, -13, 13],
+            ['prefix', 3, 7],
+        ];
+    }
+
+    #[DataProvider('provideBoundaries')]
+    public function testBoundaryRetainsFormatAndIsCached(?string $prefix, int $length, int $expectedLength): void
+    {
+        $transport = new FakeTransport();
+        $boundary = $transport->getBoundary('mixed', $prefix, $length);
+        $expectedPrefix = null === $prefix ? '' : $prefix . '-';
+
+        $this->assertSame($expectedLength, strlen($boundary));
+        $this->assertMatchesRegularExpression('/\A' . preg_quote($expectedPrefix, '/') . '[A-Z0-9]*\z/', $boundary);
+        $this->assertSame($boundary, $transport->getBoundary('mixed', 'ignored', 50));
+    }
+
     public function testGetContents()
     {
         $transport = new FakeTransport();

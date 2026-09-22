@@ -10,13 +10,42 @@
  * file that was distributed with this source code, to the root.
  */
 
+declare(strict_types=1);
+
 namespace Berlioz\Http\Message\Tests\Stream;
 
 use Berlioz\Http\Message\Stream\MultipartStream;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 class MultipartStreamTest extends TestCase
 {
+    public static function provideBoundaries(): array
+    {
+        return [[null], [''], ['custom-boundary']];
+    }
+
+    #[DataProvider('provideBoundaries')]
+    public function testBoundaryRemainsConsistentWithDelimiters(?string $provided): void
+    {
+        $multipart = new MultipartStream($provided);
+        $boundary = $multipart->getBoundary();
+        if ($provided) {
+            $this->assertSame($provided, $boundary);
+        } else {
+            $this->assertMatchesRegularExpression('/\A[a-zA-Z0-9]{70}\z/', $boundary);
+        }
+
+        $multipart->addElement('field', 'value', ['Content-Type' => 'text/plain']);
+        $contents = (string)$multipart;
+
+        $this->assertSame($boundary, $multipart->getBoundary());
+        $this->assertStringStartsWith('--' . $boundary . MultipartStream::EOL, $contents);
+        $this->assertStringEndsWith('--' . $boundary . '--' . MultipartStream::EOL, $contents);
+        $this->assertSame(strlen($contents), $multipart->getSize());
+        $this->assertSame($contents, (string)$multipart);
+    }
+
     public function testGetContents_empty()
     {
         $multipart = new MultipartStream();

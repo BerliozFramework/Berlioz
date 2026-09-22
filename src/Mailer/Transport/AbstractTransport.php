@@ -1,5 +1,5 @@
 <?php
-/**
+/*
  * This file is part of Berlioz framework.
  *
  * @license   https://opensource.org/licenses/MIT MIT License
@@ -280,7 +280,7 @@ abstract class AbstractTransport implements TransportInterface
 
         $remaining = $length - strlen($this->boundaries[$type]);
         for ($i = 0; $i < $remaining; $i++) {
-            $this->boundaries[$type] .= $source[mt_rand(1, $n) - 1];
+            $this->boundaries[$type] .= $source[random_int(0, $n - 1)];
         }
 
         return $this->boundaries[$type];
