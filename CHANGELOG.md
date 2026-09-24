@@ -7,6 +7,67 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.3.0] - 2026-09-24
+
+### Added
+
+- [form] `FormMapping(get:, set:)` strategy accepted as the `mapped` option, allowing full control over how an
+  element reads from and writes to the mapped object (arbitrary internal target, nested properties, on-the-fly
+  transformations). The public `name` stays decoupled from the internal mapping target.
+- [form] `ElementInterface::getMapping(): ?FormMapping` normalizing the `mapped` option (`false`/`string`/`true`/
+  `FormMapping`) into a single strategy.
+- [http-client] Additive `redirectSensitiveHeaders` option to configure application-specific credential headers
+- [http-core] Display response status, reason phrase, protocol and headers in the debug console's HTTP / Router section
+- [http-core] HTTP Core refreshes the router server-parameter context before matching each request, keeping route and asset URLs consistent with the supplied PSR-7 request even when URI rewriting is disabled
+- [http-core] Optional `ForwardedPrefixMiddleware`, applied last in the pipeline when both `berlioz.router.rewriteRequestUri` and `X-Forwarded-Prefix` handling are enabled, rewrites the current request URI with the reverse-proxy prefix so URLs derived from `getUri()` are correctly prefixed; the resolved prefix is also exposed via the `berlioz.forwarded_prefix` request attribute
+- [http-core] `berlioz.router.rewriteRequestUri` defaults to `false` in v3, preserving the internal request path unless rewriting is explicitly enabled
+- [http-core] `HttpApp::setRequest()` to update the application-wide server request
+- [http-core] Request rewriting uses a processing attribute to avoid applying the prefix twice to the same rewritten request, while preserving internal paths that overlap the proxy mount
+- [router] `RouterInterface::setServerParams()` supplies a non-serialized request context for URL generation; explicit `finalizePath()` parameters take precedence, and `$_SERVER` remains the fallback without a context
+- [router] `ForwardedPrefixResolver` centralizes prefix validation and proxy trust checks; `Router::getForwardedPrefixResolver()` exposes the resolver built from the concrete router's effective options
+- [router] `Router::finalizePath()` accepts an optional `?array $serverParams` argument (uses the current context, then `$_SERVER` when omitted), added to `RouterInterface`
+- [router] New `trustedProxies` router option: `X-Forwarded-Prefix` is now only honoured when `REMOTE_ADDR` is a trusted proxy (IP, CIDR or alias via `NetworkHelper::isTrustedProxy()`)
+
+### Changed
+
+- [form] Mapping is now resolved uniformly through the `FormMapping` strategy in `TypeHydrator`, `TypeCollector`
+  and `AbstractElement::getMapped()`. No behavior change for the existing `bool`/`string` forms of the
+  `mapped` option.
+- [http-message] Generate 70-character multipart boundaries directly from `random_bytes()` instead of the generic random-string helper
+- [router] `Router::finalizePath()` normalizes leading/trailing slashes of the prefix and prefixes internal paths even when they start with the same segment as the proxy mount
+
+### Deprecated
+
+- [http-core] Handling a valid trusted forwarded prefix without request URI rewriting now emits `E_USER_DEPRECATED`; enable `berlioz.router.rewriteRequestUri` to adopt the mandatory v4 behavior. Requests without a valid trusted prefix do not emit this deprecation
+
+### Fixed
+
+- [html-selector] Preserve quotes and backslashes in XPath literals for attribute selectors and `:contains()` / `:lang()` arguments
+- [http-client] Restore cookie manager snapshots in linear time without replaying cookie replacement checks
+- [http-client] Reject empty cookie hosts before IDNA conversion to avoid ValueError on PHP 8.4 and later
+- [http-client] Ignore invalid cookie domains individually during HAR import and replay
+- [http-client] Serialize session cookies as an array and discard cookies from legacy session formats
+- [http-client] Preserve host-only and SameSite attributes when updating cookies
+- [http-client] Honor `cookies: false` when sending requests and collecting response cookies
+- [http-client] Preserve content type for 307/308 request bodies and recalculate redirect content length
+- [http-core] Log caught HTTP server exceptions and error-handler failures to the configured PHP error log, even when debug is disabled
+- [queue-manager] Fix `DbQueue::waitTime()` acquiring a needless `FOR UPDATE SKIP LOCKED` lock and skipping locked rows, distorting the monitoring metric
+- [queue-manager-package] Resolve the queue manager only when collecting HTTP metrics, allowing applications without configured queues to handle requests while metrics are disabled or not requested
+
+### Security
+
+- [html-selector] Encode XPath string literals safely and validate interpolated element/attribute names to prevent XPath injection
+- [http-client] Preserve host-only scope across HAR exports/imports and validate imported cookies against their entry host
+- [http-client] Normalize internationalized cookie domains when IDNA support is available; reject Unicode domains otherwise
+- [http-client] Reject response cookies for unrelated domains before storage, replacement or deletion
+- [http-client] Preserve host-only cookie scope and enforce cookie path boundaries and default paths
+- [http-client] Strip credential headers and URI credentials persistently after cross-origin redirects without modifying caller options
+- [http-client] Sanitize redirect referers and omit them on HTTPS-to-HTTP redirects, preventing reapplication from default headers
+- [http-core] The reverse-proxy prefix is only applied when `REMOTE_ADDR` matches the router's trusted proxies (inherited from `berlioz.proxies.trusted` unless explicitly overridden); HTTP Core injects the concrete router's `ForwardedPrefixResolver` into the middleware to share the same validation and effective options
+- [mailer] Use cryptographically secure randomness for MIME boundaries and attachment Content-IDs, preserving their existing formats
+- [router] Ignore malformed forwarded prefixes, including header lists, traversal segments, delimiters, controls and ambiguous encoded separators or percent signs
+- [router] `X-Forwarded-Prefix` is ignored unless it comes from a configured trusted proxy, preventing a client from spoofing the prefix to poison generated URLs
+
 ## [3.2.1] - 2026-09-11
 
 ### Fixed
