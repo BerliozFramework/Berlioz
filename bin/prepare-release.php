@@ -129,10 +129,20 @@ function extractRawSection(string $md, string $headerRegex): ?array
 function extractItems(string $text): array
 {
     $out = [];
-    foreach (explode("\n", trim($text)) as $l) {
-        if (preg_match('/^\s*[-*]\s+(.*)$/', $l, $matches)) {
-            $out[] = trim($matches[1]);
+    $item = null;
+    foreach (explode("\n", $text) as $line) {
+        if (preg_match('/^[-*]\s+(.*)$/', $line, $matches)) {
+            if ($item !== null) {
+                $out[] = rtrim($item);
+            }
+            $item = $matches[1];
+        } elseif ($item !== null) {
+            // Keep continuation lines, paragraphs and indented sub-lists with their parent item.
+            $item .= "\n" . $line;
         }
+    }
+    if ($item !== null) {
+        $out[] = rtrim($item);
     }
     return $out;
 }

@@ -67,6 +67,9 @@
     <testsuite name="Berlioz ServiceContainer test suite">
       <directory suffix="Test.php">./tests/ServiceContainer</directory>
     </testsuite>
+    <testsuite name="Berlioz Tooling test suite">
+      <directory suffix="Test.php">./tests/Tooling</directory>
+    </testsuite>
   </testsuites>
   <source>
     <include>
