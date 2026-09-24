@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Resolve the queue manager only when collecting HTTP metrics, allowing applications without configured queues to handle requests while metrics are disabled or not requested
+
 ## [3.2.1] - 2026-09-11
 
 _No changes in this release._

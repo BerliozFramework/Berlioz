@@ -10,6 +10,8 @@
  * file that was distributed with this source code, to the root.
  */
 
+declare(strict_types=1);
+
 namespace Berlioz\Package\QueueManager\Tests\Http;
 
 use Berlioz\Config\Adapter\ArrayAdapter;
@@ -17,16 +19,17 @@ use Berlioz\Config\Config;
 use Berlioz\Http\Core\App\HttpApp;
 use Berlioz\Http\Message\Response;
 use Berlioz\Http\Message\ServerRequest;
+use Berlioz\Package\QueueManager\Container\QueueManagerProvider;
 use Berlioz\Package\QueueManager\Http\QueueMetricsMiddleware;
 use Berlioz\QueueManager\Queue\MemoryQueue;
-use Berlioz\QueueManager\Queue\QueueInterface;
 use Berlioz\QueueManager\QueueManager;
 use Berlioz\Router\RouteInterface;
+use Berlioz\ServiceContainer\Container;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
-use RuntimeException;
 
 class QueueMetricsMiddlewareTest extends TestCase
 {
@@ -40,8 +43,9 @@ class QueueMetricsMiddlewareTest extends TestCase
         $app = $this->createMock(HttpApp::class);
         $app->method('getConfig')->willReturn(new Config([new ArrayAdapter($config)]));
         $app->method('getRoute')->willReturn($route);
+        $app->method('get')->with(QueueManager::class)->willReturn($this->queueManager());
 
-        return new QueueMetricsMiddleware($app, $this->queueManager());
+        return new QueueMetricsMiddleware($app);
     }
 
     private function handler(): RequestHandlerInterface
@@ -149,20 +153,55 @@ class QueueMetricsMiddlewareTest extends TestCase
 
     public function testProcess_headDoesNotCollectMetrics()
     {
-        // A queue whose size() would throw ensures HEAD never touches the backend.
-        $queue = $this->createMock(QueueInterface::class);
-        $queue->method('getName')->willReturn('default');
-        $queue->method('size')->willThrowException(new RuntimeException('backend must not be queried on HEAD'));
-
         $app = $this->createMock(HttpApp::class);
         $app->method('getConfig')->willReturn(new Config([new ArrayAdapter($this->enabledConfig())]));
         $app->method('getRoute')->willReturn(null);
-        $middleware = new QueueMetricsMiddleware($app, new QueueManager($queue));
+        $app->expects($this->never())->method('get');
+        $middleware = new QueueMetricsMiddleware($app);
 
         $response = $middleware->process($this->request(method: 'HEAD'), $this->handler());
 
         $this->assertSame(Response::HTTP_STATUS_OK, $response->getStatusCode());
         $this->assertSame('', (string)$response->getBody());
+    }
+
+    public static function provideRequestsWithoutQueueResolution(): iterable
+    {
+        yield 'other path' => [true, '/foo', 'GET', [], false, 404];
+        yield 'disabled metrics' => [false, '/metrics/queues', 'GET', [], false, 404];
+        yield 'existing route' => [true, '/metrics/queues', 'GET', [], true, 404];
+        yield 'unsupported method' => [true, '/metrics/queues', 'POST', [], false, 404];
+        yield 'denied IP' => [true, '/metrics/queues', 'GET', ['ip' => ['127.0.0.1']], false, 404];
+        yield 'missing token' => [true, '/metrics/queues', 'GET', ['token' => 'secret'], false, 404];
+        yield 'HEAD' => [true, '/metrics/queues', 'HEAD', [], false, 200];
+    }
+
+    #[DataProvider('provideRequestsWithoutQueueResolution')]
+    public function testProcess_withoutConfiguredQueues(
+        bool $enabled,
+        string $path,
+        string $method,
+        array $metrics,
+        bool $hasRoute,
+        int $status,
+    ): void {
+        $config = new Config([new ArrayAdapter($this->enabledConfig(['enable' => $enabled] + $metrics))]);
+        $app = $this->createMock(HttpApp::class);
+        $app->method('getConfig')->willReturn($config);
+        $app->method('getRoute')->willReturn($hasRoute ? $this->createMock(RouteInterface::class) : null);
+        $app->expects($this->never())->method('get');
+
+        $container = new Container();
+        $container->autoWiring(true);
+        $container->add($config);
+        $container->add($app, HttpApp::class);
+        $container->addProvider(new QueueManagerProvider());
+
+        $middleware = $container->get(QueueMetricsMiddleware::class);
+        $response = $middleware->process($this->request($path, method: $method), $handler = $this->handler());
+
+        $this->assertSame($status, $response->getStatusCode());
+        $this->assertSame(404 === $status, $handler->handled);
     }
 
     public function testProcess_passThroughWhenIpNotAllowed()

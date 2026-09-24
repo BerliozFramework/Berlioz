@@ -47,7 +47,6 @@ class QueueMetricsMiddleware implements MiddlewareInterface
 {
     public function __construct(
         protected HttpApp $app,
-        protected QueueManager $queueManager,
     ) {
     }
 
@@ -197,7 +196,7 @@ class QueueMetricsMiddleware implements MiddlewareInterface
      */
     private function metricsResponse(ConfigInterface $config): ResponseInterface
     {
-        $exporter = new QueueMetricsExporter($this->queueManager);
+        $exporter = new QueueMetricsExporter($this->app->get(QueueManager::class));
         $withTotal = (bool)$config->get('berlioz.queues.metrics.total', false);
 
         if ('json' === $config->get('berlioz.queues.metrics.format', 'prometheus')) {
