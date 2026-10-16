@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.3.1] - 2026-10-16
+
+### Fixed
+
+- [queue-manager] Fix PHP 8.6 deprecation caused by the nullable return type of `JobHandlerManager::__debugInfo()`
+
 ## [3.3.0] - 2026-09-24
 
 ### Added
