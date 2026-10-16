@@ -29,7 +29,7 @@ class JobHandlerManager implements JobHandlerInterface
     ) {
     }
 
-    public function __debugInfo(): ?array
+    public function __debugInfo(): array
     {
         return [
             'handlers' => $this->handlers,

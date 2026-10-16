@@ -23,7 +23,7 @@ class RedisCacheDriverTest extends AbstractCacheDriverTestCase
 {
     protected static ?RedisCacheDriver $cacheDriver = null;
     protected static ?Redis $redis = null;
-    protected const NAMESPACE = 'berlioz-test';
+    protected const CACHE_NAMESPACE = 'berlioz-test';
 
     protected static function getRedis(): ?Redis
     {
@@ -56,7 +56,7 @@ class RedisCacheDriverTest extends AbstractCacheDriverTestCase
         $redis = self::getRedis();
 
         if (null !== $redis) {
-            (new RedisCacheDriver($redis, self::NAMESPACE))->clear();
+            (new RedisCacheDriver($redis, self::CACHE_NAMESPACE))->clear();
         }
     }
 
@@ -65,7 +65,7 @@ class RedisCacheDriverTest extends AbstractCacheDriverTestCase
         $redis = self::getRedis();
 
         if (null !== $redis) {
-            (new RedisCacheDriver($redis, self::NAMESPACE))->clear();
+            (new RedisCacheDriver($redis, self::CACHE_NAMESPACE))->clear();
         }
 
         self::$cacheDriver = null;
@@ -81,7 +81,7 @@ class RedisCacheDriverTest extends AbstractCacheDriverTestCase
         }
 
         if (null === self::$cacheDriver) {
-            self::$cacheDriver = new RedisCacheDriver($redis, self::NAMESPACE);
+            self::$cacheDriver = new RedisCacheDriver($redis, self::CACHE_NAMESPACE);
         }
 
         return self::$cacheDriver;
