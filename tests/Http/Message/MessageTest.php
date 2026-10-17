@@ -24,6 +24,7 @@ use Berlioz\Http\Message\Stream;
 use Berlioz\Http\Message\Stream\MemoryStream;
 use Berlioz\Http\Message\Tests\Parser\FakeParser;
 use InvalidArgumentException;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use stdClass;
 
@@ -224,6 +225,69 @@ class MessageTest extends TestCase
             ->withHeader('Content-Type', 'application/vnd.api+json; charset=utf-8');
 
         $this->assertObjectHasProperty('json', $message->getParsedBody());
+    }
+
+    public function testGetParsedBodyWithEmptyJsonBody()
+    {
+        $message = $this->newMessageObj();
+        $message = $message->withBody(new Stream())
+            ->withHeader('Content-Type', 'application/json');
+
+        $this->assertNull($message->getParsedBody());
+    }
+
+    public function testGetParsedBodyIsParsedOnce()
+    {
+        $message = $this->newMessageObj();
+        $stream = new Stream();
+        $stream->write('[]');
+        $message = $message->withBody($stream)
+            ->withHeader('Content-Type', 'application/json');
+
+        $this->assertSame([], $message->getParsedBody());
+
+        // An unchanged body must not be parsed again, even if its parsed value is falsy.
+        $stream->write('{"json": true}');
+        $this->assertSame([], $message->getParsedBody());
+    }
+
+    public function testGetParsedBodyAfterWithBody()
+    {
+        $message = $this->newMessageObj();
+        $stream = new Stream();
+        $stream->write('[]');
+        $message = $message->withBody($stream)
+            ->withHeader('Content-Type', 'application/json');
+
+        $this->assertSame([], $message->getParsedBody());
+
+        $newStream = new Stream();
+        $newStream->write('{"json": true}');
+        $message2 = $message->withBody($newStream);
+
+        $this->assertSame([], $message->getParsedBody());
+        $this->assertObjectHasProperty('json', $message2->getParsedBody());
+    }
+
+    public static function provideFalsyParsedBodies(): array
+    {
+        return [
+            'null' => [null],
+            'empty array' => [[]],
+        ];
+    }
+
+    #[DataProvider('provideFalsyParsedBodies')]
+    public function testWithParsedBody_falsyValueIsNotParsedAgain(?array $data)
+    {
+        $message = $this->newMessageObj();
+        $stream = new Stream();
+        $stream->write('invalid json');
+        $message = $message->withBody($stream)
+            ->withHeader('Content-Type', 'application/json')
+            ->withParsedBody($data);
+
+        $this->assertSame($data, $message->getParsedBody());
     }
 
     public function testWithParsedBody()
