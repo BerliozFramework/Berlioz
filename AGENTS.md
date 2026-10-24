@@ -421,7 +421,8 @@ What it does:
 3. Merges intelligently if the version block already exists (idempotent)
 
 After running it, commit everything as `chore(release): prepare v<version>`, then tag `v<version>` to trigger the
-subsplit publication to all mirrors.
+subsplit publication to all mirrors. The tag run waits (up to 30 minutes) for a successful `3.x` synchronization
+containing the tagged commit before propagating the tag, so the tag can be pushed right after the release merge.
 
 ## Issues & Pull Requests
 
