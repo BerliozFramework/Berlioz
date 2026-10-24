@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.3.2] - 2026-10-25
+
+### Fixed
+
+- [http-core] `HttpApp::print()` preserves the response status code when a `Location` header is sent with a status other than 201 or 3xx, instead of letting PHP turn it into a 302 redirect
+- [http-message] `getParsedBody()` no longer parses the body again when its parsed value is falsy (`null`, `[]`), and respects a `null` value set with `withParsedBody()`
+- [http-message] `JsonParser` returns `null` for an empty body instead of throwing a `RuntimeException`
+- [queue-manager] Fix HectorORM 1.6 `$skipLocked` deprecation triggered on every `DbQueue::consume()` poll, and keep `SKIP LOCKED` semantics explicit ahead of HectorORM 2.0
+
 ## [3.3.1] - 2026-10-16
 
 ### Fixed
