@@ -19,6 +19,7 @@ use Berlioz\QueueManager\Queue\QueueInterface;
 use Berlioz\QueueManager\RateLimiter\NullRateLimiter;
 use Berlioz\QueueManager\RateLimiter\RateLimiterInterface;
 use Hector\Connection\Connection;
+use Hector\Connection\Driver\DriverInfo;
 use PHPUnit\Framework\Attributes\RequiresMethod;
 use PHPUnit\Framework\Attributes\RequiresPhpExtension;
 
@@ -86,5 +87,25 @@ class DbQueueTest extends QueueTestCase
         $this->assertSame($secondJobId, $job->getId());
         $this->assertSame('second', $job->getName());
         $this->assertNotSame($firstJobId, $job->getId());
+    }
+
+    public function testConsumeLocksWithSkipLocked(): void
+    {
+        $statements = [];
+        $connection = $this->createMock(Connection::class);
+        $connection->method('inTransaction')->willReturn(false);
+        $connection->method('getDriverInfo')->willReturn(new DriverInfo('mysql', '8.4.0'));
+        $connection
+            ->method('fetchOne')
+            ->willReturnCallback(function (string $statement) use (&$statements): ?array {
+                $statements[] = $statement;
+                return null;
+            });
+
+        $queue = new DbQueue(connection: $connection);
+
+        $this->assertNull($queue->consume());
+        $this->assertCount(1, $statements);
+        $this->assertStringEndsWith(' FOR UPDATE SKIP LOCKED', $statements[0]);
     }
 }
