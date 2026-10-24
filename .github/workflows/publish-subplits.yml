@@ -7,19 +7,26 @@ on:
       - '*.x'
   # Tag propagation to sub-splits relies on the `create`/`delete` events:
   # frankdejonge/use-subsplit-publish only propagates tags on `create` (never on `push: tags`).
-  create:
-    tags:
-      - 'v*.*'
-  delete:
-    tags:
-      - 'v*.*'
+  # These events do not support branch/tag filters: branch events are filtered at job level.
+  create: ~
+  delete: ~
 
+permissions:
+  actions: read
+  contents: read
+
+# Branch synchronizations cancel each other, tag events run in their own group.
+# Delete events use the default branch as `github.ref`, so they must never share the push group.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event_name == 'push' && github.ref || github.event.ref }}
+  cancel-in-progress: ${{ github.event_name == 'push' }}
+
+env:
+  SOURCE_BRANCH: '3.x'
 
 jobs:
   publish_subsplits:
+    if: github.event_name == 'push' || (github.event.ref_type == 'tag' && startsWith(github.event.ref, 'v'))
     runs-on: ubuntu-latest
     name: Publish package sub-splits
     env:
@@ -29,6 +36,29 @@ jobs:
         with:
           fetch-depth: '0'
           persist-credentials: 'false'
+      - name: Wait for branch synchronization
+        if: github.event_name == 'create'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.event.ref }}
+        run: |
+          tag_sha=$(git rev-list -n 1 "refs/tags/${TAG}")
+          for attempt in $(seq 1 60); do
+            synced_sha=$(gh api \
+              "repos/${GITHUB_REPOSITORY}/actions/workflows/publish-subplits.yml/runs?event=push&branch=${SOURCE_BRANCH}&status=success&per_page=1" \
+              --jq '.workflow_runs[0].head_sha // empty')
+            if [ -n "${synced_sha}" ]; then
+              git fetch --quiet origin "+refs/heads/${SOURCE_BRANCH}:refs/remotes/origin/${SOURCE_BRANCH}"
+              if git merge-base --is-ancestor "${tag_sha}" "${synced_sha}"; then
+                echo "Tag ${TAG} (${tag_sha}) is synchronized by push run on ${synced_sha}."
+                exit 0
+              fi
+            fi
+            echo "Waiting for ${SOURCE_BRANCH} synchronization of ${tag_sha} (attempt ${attempt}/60)..."
+            sleep 30
+          done
+          echo "::error::Branch ${SOURCE_BRANCH} was not synchronized up to ${tag_sha}, tag ${TAG} not propagated."
+          exit 1
       - uses: frankdejonge/use-github-token@1.1.0
         with:
           authentication: 'x-access-token:${{ secrets.REPO_PUSH_TOKEN }}'
@@ -42,7 +72,7 @@ jobs:
           key: '${{ runner.os }}-splitsh'
       - uses: frankdejonge/use-subsplit-publish@1.1.0
         with:
-          source-branch: '3.x'
+          source-branch: ${{ env.SOURCE_BRANCH }}
           config-path: './config.subsplit-publish.json'
           splitsh-path: './.splitsh/splitsh-lite'
           splitsh-version: 'v1.0.1'
