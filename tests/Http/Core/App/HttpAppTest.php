@@ -34,6 +34,7 @@ use Berlioz\Router\Route;
 use Berlioz\Router\Router;
 use Berlioz\Router\RouterInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\RunInSeparateProcess;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Server\MiddlewareInterface;
@@ -421,6 +422,32 @@ class HttpAppTest extends TestCase
 
         $this->expectOutputString($body);
         $app->print($response);
+    }
+
+    public static function provideStatusWithLocation(): array
+    {
+        return [
+            'ok' => [200],
+            'created' => [201],
+            'accepted' => [202],
+            'moved permanently' => [301],
+            'see other' => [303],
+            'not found' => [404],
+        ];
+    }
+
+    #[DataProvider('provideStatusWithLocation')]
+    #[RunInSeparateProcess]
+    public function testPrint_keepsStatusCodeWithLocationHeader(int $statusCode): void
+    {
+        $app = new HttpApp(new Core(new FakeDefaultDirectories(), false));
+        $response = new Response('', $statusCode, ['Location' => '/jobs/1', 'X-Foo' => 'Bar']);
+
+        $this->assertFalse(headers_sent());
+        $this->expectOutputString('');
+        $app->print($response);
+
+        $this->assertSame($statusCode, http_response_code());
     }
 
     public function testResponseInfo_afterMiddlewareWithoutAccessingBody(): void
