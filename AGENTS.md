@@ -447,6 +447,7 @@ containing the tagged commit before propagating the tag, so the tag can be pushe
 
 ## CI/CD
 
-- **Tests:** GitHub Actions on push to `main`/`*.x`, PRs, and daily. Matrix: PHP 8.2-8.5 x prefer-lowest/prefer-stable.
+- **Tests:** GitHub Actions on push to `main`/`*.x`, PRs, and daily. Matrix: PHP 8.2-8.6 x prefer-lowest/prefer-stable
+  (PHP 8.6 is experimental, `continue-on-error`).
   Coverage via xdebug.
 - **Subsplit:** Automatically synchronizes each `src/` subdirectory to its read-only mirror repository.

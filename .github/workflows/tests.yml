@@ -20,12 +20,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        php-versions: [ '8.2', '8.3', '8.4', '8.5' ]
+        php-versions: [ '8.2', '8.3', '8.4', '8.5', '8.6' ]
         stability: [ 'prefer-lowest', 'prefer-stable' ]
 
     name: PHPUnit on PHP ${{ matrix.php-versions }} - ${{ matrix.stability }}
 
-    continue-on-error: ${{ matrix.stability != 'prefer-stable' }}
+    # PHP 8.6 is experimental until its GA and PECL extensions (amqp, redis, yaml, xdebug) support.
+    continue-on-error: ${{ matrix.stability != 'prefer-stable' || matrix.php-versions == '8.6' }}
 
     services:
       redis:
