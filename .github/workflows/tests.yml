@@ -25,8 +25,7 @@ jobs:
 
     name: PHPUnit on PHP ${{ matrix.php-versions }} - ${{ matrix.stability }}
 
-    # PHP 8.6 is experimental until its GA and PECL extensions (amqp, redis, yaml, xdebug) support.
-    continue-on-error: ${{ matrix.stability != 'prefer-stable' || matrix.php-versions == '8.6' }}
+    continue-on-error: ${{ matrix.stability != 'prefer-stable' }}
 
     services:
       redis:
