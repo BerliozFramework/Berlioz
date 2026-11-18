@@ -63,6 +63,62 @@ class FileCacheDriverTest extends AbstractCacheDriverTestCase
         $driver->clear();
     }
 
+    public function testSet_doesNotLeaveTemporaryFiles()
+    {
+        $path = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'berlioz-cache-tmp-' . uniqid();
+        $driver = new FileCacheDriver($path);
+
+        for ($i = 0; $i < 5; $i++) {
+            $this->assertTrue($driver->set('foo', 'bar' . $i));
+        }
+
+        $hash = md5('foo');
+        $keyDirectory =
+            $path . DIRECTORY_SEPARATOR .
+            FileCacheDriver::CACHE_DIRECTORY . DIRECTORY_SEPARATOR .
+            substr($hash, 0, 2);
+
+        $this->assertSame([$hash . '.txt'], array_values(array_diff(scandir($keyDirectory), ['.', '..'])));
+
+        $driver->clear();
+    }
+
+    public function testSet_overwritesExistingEntry()
+    {
+        $path = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'berlioz-cache-overwrite-' . uniqid();
+        $driver = new FileCacheDriver($path);
+
+        $this->assertTrue($driver->set('foo', 'bar'));
+        $this->assertTrue($driver->set('foo', 'baz'));
+        $this->assertSame('baz', $driver->get('foo'));
+
+        $driver->clear();
+    }
+
+    public function testSet_appliesRestrictiveFilePermissions()
+    {
+        if (DIRECTORY_SEPARATOR === '\\') {
+            $this->markTestSkipped('POSIX permissions do not apply on Windows');
+        }
+
+        $path = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'berlioz-cache-fileperm-' . uniqid();
+        $driver = new FileCacheDriver($path);
+
+        $this->assertTrue($driver->set('foo', 'bar'));
+
+        $hash = md5('foo');
+        $cacheFile =
+            $path . DIRECTORY_SEPARATOR .
+            FileCacheDriver::CACHE_DIRECTORY . DIRECTORY_SEPARATOR .
+            substr($hash, 0, 2) . DIRECTORY_SEPARATOR .
+            $hash . '.txt';
+
+        clearstatcache();
+        $this->assertSame(0, (fileperms($cacheFile) & 0o007), 'Cache file must not be accessible to others');
+
+        $driver->clear();
+    }
+
     public function testConstructWithStringPath()
     {
         $path = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'berlioz-cache-test-' . uniqid();
