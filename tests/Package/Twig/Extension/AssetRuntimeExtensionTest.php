@@ -141,6 +141,90 @@ class AssetRuntimeExtensionTest extends TestCase
         );
     }
 
+    public static function provideEntryPoints_withPreload(): array
+    {
+        return [
+            'type js' => [
+                'entry' => 'website',
+                'type' => 'js',
+                'options' => ['preload' => true],
+                'expectedHtml' =>
+                    '<script src="/assets/js/website.js"></script>' . PHP_EOL .
+                    '<script src="/assets/js/vendor.js"></script>' . PHP_EOL,
+                'expectedHeaders' => [
+                    'Link: </assets/js/website.js>; rel=preload; as=script',
+                    'Link: </assets/js/vendor.js>; rel=preload; as=script',
+                ],
+            ],
+            'no type' => [
+                'entry' => ['website', 'admin'],
+                'type' => null,
+                'options' => ['preload' => true],
+                'expectedHtml' =>
+                    '<link rel="stylesheet" href="/assets/css/website.css">' . PHP_EOL .
+                    '<link rel="stylesheet" href="/assets/css/admin.css">' . PHP_EOL .
+                    '<script src="/assets/js/website.js"></script>' . PHP_EOL .
+                    '<script src="/assets/js/vendor.js"></script>' . PHP_EOL .
+                    '<script src="/assets/js/admin.js"></script>' . PHP_EOL,
+                'expectedHeaders' => [
+                    'Link: </assets/css/website.css>; rel=preload; as=style',
+                    'Link: </assets/css/admin.css>; rel=preload; as=style',
+                    'Link: </assets/js/website.js>; rel=preload; as=script',
+                    'Link: </assets/js/vendor.js>; rel=preload; as=script',
+                    'Link: </assets/js/admin.js>; rel=preload; as=script',
+                ],
+            ],
+            'preload options' => [
+                'entry' => 'website',
+                'type' => 'js',
+                'options' => ['preload' => ['crossorigin' => true], 'defer' => true],
+                'expectedHtml' =>
+                    '<script defer src="/assets/js/website.js"></script>' . PHP_EOL .
+                    '<script defer src="/assets/js/vendor.js"></script>' . PHP_EOL,
+                'expectedHeaders' => [
+                    'Link: </assets/js/website.js>; rel=preload; as=script; crossorigin',
+                    'Link: </assets/js/vendor.js>; rel=preload; as=script; crossorigin',
+                ],
+            ],
+            'preload disabled' => [
+                'entry' => 'website',
+                'type' => 'js',
+                'options' => ['preload' => false],
+                'expectedHtml' =>
+                    '<script src="/assets/js/website.js"></script>' . PHP_EOL .
+                    '<script src="/assets/js/vendor.js"></script>' . PHP_EOL,
+                'expectedHeaders' => [],
+            ],
+        ];
+    }
+
+    #[DataProvider('provideEntryPoints_withPreload')]
+    public function testEntryPoints_withPreload(
+        string|array $entry,
+        ?string $type,
+        array $options,
+        string $expectedHtml,
+        array $expectedHeaders,
+    ) {
+        $headers = [];
+
+        $extensionRuntime = $this->getMockBuilder(AssetRuntimeExtension::class)
+            ->setConstructorArgs([$this->assets, new Router()])
+            ->onlyMethods(['isHeadersSent', 'sendHeader', 'setCookie'])
+            ->getMock();
+        $extensionRuntime
+            ->method('isHeadersSent')
+            ->willReturn(false);
+        $extensionRuntime
+            ->method('sendHeader')
+            ->willReturnCallback(function (string $header) use (&$headers): void {
+                $headers[] = $header;
+            });
+
+        $this->assertEquals($expectedHtml, $extensionRuntime->entryPoints($entry, $type, $options));
+        $this->assertEquals($expectedHeaders, $headers);
+    }
+
     public function testEntryPoints_notFound()
     {
         $extensionRuntime = new AssetRuntimeExtension($this->assets, new Router());
