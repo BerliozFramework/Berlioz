@@ -25,17 +25,15 @@ use Twig\Error\RuntimeError;
 
 class AssetRuntimeExtension
 {
+    /** @deprecated HTTP/2 Server Push is no longer supported by browsers, the cookie is no longer used. */
     const H2PUSH_CACHE_COOKIE = 'h2pushes';
-    private array $h2pushCache = [];
+    /** @var string[] Links already preloaded */
+    private array $preloaded = [];
 
     public function __construct(
         protected Assets $assets,
         protected Router $router,
     ) {
-        // Get cache from cookies
-        if (isset($_COOKIE[self::H2PUSH_CACHE_COOKIE]) && is_array($_COOKIE[self::H2PUSH_CACHE_COOKIE])) {
-            $this->h2pushCache = array_keys($_COOKIE[self::H2PUSH_CACHE_COOKIE]);
-        }
     }
 
     protected function getRouter(): Router
@@ -235,7 +233,7 @@ class AssetRuntimeExtension
     }
 
     /**
-     * Function preload to pre loading of request for HTTP 2 protocol.
+     * Function preload to send a preload Link header.
      *
      * @param string $link
      * @param array $parameters
@@ -246,7 +244,14 @@ class AssetRuntimeExtension
     {
         $link = $this->getRouter()->finalizePath($link);
 
-        if (($push = (false === ($parameters['nopush'] ?? false))) && in_array(md5($link), $this->h2pushCache)) {
+        if (isset($parameters['nopush'])) {
+            trigger_error(
+                'The "nopush" preload parameter is deprecated, HTTP/2 Server Push is no longer supported',
+                E_USER_DEPRECATED,
+            );
+        }
+
+        if (in_array($link, $this->preloaded, true)) {
             return $link;
         }
 
@@ -269,24 +274,7 @@ class AssetRuntimeExtension
         }
 
         $this->sendHeader($header, false);
-
-        // Cache
-        if ($push) {
-            $this->h2pushCache[] = md5($link);
-
-            $this->setCookie(
-                sprintf('%s[%s]', self::H2PUSH_CACHE_COOKIE, md5($link)),
-                '1',
-                [
-                    'expires' => 0,
-                    'path' => '/',
-                    'domain' => '',
-                    'secure' => true,
-                    'httponly' => true,
-                    'samesite' => 'Strict',
-                ]
-            );
-        }
+        $this->preloaded[] = $link;
 
         return $link;
     }
@@ -322,6 +310,7 @@ class AssetRuntimeExtension
      * @param array $options
      *
      * @return void
+     * @deprecated No longer used, HTTP/2 Server Push cache has been removed.
      */
     public function setCookie(string $name, string $value, array $options = []): void
     {

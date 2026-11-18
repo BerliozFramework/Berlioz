@@ -15,6 +15,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `path_exists()` accepts a `RouteAttributes` object, like `path()`
 - `entrypoints()` with the `preload` option now preloads every rendered file, not only the first one
 - `entrypoints()` no longer preloads files when the `preload` option is `false`
+- `preload()` always sends the `Link` preload header (once per link and response) and no longer sets
+  `h2pushes[...]` cookies, the HTTP/2 Server Push cache is removed
+
+### Deprecated
+
+- `preload()` parameter `nopush`, HTTP/2 Server Push is no longer supported by browsers
+- `AssetRuntimeExtension::H2PUSH_CACHE_COOKIE` constant and `AssetRuntimeExtension::setCookie()` method, no longer used
 
 
 ## [3.3.2] - 2026-10-25
