@@ -12,13 +12,13 @@ This repository is a **monorepo** that contains all official Berlioz packages. S
 
 ## Issue titles
 
-Issue titles use the format `[package] Short description`, where `package` is the short package name
-(e.g. `[router]`, `[http-client]`, `[twig-package]`):
+Issue titles are a short description only:
 
-- `[router] Optional segments are ignored with a trailing slash`
-- `[mailer] Support STARTTLS in the native SMTP transport`
+- `Optional segments are ignored with a trailing slash`
+- `Support STARTTLS in the native SMTP transport`
 
-Do not use the [Conventional Commits](https://www.conventionalcommits.org/) format (`fix(router): ...`) for issues:
+Do not prefix the title with the package: it is tracked with a `package: <name>` label (e.g. `package: router`).
+Do not use the [Conventional Commits](https://www.conventionalcommits.org/) format (`fix(router): ...`) either:
 it is reserved for pull request titles and commit messages.
 
 ## Reporting bugs
