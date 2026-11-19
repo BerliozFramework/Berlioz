@@ -449,4 +449,6 @@ containing the tagged commit before propagating the tag, so the tag can be pushe
 
 - **Tests:** GitHub Actions on push to `main`/`*.x`, PRs, and daily. Matrix: PHP 8.2-8.5 x prefer-lowest/prefer-stable.
   Coverage via xdebug.
+- **Labeler:** `actions/labeler` adds `package: <name>` labels to pull requests from the changed files
+  (`.github/labeler.yml`); keep it in sync when adding a package.
 - **Subsplit:** Automatically synchronizes each `src/` subdirectory to its read-only mirror repository.
