@@ -54,6 +54,15 @@ class AssetRuntimeExtensionTest extends TestCase
         $extensionRuntime->asset('fake.css');
     }
 
+    public function testAsset_noManifest()
+    {
+        $this->expectException(RuntimeError::class);
+        $this->expectExceptionMessage('No manifest file');
+
+        $extensionRuntime = new AssetRuntimeExtension(new Assets(), new Router());
+        $extensionRuntime->asset('website.css');
+    }
+
     public function testEntryPoints()
     {
         $extensionRuntime = new AssetRuntimeExtension($this->assets, new Router());
