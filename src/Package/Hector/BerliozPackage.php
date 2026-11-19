@@ -52,6 +52,9 @@ class BerliozPackage extends AbstractPackage
                 'hector' => [
                     'dsn' => '',
                     'read_dsn' => null,
+                    'username' => null,
+                    'password' => null,
+                    'options' => [],
                     'schemas' => [],
                     'dynamic_events' => true,
                     'types' => [],

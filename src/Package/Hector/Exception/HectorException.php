@@ -45,4 +45,16 @@ class HectorException extends BerliozException
     {
         return new self('Migration config error', previous: $previous);
     }
+
+    /**
+     * PDO options config.
+     *
+     * @param string $reason
+     *
+     * @return self
+     */
+    public static function pdoOptionsConfig(string $reason): self
+    {
+        return new self(sprintf('PDO options config error: %s', $reason));
+    }
 }
