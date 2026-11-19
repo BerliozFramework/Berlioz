@@ -10,6 +10,17 @@ This repository is a **monorepo** that contains all official Berlioz packages. S
 
 **All contributions (bug reports, feature requests, pull requests) must be made on this repository.**
 
+## Issue titles
+
+Issue titles are a short description only:
+
+- `Optional segments are ignored with a trailing slash`
+- `Support STARTTLS in the native SMTP transport`
+
+Do not prefix the title with the package: it is tracked with a `package: <name>` label (e.g. `package: router`).
+Do not use the [Conventional Commits](https://www.conventionalcommits.org/) format (`fix(router): ...`) either:
+it is reserved for pull request titles and commit messages.
+
 ## Reporting bugs
 
 Before opening a new issue, please check if a similar issue already exists.

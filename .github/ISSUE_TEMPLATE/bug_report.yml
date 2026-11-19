@@ -2,6 +2,13 @@ name: Bug Report
 description: Report a bug in the Berlioz Framework
 labels: ["bug"]
 body:
+  - type: markdown
+    attributes:
+      value: |
+        **Title:** a short description only, e.g. `Optional segments are ignored with a trailing slash`.
+        Do not prefix it with the package (it is tracked with a `package: <name>` label) and do not use
+        the Conventional Commits format (`fix(router): ...`): it is reserved for pull requests and commits.
+
   - type: dropdown
     id: package
     attributes:
