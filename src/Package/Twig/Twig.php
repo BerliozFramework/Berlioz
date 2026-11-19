@@ -1,5 +1,5 @@
 <?php
-/**
+/*
  * This file is part of Berlioz framework.
  *
  * @license   https://opensource.org/licenses/MIT MIT License
@@ -94,7 +94,7 @@ class Twig
      *
      * @return array
      */
-    public function __debugInfo()
+    public function __debugInfo(): array
     {
         return ['loader' => '*TWIG LOADER*', 'twig' => '*TWIG*'];
     }
