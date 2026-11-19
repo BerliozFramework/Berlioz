@@ -15,7 +15,6 @@ declare(strict_types=1);
 namespace Berlioz\Package\Twig\Extension;
 
 use Berlioz\Core\Core;
-use DateTime;
 use DateTimeInterface;
 use IntlDateFormatter;
 use Twig\Extension\AbstractExtension;
@@ -66,14 +65,14 @@ class DefaultExtension extends AbstractExtension
     /**
      * Filter to format date.
      *
-     * @param DateTime|string|int $datetime DateTime object or timestamp
+     * @param DateTimeInterface|string|int $datetime DateTime object or timestamp
      * @param string $pattern Pattern of date result waiting
      * @param string|null $locale Locale for pattern translation
      *
      * @return string
      */
     public function filterDateFormat(
-        DateTime|string|int $datetime,
+        DateTimeInterface|string|int $datetime,
         string $pattern = 'dd/MM/yyyy',
         ?string $locale = null
     ): string {

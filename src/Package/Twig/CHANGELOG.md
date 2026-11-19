@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Twig debug console template no longer uses the `spaceless` filter, deprecated since Twig 3.12
+- `date_format` filter accepts any `DateTimeInterface`, `DateTimeImmutable` no longer throws a `TypeError`
+
 
 ## [3.3.2] - 2026-10-25
 
