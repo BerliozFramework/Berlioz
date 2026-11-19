@@ -1,7 +1,14 @@
 name: Feature Request
 description: Suggest a new feature or improvement
+title: "[package] "
 labels: ["enhancement"]
 body:
+  - type: markdown
+    attributes:
+      value: |
+        **Title:** use `[package] Short description`, e.g. `[mailer] Support STARTTLS in the native SMTP transport`.
+        Do not use the Conventional Commits format (`feat(mailer): ...`) for issues: it is reserved for pull requests and commits.
+
   - type: textarea
     id: problem
     attributes:

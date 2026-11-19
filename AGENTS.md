@@ -430,6 +430,8 @@ containing the tagged commit before propagating the tag, so the tag can be pushe
 
 - **One issue per bug/feature**, one branch, one PR — keep each PR atomic (a single fix or feature).
 - **Branch naming:** `fix/<slug>` for bugfixes, `feat/<slug>` (or `feature/<slug>`) for features, branched from `3.x`.
+- **Issue titles** use `[package] Short description` (e.g. `[router] Optional segments are ignored`), **never** the
+  Conventional Commits format: it is reserved for PR titles and commit messages.
 - **Issues** use the templates in `.github/ISSUE_TEMPLATE/`; tag the affected package with a `package: <name>` label (e.g. `package: router`) and include a confirmed reproduction.
 - **PRs** target `3.x`, follow `.github/PULL_REQUEST_TEMPLATE.md`, and link the issue with `closes #N`. A good description has **Summary / Fix / Tests / Validation** sections (test + assertion counts, Rector result).
 - **Merging/closing PRs:** prefer **squash merge** to keep a clean, linear history on `3.x` (one commit per PR). The squash commit message must follow Conventional Commits.
