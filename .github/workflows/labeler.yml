@@ -1,0 +1,35 @@
+name: Pull Request Labeler
+
+on:
+  pull_request_target:
+    types: [opened, edited, synchronize, reopened]
+
+jobs:
+  labeler:
+    permissions:
+      contents: read
+      pull-requests: write
+    runs-on: ubuntu-latest
+    steps:
+      # Package labels, from changed files (.github/labeler.yml)
+      - uses: actions/labeler@v7
+
+      # Type label, from the Conventional Commits type of the title
+      - uses: actions/github-script@v9
+        with:
+          script: |
+            const labels = new Map([['fix', 'bug'], ['feat', 'enhancement'], ['docs', 'documentation']]);
+            const labelOf = (title) => labels.get(/^(\w+)(?:\([^)]*\))?!?:/.exec(title ?? '')?.[1]);
+            const pr = context.payload.pull_request;
+            const issue = {owner: context.repo.owner, repo: context.repo.repo, issue_number: pr.number};
+
+            const label = labelOf(pr.title);
+            const oldLabel = labelOf(context.payload.changes?.title?.from);
+            const current = pr.labels.map((l) => l.name);
+
+            if (oldLabel && oldLabel !== label && current.includes(oldLabel)) {
+              await github.rest.issues.removeLabel({...issue, name: oldLabel});
+            }
+            if (label && !current.includes(label)) {
+              await github.rest.issues.addLabels({...issue, labels: [label]});
+            }

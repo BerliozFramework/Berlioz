@@ -1,0 +1,69 @@
+# Labels applied to pull requests by .github/workflows/labeler.yml, based on changed files.
+
+'package: cli-core':
+  - changed-files:
+      - any-glob-to-any-file: ['src/Cli/Core/**', 'tests/Cli/Core/**']
+
+'package: config':
+  - changed-files:
+      - any-glob-to-any-file: ['src/Config/**', 'tests/Config/**']
+
+'package: core':
+  - changed-files:
+      - any-glob-to-any-file: ['src/Core/**', 'tests/Core/**']
+
+'package: event-manager':
+  - changed-files:
+      - any-glob-to-any-file: ['src/EventManager/**', 'tests/EventManager/**']
+
+'package: flash-bag':
+  - changed-files:
+      - any-glob-to-any-file: ['src/FlashBag/**', 'tests/FlashBag/**']
+
+'package: form':
+  - changed-files:
+      - any-glob-to-any-file: ['src/Form/**', 'tests/Form/**']
+
+'package: hector-package':
+  - changed-files:
+      - any-glob-to-any-file: ['src/Package/Hector/**', 'tests/Package/Hector/**']
+
+'package: html-selector':
+  - changed-files:
+      - any-glob-to-any-file: ['src/HtmlSelector/**', 'tests/HtmlSelector/**']
+
+'package: http-client':
+  - changed-files:
+      - any-glob-to-any-file: ['src/Http/Client/**', 'tests/Http/Client/**']
+
+'package: http-core':
+  - changed-files:
+      - any-glob-to-any-file: ['src/Http/Core/**', 'tests/Http/Core/**']
+
+'package: http-message':
+  - changed-files:
+      - any-glob-to-any-file: ['src/Http/Message/**', 'tests/Http/Message/**']
+
+'package: mailer':
+  - changed-files:
+      - any-glob-to-any-file: ['src/Mailer/**', 'tests/Mailer/**']
+
+'package: queue-manager':
+  - changed-files:
+      - any-glob-to-any-file: ['src/QueueManager/**', 'tests/QueueManager/**']
+
+'package: queue-manager-package':
+  - changed-files:
+      - any-glob-to-any-file: ['src/Package/QueueManager/**', 'tests/Package/QueueManager/**']
+
+'package: router':
+  - changed-files:
+      - any-glob-to-any-file: ['src/Router/**', 'tests/Router/**']
+
+'package: service-container':
+  - changed-files:
+      - any-glob-to-any-file: ['src/ServiceContainer/**', 'tests/ServiceContainer/**']
+
+'package: twig-package':
+  - changed-files:
+      - any-glob-to-any-file: ['src/Package/Twig/**', 'tests/Package/Twig/**']
