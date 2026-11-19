@@ -42,7 +42,7 @@ class RouterRuntimeExtension
         try {
             return $this->router->generate($name, $parameters);
         } catch (NotFoundException|RoutingException $exception) {
-            throw new RuntimeError($exception->getMessage());
+            throw new RuntimeError($exception->getMessage(), previous: $exception);
         } catch (Exception $exception) {
             throw new RuntimeError('Routing treatment error', previous: $exception);
         }
@@ -52,12 +52,12 @@ class RouterRuntimeExtension
      * Function to check if a path exists.
      *
      * @param string $name
-     * @param array $parameters
+     * @param array|RouteAttributes $parameters
      *
      * @return bool
      * @throws Error
      */
-    public function functionPathExists(string $name, array $parameters = []): bool
+    public function functionPathExists(string $name, array|RouteAttributes $parameters = []): bool
     {
         try {
             $this->router->generate($name, $parameters);
