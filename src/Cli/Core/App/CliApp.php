@@ -15,6 +15,7 @@ declare(strict_types=1);
 namespace Berlioz\Cli\Core\App;
 
 use Berlioz\Cli\Core\Command\CommandHandler;
+use Berlioz\Cli\Core\Event\CliTerminateEvent;
 use Berlioz\Cli\Core\Exception\CliException;
 use Berlioz\Core\App\AbstractApp;
 use Berlioz\Core\Core;
@@ -25,6 +26,8 @@ use Berlioz\ServiceContainer\Inflector\Inflector;
  */
 class CliApp extends AbstractApp
 {
+    protected ?int $exitCode = null;
+
     /**
      * HttpApp constructor.
      *
@@ -60,9 +63,29 @@ class CliApp extends AbstractApp
      */
     public function handle(?array $argv = null): int
     {
+        $this->exitCode = null;
+
         /** @var CommandHandler $commandHandler */
         $commandHandler = $this->get(CommandHandler::class);
 
-        return $commandHandler->handle($argv);
+        return $this->exitCode = $commandHandler->handle($argv);
+    }
+
+    /**
+     * Get exit code of the last handled command.
+     *
+     * @return int|null
+     */
+    public function getExitCode(): ?int
+    {
+        return $this->exitCode;
+    }
+
+    /**
+     * @inheritDoc
+     */
+    protected function createTerminateEvent(): CliTerminateEvent
+    {
+        return new CliTerminateEvent($this, $this->exitCode);
     }
 }

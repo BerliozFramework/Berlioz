@@ -47,11 +47,15 @@ if (null === $autoloadFile) {
 require $autoloadFile;
 
 // Application
+$app = null;
 try {
   // App
   $app = new CliApp();
-  exit($app->handle());
+  $exitCode = $app->handle();
 } catch (Throwable $e) {
   fwrite(STDERR, rtrim((string)$e) . PHP_EOL);
-  exit(1);
+  $exitCode = 1;
 }
+
+$app?->terminate();
+exit($exitCode);
