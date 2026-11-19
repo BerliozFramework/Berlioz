@@ -68,4 +68,17 @@ class TimelineTest extends TestCase
 //        $this->assertEquals(var_export($timeLine->getActivities(), true), (string)$timeLine);
         $this->assertEquals(unserialize(serialize($timeLine)), $timeLine);
     }
+
+    public function testGetDurationUntil()
+    {
+        $timeLine = new Timeline([$activity = new TimelineActivity('Foo')]);
+
+        $this->assertNull($timeLine->getDurationUntil(15000));
+
+        $activity->start(10000)->end(20000);
+
+        $this->assertNull($timeLine->getDurationUntil(null));
+        $this->assertEquals(5000, $timeLine->getDurationUntil(15000));
+        $this->assertEquals(0, $timeLine->getDurationUntil(5000));
+    }
 }

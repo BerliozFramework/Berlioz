@@ -162,6 +162,74 @@ class SnapshotCleanerTest extends TestCase
         $this->assertTrue($this->filesystem->fileExists('debug://bbb.debug'));
     }
 
+    private function createPending(string $uniqid, float $expire): void
+    {
+        $this->filesystem->write(
+            sprintf('debug://%s.pending', $uniqid),
+            json_encode(['uniqid' => $uniqid, 'expire' => $expire])
+        );
+    }
+
+    public function testListSnapshots_ignoresPendings(): void
+    {
+        $this->createSnapshot('aaa');
+        $this->createPending('bbb', microtime(true) + 60);
+
+        $cleaner = new SnapshotCleaner($this->filesystem);
+
+        $this->assertCount(1, $cleaner->listSnapshots());
+        $this->assertCount(1, $cleaner->listPendings());
+    }
+
+    public function testCleanPendings(): void
+    {
+        $this->createPending('alive', microtime(true) + 60);
+        $this->createPending('expired', microtime(true) - 1);
+        $this->filesystem->write('debug://invalid.pending', 'not json');
+
+        $cleaner = new SnapshotCleaner($this->filesystem);
+
+        $this->assertSame(2, $cleaner->cleanPendings());
+        $this->assertTrue($this->filesystem->fileExists('debug://alive.pending'));
+        $this->assertFalse($this->filesystem->fileExists('debug://expired.pending'));
+        $this->assertFalse($this->filesystem->fileExists('debug://invalid.pending'));
+    }
+
+    public function testClean_removesExpiredPendings(): void
+    {
+        $this->createSnapshot('aaa');
+        $this->createPending('expired', microtime(true) - 1);
+
+        $cleaner = new SnapshotCleaner($this->filesystem);
+
+        $this->assertSame(0, $cleaner->clean());
+        $this->assertTrue($this->filesystem->fileExists('debug://aaa.debug'));
+        $this->assertFalse($this->filesystem->fileExists('debug://expired.pending'));
+    }
+
+    public function testClear_removesPendings(): void
+    {
+        $this->createSnapshot('aaa');
+        $this->createPending('bbb', microtime(true) + 60);
+
+        $cleaner = new SnapshotCleaner($this->filesystem);
+
+        $this->assertSame(1, $cleaner->clear());
+        $this->assertSame(0, $this->countSnapshots());
+    }
+
+    public function testDelete_removesPending(): void
+    {
+        $this->createSnapshot('aaa');
+        $this->createPending('aaa', microtime(true) + 60);
+
+        $cleaner = new SnapshotCleaner($this->filesystem);
+        $cleaner->delete('aaa');
+
+        $this->assertFalse($this->filesystem->fileExists('debug://aaa.debug'));
+        $this->assertFalse($this->filesystem->fileExists('debug://aaa.pending'));
+    }
+
     public function testDeleteWithExtension(): void
     {
         $this->createSnapshot('aaa');

@@ -43,8 +43,32 @@ class Snapshot
         private readonly PhpErrorSet $phpErrors,
         private readonly array $exceptions,
         private array $sections,
+        private readonly ?float $responseSentTime = null,
     ) {
         $this->sections = array_filter($this->sections, fn($section) => $section instanceof Section);
+    }
+
+    /**
+     * Get the moment the response has been sent to the client.
+     *
+     * @return float|null
+     */
+    public function getResponseSentTime(): ?float
+    {
+        // Snapshots serialized before this property existed have it uninitialized
+        return $this->responseSentTime ?? null;
+    }
+
+    /**
+     * Get response time (from the first activity to the response sent), in seconds.
+     *
+     * Null if the response has not been marked as sent (e.g. CLI).
+     *
+     * @return float|null
+     */
+    public function getResponseTime(): ?float
+    {
+        return $this->timeline->getDurationUntil($this->getResponseSentTime());
     }
 
     /**

@@ -47,6 +47,7 @@ class DebugHandler
     private array $events;
     private array $sections;
     private PhpErrorHandler $phpErrorHandler;
+    private ?float $responseSentTime;
 
     public function __construct()
     {
@@ -57,6 +58,7 @@ class DebugHandler
     {
         $this->uniqid = uniqid();
         $this->enabled = false;
+        $this->responseSentTime = null;
         $this->dateTime = new DateTimeImmutable();
         $this->activities = [];
         $this->exceptions = [];
@@ -258,6 +260,36 @@ class DebugHandler
     }
 
     /**
+     * Mark the moment the response has been sent to the client.
+     *
+     * @param float|null $microTime
+     */
+    public function markResponseSent(?float $microTime = null): void
+    {
+        $this->responseSentTime = $microTime ?? microtime(true);
+    }
+
+    /**
+     * Get the moment the response has been sent to the client.
+     *
+     * @return float|null
+     */
+    public function getResponseSentTime(): ?float
+    {
+        return $this->responseSentTime;
+    }
+
+    /**
+     * Get response time (from the first activity to the response sent), in seconds.
+     *
+     * @return float|null
+     */
+    public function getResponseTime(): ?float
+    {
+        return (new Timeline($this->activities))->getDurationUntil($this->responseSentTime);
+    }
+
+    /**
      * Get unique id of current snapshot.
      *
      * @return string
@@ -289,6 +321,7 @@ class DebugHandler
             phpErrors: $this->phpErrorHandler->getErrors(),
             exceptions: $this->exceptions,
             sections: $this->sections,
+            responseSentTime: $this->responseSentTime,
         );
     }
 }
