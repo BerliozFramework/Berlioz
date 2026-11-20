@@ -12,6 +12,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `FileCacheDriver::set()` now writes atomically (temporary file + `rename()`), preventing concurrent readers from
   getting "Corrupted data" exceptions
 
+### Deprecated
+
+- Service declarations in `container.services` configuration; register services from a service provider listed in
+  `container.providers` instead. An `E_USER_DEPRECATED` is triggered when `container.services` is not empty
+
+
 ## [3.3.2] - 2026-10-25
 
 _No changes in this release._
