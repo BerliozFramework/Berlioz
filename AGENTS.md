@@ -434,6 +434,12 @@ containing the tagged commit before propagating the tag, so the tag can be pushe
   (use the `package: <name>` label) and **never** the Conventional Commits format, reserved for PR titles and commits.
 - **Issues** use the templates in `.github/ISSUE_TEMPLATE/`; tag the affected package with a `package: <name>` label (e.g. `package: router`) and include a confirmed reproduction.
 - **PRs** target `3.x`, follow `.github/PULL_REQUEST_TEMPLATE.md`, and link the issue with `closes #N`. A good description has **Summary / Fix / Tests / Validation** sections (test + assertion counts, Rector result).
+- **Milestones:** one milestone per minor version (e.g. `3.4`, `4.0`); no patch milestones (patch details live in
+  tags and changelogs). Every new issue and PR gets a milestone, the PR using the same one as the issue it closes.
+  Deduce it from the change: `feat`, deprecation or behavior change → next minor (open `3.x` milestone);
+  breaking change or removal → next major (`4.0`); `fix` → next minor, unless a patch release of the current minor
+  is planned (then reopen that minor's milestone). If the target is ambiguous, ask before creating the issue or PR.
+  Close a milestone once its last release is published.
 - **Merging/closing PRs:** prefer **squash merge** to keep a clean, linear history on `3.x` (one commit per PR). The squash commit message must follow Conventional Commits.
 - **Do not push fixes directly to `3.x`** — go through a branch + PR even for small changes, so the issue/PR trail stays consistent.
 - Sub-package repos are read-only mirrors: **everything goes through the monorepo.**
