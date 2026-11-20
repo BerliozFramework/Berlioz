@@ -16,6 +16,8 @@ use AMQPConnection;
 use AMQPConnectionException;
 use Berlioz\QueueManager\Job\JobDescriptor;
 use Berlioz\QueueManager\Queue\AmqpQueue;
+use Berlioz\QueueManager\Queue\PurgeableQueueInterface;
+use Berlioz\QueueManager\Queue\QueueInterface;
 use Berlioz\QueueManager\RateLimiter\NullRateLimiter;
 use Berlioz\QueueManager\RateLimiter\RateLimiterInterface;
 use PHPUnit\Framework\Attributes\RequiresPhpExtension;
@@ -51,8 +53,11 @@ class AmqpQueueTest extends QueueTestCase
         static::newQueue()->purge();
     }
 
-    public static function newQueue(RateLimiterInterface $limiter = new NullRateLimiter()): AmqpQueue
-    {
+    // Not typed as AmqpQueue: a covariant return type would load the class (which throws without ext-amqp)
+    // during inheritance checks, before #[RequiresPhpExtension] can skip the test.
+    public static function newQueue(
+        RateLimiterInterface $limiter = new NullRateLimiter(),
+    ): QueueInterface&PurgeableQueueInterface {
         return new AmqpQueue(
             connection: self::$amqpConnection,
             limiter: $limiter,
