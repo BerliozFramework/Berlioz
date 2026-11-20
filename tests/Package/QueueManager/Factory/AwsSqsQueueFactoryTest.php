@@ -64,4 +64,29 @@ class AwsSqsQueueFactoryTest extends TestCase
             ],
         ]));
     }
+
+    public function testCreateFromConfig_withMaxAttempts(): void
+    {
+        $queues = iterator_to_array(AwsSqsQueueFactory::createFromConfig([
+            'client' => [
+                'version' => 'latest',
+                'region' => 'eu-west-3',
+                'credentials' => [
+                    'key' => 'test',
+                    'secret' => 'test',
+                ],
+            ],
+            'max_attempts' => 3,
+            'name' => [
+                'queue1' => 'https://sqs.eu-west-3.amazonaws.com/123456789012/queue1',
+                'queue2' => [
+                    'url' => 'https://sqs.eu-west-3.amazonaws.com/123456789012/queue2',
+                    'max_attempts' => 7,
+                ],
+            ],
+        ]));
+
+        $this->assertSame(3, $queues[0]->getMaxAttempts());
+        $this->assertSame(7, $queues[1]->getMaxAttempts());
+    }
 }

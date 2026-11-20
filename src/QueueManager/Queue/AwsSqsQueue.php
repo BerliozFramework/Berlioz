@@ -39,8 +39,36 @@ readonly class AwsSqsQueue extends AbstractQueue implements PurgeableQueueInterf
         private int $retryTime = 30,
         RateLimiterInterface $limiter = new NullRateLimiter(),
         private ?CloudWatchClient $cloudWatchClient = null,
+        private ?int $maxAttempts = null,
     ) {
         parent::__construct(name: $name, limiter: $limiter);
+    }
+
+    /**
+     * Get maximum number of attempts.
+     *
+     * If not given to the constructor, read from the "maxReceiveCount" of the queue redrive policy.
+     * Returns NULL if the queue has no redrive policy.
+     *
+     * @return int|null
+     */
+    public function getMaxAttempts(): ?int
+    {
+        if (null !== $this->maxAttempts) {
+            return $this->maxAttempts;
+        }
+
+        $response = $this->sqsClient->getQueueAttributes([
+            'QueueUrl' => $this->queueUrl,
+            'AttributeNames' => ['RedrivePolicy'],
+        ]);
+        $redrivePolicy = json_decode((string)($response->get('Attributes')['RedrivePolicy'] ?? ''), true);
+
+        if (!is_numeric($redrivePolicy['maxReceiveCount'] ?? null)) {
+            return null;
+        }
+
+        return (int)$redrivePolicy['maxReceiveCount'];
     }
 
     /**

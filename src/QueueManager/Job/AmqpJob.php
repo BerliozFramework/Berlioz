@@ -35,6 +35,7 @@ class AmqpJob extends Job
             name: $payload['jobName'] ?? null,
             attempts: ($envelope->getHeader('attempts') ?? 0) + 1,
             payload: $payload,
+            maxAttempts: $this->queue->getMaxAttempts(),
         );
     }
 

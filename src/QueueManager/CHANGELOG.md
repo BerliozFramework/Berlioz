@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `JobInterface::getMaxAttempts()` and `JobInterface::isLastAttempt()` to let a job handler know whether the current attempt is the last one; custom `JobInterface` implementations not extending `Job` must implement them
+- `getMaxAttempts()` on `MemoryQueue`, `DbQueue` and `AmqpQueue`
+- `AwsSqsQueue::getMaxAttempts()`, from the new optional `maxAttempts` constructor parameter or, if not given, from the `maxReceiveCount` of the queue redrive policy
+
 ## [3.3.2] - 2026-10-25
 
 ### Fixed

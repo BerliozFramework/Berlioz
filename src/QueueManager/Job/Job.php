@@ -26,6 +26,7 @@ abstract class Job extends JobDescriptor implements JobInterface
         ?string $name,
         protected readonly int $attempts,
         PayloadInterface|array $payload,
+        protected readonly ?int $maxAttempts = null,
     ) {
         parent::__construct($name, $payload);
     }
@@ -62,6 +63,26 @@ abstract class Job extends JobDescriptor implements JobInterface
     public function getAttempts(): int
     {
         return $this->attempts;
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function getMaxAttempts(): ?int
+    {
+        return $this->maxAttempts;
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function isLastAttempt(): bool
+    {
+        if (null === ($maxAttempts = $this->getMaxAttempts())) {
+            return false;
+        }
+
+        return $this->getAttempts() >= $maxAttempts;
     }
 
     /**
