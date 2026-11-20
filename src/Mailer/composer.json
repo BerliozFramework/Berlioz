@@ -24,6 +24,9 @@
     "ext-fileinfo": "*",
     "psr/log": "^2.0 || ^3.0"
   },
+  "suggest": {
+    "ext-openssl": "To use encrypted SMTP connections (STARTTLS or implicit TLS)"
+  },
   "extra": {
     "branch-alias": {
       "dev-main": "3.x-dev"

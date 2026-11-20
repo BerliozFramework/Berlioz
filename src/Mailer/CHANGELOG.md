@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- SMTP transport encryption with `encryption` argument (`SmtpEncryption` enum or string): `starttls` (mandatory
+  STARTTLS, without plaintext fallback) and `tls` (implicit TLS)
+- SMTP transport `context` argument, to give stream context or stream context options (e.g. `ssl.cafile`)
+- SMTP transport `timeout` argument, now also applied to reads
+
+### Deprecated
+
+- Argument `$options` of `Smtp::__construct()`, use named argument `$timeout` instead; it will be removed in 4.0
+
 ## [3.3.2] - 2026-10-25
 
 _No changes in this release._
