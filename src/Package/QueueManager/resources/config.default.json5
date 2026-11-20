@@ -14,6 +14,12 @@
         "Berlioz\\Package\\QueueManager\\Factory\\AwsSqsQueueFactory",
         "Berlioz\\Package\\QueueManager\\Factory\\DbQueueFactory"
       ],
+      // Queues consumed on application terminate, i.e. after the HTTP response has been sent
+      // (or at the end of a CLI command). Memory queues are purged afterwards.
+      deferred: {
+        queues: [],
+        time_limit: null
+      },
       // HTTP metrics endpoint. Opt-in: disabled by default. When `berlioz/http-core` is installed,
       // the middleware below serves queue metrics on `path`, gated by the client IP allow-list
       // (`ip`) and/or an optional bearer `token`.
