@@ -26,7 +26,7 @@ use Twig\Error\RuntimeError;
 class AssetRuntimeExtension
 {
     /** @deprecated HTTP/2 Server Push is no longer supported by browsers, the cookie is no longer used. */
-    const H2PUSH_CACHE_COOKIE = 'h2pushes';
+    public const H2PUSH_CACHE_COOKIE = 'h2pushes';
     /** @var string[] Links already preloaded */
     private array $preloaded = [];
 
