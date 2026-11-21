@@ -125,12 +125,22 @@ class FileCacheDriver extends AbstractCacheDriver implements CacheInterface
             }
         }
 
-        if (@file_put_contents($cacheFilename, @serialize($data)) === false) {
+        // Write to a temporary file in the same directory, then atomically replace the target,
+        // so concurrent readers always get a complete file.
+        $tmpFilename = $cacheFilename . '.' . bin2hex(random_bytes(6)) . '.tmp';
+
+        if (@file_put_contents($tmpFilename, @serialize($data)) === false) {
+            @unlink($tmpFilename);
             throw new CacheException(sprintf('Unable to save file to cache "%s"', $cacheFilename));
         }
 
         // Restrictive permissions on the cache file (owner read/write, group read).
-        @chmod($cacheFilename, 0640);
+        @chmod($tmpFilename, 0640);
+
+        if (@rename($tmpFilename, $cacheFilename) === false) {
+            @unlink($tmpFilename);
+            throw new CacheException(sprintf('Unable to save file to cache "%s"', $cacheFilename));
+        }
 
         return true;
     }
