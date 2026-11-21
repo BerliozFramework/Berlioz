@@ -55,7 +55,7 @@ class AssetRuntimeExtension
         try {
             if (null === $manifest) {
                 if (null === ($manifest = $this->assets->getManifest())) {
-                    throw new RuntimeError('No entry points file');
+                    throw new RuntimeError('No manifest file');
                 }
             }
 

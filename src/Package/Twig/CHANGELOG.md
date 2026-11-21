@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `entrypoints()` no longer preloads files when the `preload` option is `false`
 - `preload()` always sends the `Link` preload header (once per link and response) and no longer sets
   `h2pushes[...]` cookies, the HTTP/2 Server Push cache is removed
+- `asset()` reports `No manifest file` instead of `No entry points file` when no manifest is configured
 
 ### Deprecated
 
