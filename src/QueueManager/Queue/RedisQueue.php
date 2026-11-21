@@ -48,6 +48,12 @@ readonly class RedisQueue extends AbstractQueue implements QueueInterface, Monit
         return null;
     }
 
+    /** @inheritDoc */
+    public function getRetryTime(): ?int
+    {
+        return null;
+    }
+
     /**
      * @inheritDoc
      */

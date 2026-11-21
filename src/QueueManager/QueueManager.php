@@ -150,6 +150,12 @@ readonly class QueueManager implements QueueInterface, PurgeableQueueInterface, 
         return null;
     }
 
+    /** @inheritDoc */
+    public function getRetryTime(): ?int
+    {
+        return null;
+    }
+
     /**
      * @inheritDoc
      */

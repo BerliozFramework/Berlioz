@@ -48,6 +48,12 @@ readonly class MemoryQueue extends AbstractQueue implements PurgeableQueueInterf
         return $this->maxAttempts;
     }
 
+    /** @inheritDoc */
+    public function getRetryTime(): int
+    {
+        return $this->retryTime;
+    }
+
     public function nowDeltaRetry(): DateTimeImmutable
     {
         return $this->now()->sub(new DateInterval('PT' . $this->retryTime . 'S'));

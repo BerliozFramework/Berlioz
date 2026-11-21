@@ -53,6 +53,12 @@ readonly class NullQueue implements QueueInterface
         return null;
     }
 
+    /** @inheritDoc */
+    public function getRetryTime(): ?int
+    {
+        return null;
+    }
+
     /**
      * @inheritDoc
      */
