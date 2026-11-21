@@ -11,6 +11,12 @@
   hector: {
     dsn: '',
     read_dsn: null,
+    username: null,
+    password: null,
+    // PDO connection options, as a map or a list of {attribute, value} entries.
+    // Attributes are integers or constant names, e.g. "PDO::ATTR_TIMEOUT": 5
+    // or [{attribute: "PDO::ATTR_TIMEOUT", value: 5}]. The last definition wins.
+    options: {},
     schemas: [],
     dynamic_events: true,
     types: {},

@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Require HectorORM 1.5 or later, the first version supporting PDO connection options
+
+### Added
+
+- Support constant names (e.g. `PDO::ATTR_TIMEOUT`) as attributes of `hector.options`
+- Support list format `[{attribute, value}]` for `hector.options`
+- Declare `username`, `password` and `options` in default configuration
+
 ## [3.3.2] - 2026-10-25
 
 _No changes in this release._

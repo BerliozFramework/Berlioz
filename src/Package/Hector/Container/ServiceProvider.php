@@ -64,6 +64,7 @@ class ServiceProvider extends AbstractServiceProvider
                     $config = $core->getConfig();
                     $options = $config->get('hector');
                     $options['log'] ??= $core->getDebug()->isEnabled();
+                    $options['options'] = $this->resolvePdoOptions((array)($options['options'] ?? []));
 
                     $connection = OrmFactory::connection($options);
 
@@ -137,6 +138,104 @@ class ServiceProvider extends AbstractServiceProvider
     public function boot(Container $container): void
     {
         $container->addInflector(new Inflector(HectorAwareInterface::class, 'setOrm', ['orm' => '@orm']));
+    }
+
+    /**
+     * Resolve PDO options.
+     *
+     * Accepts a map (`attribute => value`) or a list of `{attribute, value}` entries.
+     * Attributes may be integers or names of constants resolving to an integer.
+     * When an attribute is defined several times, the last one wins.
+     *
+     * @param array $options
+     *
+     * @return array<int, mixed>
+     * @throws HectorException
+     */
+    protected function resolvePdoOptions(array $options): array
+    {
+        $resolved = [];
+
+        if ($this->isPdoOptionsList($options)) {
+            foreach ($options as $entry) {
+                $attribute = $this->resolvePdoAttribute($entry['attribute']);
+                unset($resolved[$attribute]);
+                $resolved[$attribute] = $entry['value'];
+            }
+
+            return $resolved;
+        }
+
+        foreach ($options as $attribute => $value) {
+            $attribute = $this->resolvePdoAttribute($attribute);
+            unset($resolved[$attribute]);
+            $resolved[$attribute] = $value;
+        }
+
+        return $resolved;
+    }
+
+    /**
+     * Is PDO options in list format?
+     *
+     * @param array $options
+     *
+     * @return bool
+     * @throws HectorException
+     */
+    private function isPdoOptionsList(array $options): bool
+    {
+        if ([] === $options || !array_is_list($options)) {
+            return false;
+        }
+
+        $entries = array_filter(
+            $options,
+            fn(mixed $entry): bool => is_array($entry) && array_key_exists('attribute', $entry),
+        );
+
+        if ([] === $entries) {
+            return false;
+        }
+
+        foreach ($options as $index => $entry) {
+            if (!is_array($entry) || !array_key_exists('attribute', $entry) || !array_key_exists('value', $entry)) {
+                throw HectorException::pdoOptionsConfig(
+                    sprintf('entry #%d must have "attribute" and "value" keys', $index)
+                );
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Resolve PDO attribute.
+     *
+     * @param mixed $attribute
+     *
+     * @return int
+     * @throws HectorException
+     */
+    private function resolvePdoAttribute(mixed $attribute): int
+    {
+        if (is_int($attribute)) {
+            return $attribute;
+        }
+
+        if (!is_string($attribute) || !defined($attribute)) {
+            throw HectorException::pdoOptionsConfig(
+                sprintf('unknown attribute "%s"', is_scalar($attribute) ? $attribute : get_debug_type($attribute))
+            );
+        }
+
+        $value = constant($attribute);
+
+        if (!is_int($value)) {
+            throw HectorException::pdoOptionsConfig(sprintf('constant "%s" is not an integer', $attribute));
+        }
+
+        return $value;
     }
 
     /**

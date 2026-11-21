@@ -30,4 +30,13 @@ class HectorExceptionTest extends TestCase
         $this->assertSame('Types config error', $exception->getMessage());
         $this->assertSame($previous, $exception->getPrevious());
     }
+
+    public function testPdoOptionsConfig(): void
+    {
+        $exception = HectorException::pdoOptionsConfig('reason');
+
+        $this->assertInstanceOf(HectorException::class, $exception);
+        $this->assertSame('PDO options config error: reason', $exception->getMessage());
+        $this->assertNull($exception->getPrevious());
+    }
 }
