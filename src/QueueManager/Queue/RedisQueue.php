@@ -36,6 +36,7 @@ readonly class RedisQueue extends AbstractQueue implements QueueInterface, Monit
         string $name = 'default',
         RateLimiterInterface $limiter = new NullRateLimiter(),
         private int $deletedJobsTtl = 86400,
+        private int $maxAttempts = 5,
     ) {
         parent::__construct(name: $name, limiter: $limiter);
     }
@@ -43,9 +44,9 @@ readonly class RedisQueue extends AbstractQueue implements QueueInterface, Monit
     /**
      * @inheritDoc
      */
-    public function getMaxAttempts(): ?int
+    public function getMaxAttempts(): int
     {
-        return null;
+        return $this->maxAttempts;
     }
 
     /** @inheritDoc */
@@ -251,6 +252,20 @@ readonly class RedisQueue extends AbstractQueue implements QueueInterface, Monit
         $job->isReleased() && throw JobException::alreadyReleased($job);
         $job->isDeleted() && throw JobException::alreadyDeleted($job);
 
+        // Max attempts reached, move job to the dead list
+        if ($job->getAttempts() >= $this->maxAttempts) {
+            $this->redis->rPush(
+                $this->getDeadQueueKey(),
+                json_encode([
+                    'jobId' => $job->getId(),
+                    'payload' => json_encode($job),
+                    'attempts' => $job->getAttempts(),
+                    'createdAt' => time(),
+                ]),
+            );
+            return;
+        }
+
         $this->push($job, $delay);
     }
 
@@ -277,6 +292,11 @@ readonly class RedisQueue extends AbstractQueue implements QueueInterface, Monit
     private function getDelayedQueueKey(): string
     {
         return $this->name . ':delayed';
+    }
+
+    private function getDeadQueueKey(): string
+    {
+        return $this->name . ':dead';
     }
 
     private function getDeletedJobsKey(): string
