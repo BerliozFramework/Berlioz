@@ -10,6 +10,8 @@
  * file that was distributed with this source code, to the root.
  */
 
+declare(strict_types=1);
+
 namespace Berlioz\Core\Tests\Debug\Snapshot;
 
 use Berlioz\Core\Debug\Snapshot\PerformanceInfo;
@@ -19,12 +21,23 @@ class PerformanceInfoTest extends TestCase
 {
     public function test()
     {
+        $peakBefore = memory_get_peak_usage();
         $performanceInfo = new PerformanceInfo();
+        $peakAfter = memory_get_peak_usage();
+        $snapshotPeak = $performanceInfo->getMemoryPeakUsage();
 
-        $this->assertEquals(
-            function_exists('sys_getloadavg') ? (sys_getloadavg() ?: null) : null,
-            $performanceInfo->getLoadavg()
-        );
-        $this->assertEquals(memory_get_peak_usage(), $performanceInfo->getMemoryPeakUsage());
+        // The object captures the peak at snap time, not after PHPUnit has allocated assertion objects.
+        $this->assertGreaterThanOrEqual($peakBefore, $snapshotPeak);
+        $this->assertLessThanOrEqual($peakAfter, $snapshotPeak);
+        $this->assertSame($snapshotPeak, $performanceInfo->getMemoryPeakUsage());
+
+        if (function_exists('sys_getloadavg') && false !== sys_getloadavg()) {
+            $this->assertCount(3, $performanceInfo->getLoadavg());
+            foreach ($performanceInfo->getLoadavg() as $load) {
+                $this->assertIsFloat($load);
+            }
+        } else {
+            $this->assertNull($performanceInfo->getLoadavg());
+        }
     }
 }

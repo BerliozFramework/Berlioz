@@ -17,6 +17,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Service declarations in `container.services` configuration; register services from a service provider listed in
   `container.providers` instead. An `E_USER_DEPRECATED` is triggered when `container.services` is not empty
 
+### Added
+
+- `AbstractApp::terminate()` dispatching a `TerminateEvent`, to run work once the application has done its job (debug activity in the `Terminate` group)
+
 
 ## [3.3.2] - 2026-10-25
 

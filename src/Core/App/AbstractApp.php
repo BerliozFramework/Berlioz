@@ -21,8 +21,10 @@ use Berlioz\Core\Core;
 use Berlioz\Core\CoreAwareInterface;
 use Berlioz\Core\CoreAwareTrait;
 use Berlioz\Core\Debug\DebugHandler;
+use Berlioz\Core\Event\TerminateEvent;
 use Berlioz\ServiceContainer\Exception\ContainerException;
 use Closure;
+use Throwable;
 
 /**
  * Class AbstractApp.
@@ -30,6 +32,10 @@ use Closure;
 abstract class AbstractApp implements CoreAwareInterface
 {
     use CoreAwareTrait;
+
+    public const TERMINATE_GROUP = 'Terminate';
+
+    protected bool $terminated = false;
 
     /**
      * AbstractApp constructor.
@@ -117,5 +123,43 @@ abstract class AbstractApp implements CoreAwareInterface
     public function getDebug(): DebugHandler
     {
         return $this->getCore()->getDebug();
+    }
+
+    /**
+     * Terminate application.
+     *
+     * Dispatches a TerminateEvent, once. Exceptions thrown by listeners are caught,
+     * added to the debug report and raised as a warning: terminate never throws.
+     */
+    public function terminate(): void
+    {
+        if (true === $this->terminated) {
+            return;
+        }
+        $this->terminated = true;
+
+        $activity = $this->getDebug()->newActivity('Terminate', self::TERMINATE_GROUP)->start();
+
+        try {
+            $this->getCore()->getEventDispatcher()->dispatch($this->createTerminateEvent());
+        } catch (Throwable $exception) {
+            $this->getDebug()->addException($exception);
+            trigger_error(
+                sprintf('Error during application terminate: %s', $exception->getMessage()),
+                E_USER_WARNING,
+            );
+        } finally {
+            $activity->end();
+        }
+    }
+
+    /**
+     * Create terminate event.
+     *
+     * @return TerminateEvent
+     */
+    protected function createTerminateEvent(): TerminateEvent
+    {
+        return new TerminateEvent($this);
     }
 }

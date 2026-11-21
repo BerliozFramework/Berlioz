@@ -16,10 +16,12 @@ namespace Berlioz\Http\Core\Tests\App;
 
 use Berlioz\Config\Adapter\ArrayAdapter;
 use Berlioz\Core\Core;
+use Berlioz\Core\Event\TerminateEvent;
 use Berlioz\Core\Tests\RestoresErrorHandler;
 use Berlioz\Http\Core\App\HttpApp;
 use Berlioz\Http\Core\App\Maintenance;
 use Berlioz\Http\Core\Debug\RouterSection;
+use Berlioz\Http\Core\Event\HttpTerminateEvent;
 use Berlioz\Http\Core\TestProject\Controller\ControllerOne;
 use Berlioz\Http\Core\TestProject\FakeDefaultDirectories;
 use Berlioz\Http\Core\TestProject\Http\Middleware\AbstractMiddleware;
@@ -560,6 +562,107 @@ class HttpAppTest extends TestCase
 
         $this->expectOutputString('');
         $app->print($response);
+    }
+
+    #[RunInSeparateProcess]
+    public function testPrint_finishRequest(): void
+    {
+        require_once __DIR__ . '/fastcgi_finish_request.php';
+
+        $app = new HttpApp(new Core(new FakeDefaultDirectories(), false));
+
+        $this->expectOutputString('FOO');
+        $app->print(new Response('FOO'));
+
+        $this->assertSame(1, $GLOBALS['berlioz_test_fastcgi_finish_request'] ?? 0);
+    }
+
+    #[RunInSeparateProcess]
+    public function testPrint_finishRequestDisabled(): void
+    {
+        require_once __DIR__ . '/fastcgi_finish_request.php';
+
+        $core = new Core(new FakeDefaultDirectories(), false);
+        $core->getConfig()->addConfig(new ArrayAdapter(
+            ['berlioz' => ['http' => ['finish_request' => false]]],
+            priority: PHP_INT_MAX,
+        ));
+        $app = new HttpApp($core);
+
+        $this->expectOutputString('FOO');
+        $app->print(new Response('FOO'));
+
+        $this->assertSame(0, $GLOBALS['berlioz_test_fastcgi_finish_request'] ?? 0);
+    }
+
+    public function testTerminate(): void
+    {
+        $core = new Core(new FakeDefaultDirectories(), false);
+        $app = new HttpApp($core);
+        $events = [];
+        $core->getEventDispatcher()->addEventListener(
+            TerminateEvent::class,
+            function (TerminateEvent $event) use (&$events): void {
+                $events[] = $event;
+            }
+        );
+
+        $response = $app->handle(new ServerRequest('GET', '/controller1/method1'));
+        $this->expectOutputString((string)$response->getBody());
+        $app->print($response);
+        $app->terminate();
+
+        $this->assertCount(1, $events);
+        $this->assertInstanceOf(HttpTerminateEvent::class, $events[0]);
+        $this->assertSame($app, $events[0]->getApp());
+        $this->assertSame($app->getRequest(), $events[0]->getRequest());
+        $this->assertSame('/controller1/method1', $events[0]->getRequest()->getUri()->getPath());
+        $this->assertSame($app->getResponseInfo(), $events[0]->getResponseInfo());
+        $this->assertSame(200, $events[0]->getResponseInfo()['statusCode']);
+    }
+
+    public function testTerminate_withoutPrint(): void
+    {
+        $core = new Core(new FakeDefaultDirectories(), false);
+        $app = new HttpApp($core);
+        $events = [];
+        $core->getEventDispatcher()->addEventListener(
+            HttpTerminateEvent::class,
+            function (HttpTerminateEvent $event) use (&$events): void {
+                $events[] = $event;
+            }
+        );
+
+        $app->terminate();
+
+        $this->assertCount(1, $events);
+        $this->assertNull($events[0]->getRequest());
+        $this->assertNull($events[0]->getResponseInfo());
+    }
+
+    #[RunInSeparateProcess]
+    public function testTerminate_closesSession(): void
+    {
+        ini_set('session.use_cookies', '0');
+        ini_set('session.cache_limiter', '');
+        session_save_path(sys_get_temp_dir());
+        session_start();
+        $this->assertSame(PHP_SESSION_ACTIVE, session_status());
+
+        $core = new Core(new FakeDefaultDirectories(), false);
+        $app = new HttpApp($core);
+        $sessionStatus = null;
+        $core->getEventDispatcher()->addEventListener(
+            TerminateEvent::class,
+            function () use (&$sessionStatus): void {
+                $sessionStatus = session_status();
+            }
+        );
+
+        $app->terminate();
+
+        $this->assertSame(PHP_SESSION_NONE, $sessionStatus);
+        $this->assertSame(PHP_SESSION_NONE, session_status());
     }
 
     public function testPrint_streamNotSeekable()
