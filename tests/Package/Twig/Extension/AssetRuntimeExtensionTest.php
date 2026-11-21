@@ -207,19 +207,7 @@ class AssetRuntimeExtensionTest extends TestCase
         array $expectedHeaders,
     ) {
         $headers = [];
-
-        $extensionRuntime = $this->getMockBuilder(AssetRuntimeExtension::class)
-            ->setConstructorArgs([$this->assets, new Router()])
-            ->onlyMethods(['isHeadersSent', 'sendHeader', 'setCookie'])
-            ->getMock();
-        $extensionRuntime
-            ->method('isHeadersSent')
-            ->willReturn(false);
-        $extensionRuntime
-            ->method('sendHeader')
-            ->willReturnCallback(function (string $header) use (&$headers): void {
-                $headers[] = $header;
-            });
+        $extensionRuntime = $this->createPreloadMock($headers);
 
         $this->assertEquals($expectedHtml, $extensionRuntime->entryPoints($entry, $type, $options));
         $this->assertEquals($expectedHeaders, $headers);
@@ -300,18 +288,6 @@ class AssetRuntimeExtensionTest extends TestCase
                     'crossorigin' => false,
                 ],
                 'expectedHeader' => 'Link: <https://getberlioz.com/fake>; rel=preload',
-                'expectedCookie' => [
-                    'h2pushes[d51704684c8d3f1febc7c281cc2c8f26]',
-                    '1',
-                    [
-                        'expires' => 0,
-                        'path' => '/',
-                        'domain' => '',
-                        'secure' => true,
-                        'httponly' => true,
-                        'samesite' => 'Strict',
-                    ]
-                ],
             ],
             [
                 'link' => 'https://getberlioz.com/fake',
@@ -319,62 +295,122 @@ class AssetRuntimeExtensionTest extends TestCase
                     'crossorigin' => true,
                 ],
                 'expectedHeader' => 'Link: <https://getberlioz.com/fake>; rel=preload; crossorigin',
-                'expectedCookie' => [
-                    'h2pushes[d51704684c8d3f1febc7c281cc2c8f26]',
-                    '1',
-                    [
-                        'expires' => 0,
-                        'path' => '/',
-                        'domain' => '',
-                        'secure' => true,
-                        'httponly' => true,
-                        'samesite' => 'Strict',
-                    ]
-                ],
             ],
             [
-                'link' => 'https://getberlioz.com/fake',
+                'link' => '/assets/css/website.css',
                 'parameters' => [
-                    'nopush' => true,
-                    'crossorigin' => true,
+                    'as' => 'style',
                 ],
-                'expectedHeader' => 'Link: <https://getberlioz.com/fake>; rel=preload; nopush; crossorigin',
-                'expectedCookie' => null,
-            ]
+                'expectedHeader' => 'Link: </assets/css/website.css>; rel=preload; as=style',
+            ],
         ];
     }
 
     #[DataProvider('providesPreload')]
-    public function testPreload(string $link, array $parameters, ?string $expectedHeader, ?array $expectedCookie)
+    public function testPreload(string $link, array $parameters, string $expectedHeader)
     {
-        $headerArguments = $cookieArguments = null;
-
-        $assetRuntimeMock = $this->createPartialMock(
-            AssetRuntimeExtension::class,
-            ['getRouter', 'isHeadersSent', 'sendHeader', 'setCookie']
-        );
-        $assetRuntimeMock
-            ->method('getRouter')
-            ->willReturnCallback(fn() => new Router());
-        $assetRuntimeMock
-            ->method('isHeadersSent')
-            ->willReturnCallback(fn() => false);
-        $assetRuntimeMock
-            ->method('sendHeader')
-            ->willReturnCallback(function ($header) use (&$headerArguments): void {
-                $headerArguments = $header;
-            });
-        $assetRuntimeMock
-            ->method('setCookie')
-            ->willReturnCallback(function (...$args) use (&$cookieArguments): void {
-                $cookieArguments = $args;
-            });
+        $headers = [];
+        $assetRuntimeMock = $this->createPreloadMock($headers);
 
         $result = $assetRuntimeMock->preload($link, $parameters);
 
         $this->assertEquals($link, $result);
-        $this->assertEquals($expectedHeader, $headerArguments);
-        $this->assertEquals($expectedCookie, $cookieArguments);
+        $this->assertEquals([$expectedHeader], $headers);
+    }
+
+    public function testPreload_ignoresH2PushCookie()
+    {
+        $_COOKIE['h2pushes'] = [md5('/assets/css/website.css') => '1'];
+
+        try {
+            $headers = [];
+            $assetRuntimeMock = $this->createPreloadMock($headers);
+            $assetRuntimeMock->preload('/assets/css/website.css', ['as' => 'style']);
+        } finally {
+            unset($_COOKIE['h2pushes']);
+        }
+
+        $this->assertEquals(['Link: </assets/css/website.css>; rel=preload; as=style'], $headers);
+    }
+
+    public function testPreload_onceByLink()
+    {
+        $headers = [];
+        $assetRuntimeMock = $this->createPreloadMock($headers);
+
+        $this->assertEquals('/assets/js/website.js', $assetRuntimeMock->preload('/assets/js/website.js'));
+        $this->assertEquals('/assets/js/website.js', $assetRuntimeMock->preload('/assets/js/website.js'));
+        $assetRuntimeMock->preload('/assets/js/vendor.js');
+
+        $this->assertEquals(
+            [
+                'Link: </assets/js/website.js>; rel=preload',
+                'Link: </assets/js/vendor.js>; rel=preload',
+            ],
+            $headers
+        );
+    }
+
+    public function testPreload_headersSent()
+    {
+        $assetRuntimeMock = $this->getMockBuilder(AssetRuntimeExtension::class)
+            ->setConstructorArgs([$this->assets, new Router()])
+            ->onlyMethods(['isHeadersSent', 'sendHeader', 'setCookie'])
+            ->getMock();
+        $assetRuntimeMock->method('isHeadersSent')->willReturn(true);
+        $assetRuntimeMock->expects($this->never())->method('sendHeader');
+        $assetRuntimeMock->expects($this->never())->method('setCookie');
+
+        $this->assertEquals('/assets/js/website.js', $assetRuntimeMock->preload('/assets/js/website.js'));
+    }
+
+    public function testPreload_nopushDeprecated()
+    {
+        $headers = [];
+        $assetRuntimeMock = $this->createPreloadMock($headers);
+
+        $deprecationMessage = null;
+        set_error_handler(function (int $errno, string $errstr) use (&$deprecationMessage): bool {
+            if (E_USER_DEPRECATED !== $errno) {
+                return false;
+            }
+
+            $deprecationMessage = $errstr;
+
+            return true;
+        });
+
+        try {
+            $assetRuntimeMock->preload('https://getberlioz.com/fake', ['nopush' => true, 'crossorigin' => true]);
+        } finally {
+            restore_error_handler();
+        }
+
+        $this->assertEquals(
+            'The "nopush" preload parameter is deprecated, HTTP/2 Server Push is no longer supported',
+            $deprecationMessage
+        );
+        $this->assertEquals(['Link: <https://getberlioz.com/fake>; rel=preload; nopush; crossorigin'], $headers);
+    }
+
+    private function createPreloadMock(array &$headers): AssetRuntimeExtension
+    {
+        $assetRuntimeMock = $this->getMockBuilder(AssetRuntimeExtension::class)
+            ->setConstructorArgs([$this->assets, new Router()])
+            ->onlyMethods(['isHeadersSent', 'sendHeader', 'setCookie'])
+            ->getMock();
+        $assetRuntimeMock
+            ->method('isHeadersSent')
+            ->willReturn(false);
+        $assetRuntimeMock
+            ->method('sendHeader')
+            ->willReturnCallback(function (string $header) use (&$headers): void {
+                $headers[] = $header;
+            });
+        $assetRuntimeMock
+            ->expects($this->never())
+            ->method('setCookie');
+
+        return $assetRuntimeMock;
     }
 }
-
