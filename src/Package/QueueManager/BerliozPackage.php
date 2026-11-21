@@ -23,9 +23,13 @@ use Berlioz\Package\QueueManager\Command\QueuePurgeCommand;
 use Berlioz\Package\QueueManager\Command\QueueSizeCommand;
 use Berlioz\Package\QueueManager\Command\QueueWorkerCommand;
 use Berlioz\Package\QueueManager\Container\QueueManagerProvider;
+use Berlioz\Package\QueueManager\Factory\AmqpQueueFactory;
 use Berlioz\Package\QueueManager\Factory\AwsSqsQueueFactory;
 use Berlioz\Package\QueueManager\Factory\DbQueueFactory;
 use Berlioz\Package\QueueManager\Factory\MemoryQueueFactory;
+use Berlioz\Package\QueueManager\Factory\NullQueueFactory;
+use Berlioz\Package\QueueManager\Factory\RabbitMqQueueFactory;
+use Berlioz\Package\QueueManager\Factory\RedisQueueFactory;
 use Berlioz\Package\QueueManager\Handler\BerliozCommandJobHandler;
 use Berlioz\Package\QueueManager\Http\QueueMetricsMiddleware;
 use Berlioz\Package\QueueManager\Listener\DeferredQueueListener;
@@ -54,6 +58,10 @@ class BerliozPackage extends AbstractPackage
                             MemoryQueueFactory::class,
                             AwsSqsQueueFactory::class,
                             DbQueueFactory::class,
+                            RedisQueueFactory::class,
+                            AmqpQueueFactory::class,
+                            RabbitMqQueueFactory::class,
+                            NullQueueFactory::class,
                         ],
                         // Queues consumed on application terminate, i.e. after the HTTP response has been
                         // sent (or at the end of a CLI command). Memory queues are purged afterwards.
