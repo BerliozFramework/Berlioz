@@ -12,7 +12,6 @@
 
 namespace Berlioz\Core\Tests\Container\Provider;
 
-use Berlioz\Core\Container\Provider\AppServiceProvider;
 use Berlioz\Core\Container\Provider\CoreServiceProvider;
 use Berlioz\Core\Core;
 use Berlioz\Core\Tests\Directories\FakeDefaultDirectories;
@@ -36,7 +35,6 @@ class ServiceProviderTest extends ProviderTestCase
     public static function providers(): array
     {
         return [
-            [new AppServiceProvider(self::getCore())],
             [new CoreServiceProvider(self::getCore())]
         ];
     }

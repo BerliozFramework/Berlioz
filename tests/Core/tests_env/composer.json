@@ -14,7 +14,7 @@
   ],
   "autoload": {
     "psr-4": {
-      "Berlioz\\Core\\TestsEnv\\": "src/"
+      "Berlioz\\Core\\TestProject\\": "src/"
     }
   },
   "require": {

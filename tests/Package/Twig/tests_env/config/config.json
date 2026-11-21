@@ -1,8 +1,8 @@
 {
   "container": {
-    "services": {
-      "service": "Berlioz\\Package\\Twig\\TestProject\\Service"
-    }
+    "providers": [
+      "Berlioz\\Package\\Twig\\TestProject\\TestServiceProvider"
+    ]
   },
   "controllers": [
     "Berlioz\\Http\\Core\\TestProject\\Controller\\ControllerOne",

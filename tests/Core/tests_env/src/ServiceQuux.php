@@ -10,7 +10,9 @@
  * file that was distributed with this source code, to the root.
  */
 
-namespace Berlioz\Core\TestsEnv;
+declare(strict_types=1);
+
+namespace Berlioz\Core\TestProject;
 
 class ServiceQuux
 {

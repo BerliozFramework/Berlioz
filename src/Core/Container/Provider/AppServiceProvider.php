@@ -41,7 +41,19 @@ class AppServiceProvider extends AbstractServiceProvider
     public function __construct(protected Core $core)
     {
         try {
-            foreach ((array)$this->core->getConfig()->get('container.services', []) as $alias => $serviceConfig) {
+            $services = (array)$this->core->getConfig()->get('container.services', []);
+
+            if (!empty($services)) {
+                trigger_error(
+                    'Declaring services in "container.services" configuration is deprecated since 3.4 '
+                    . 'and will be removed in 4.0. Register them from a service provider listed in '
+                    . '"container.providers" instead. '
+                    . 'See https://getberlioz.com/docs/3.x/getting-started/upgrading',
+                    E_USER_DEPRECATED,
+                );
+            }
+
+            foreach ($services as $alias => $serviceConfig) {
                 if (is_string($serviceConfig)) {
                     $this->provides[] = $alias;
                     $this->provides[] = $serviceConfig;
