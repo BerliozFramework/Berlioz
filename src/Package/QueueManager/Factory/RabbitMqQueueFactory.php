@@ -33,23 +33,42 @@ class RabbitMqQueueFactory extends AmqpQueueFactory
     /**
      * @inheritDoc
      */
-    protected static function createQueue(
-        AMQPConnection $connection,
-        array $queue,
-        array $config,
-        array $parameters,
-    ): QueueInterface {
-        $management = (array)($config['management'] ?? []);
+    protected static function createQueue(AMQPConnection $connection, array $queue, array $config): QueueInterface
+    {
+        $management = static::getManagementOptions($connection, $config);
 
         return new RabbitMqQueue(
             connection: $connection,
             name: (string)($queue['name'] ?? 'default'),
             maxAttempts: (int)($queue['max_attempts'] ?? $config['max_attempts'] ?? 5),
             limiter: self::getRateLimiterFromConfig($queue['rate_limit'] ?? null),
-            managementApiBaseUrl: $management['base_url'] ?? null,
-            managementApiUsername: $management['username'] ?? $parameters['login'] ?? null,
-            managementApiPassword: $management['password'] ?? $parameters['password'] ?? null,
-            vhost: (string)($parameters['vhost'] ?? '/'),
+            managementApiBaseUrl: $management['base_url'],
+            managementApiUsername: $management['username'],
+            managementApiPassword: $management['password'],
+            vhost: $management['vhost'],
         );
+    }
+
+    /**
+     * Get management API options.
+     *
+     * Credentials and vhost fall back to the effective connection ones
+     * (explicit options, DSN or "amqp.*" INI settings).
+     *
+     * @param AMQPConnection $connection
+     * @param array $config
+     *
+     * @return array{base_url: string|null, username: string, password: string, vhost: string}
+     */
+    protected static function getManagementOptions(AMQPConnection $connection, array $config): array
+    {
+        $management = (array)($config['management'] ?? []);
+
+        return [
+            'base_url' => isset($management['base_url']) ? (string)$management['base_url'] : null,
+            'username' => (string)($management['username'] ?? $connection->getLogin()),
+            'password' => (string)($management['password'] ?? $connection->getPassword()),
+            'vhost' => $connection->getVhost(),
+        ];
     }
 }

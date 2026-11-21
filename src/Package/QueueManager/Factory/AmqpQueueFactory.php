@@ -40,14 +40,12 @@ class AmqpQueueFactory implements QueueFactory
     {
         extension_loaded('amqp') || throw QueueManagerException::missingPackage('ext-amqp');
 
-        $parameters = static::getConnectionParameters($config);
-        $connection = new AMQPConnection($parameters);
-        $connection->connect();
+        $connection = static::createConnection($config);
 
         foreach ((array)($config['name'] ?? []) as $queue) {
             !is_array($queue) && $queue = ['name' => (string)$queue];
 
-            yield static::createQueue($connection, $queue, $config, $parameters);
+            yield static::createQueue($connection, $queue, $config);
         }
     }
 
@@ -57,25 +55,41 @@ class AmqpQueueFactory implements QueueFactory
      * Return type is not narrowed to avoid loading the queue class (which requires ext-amqp)
      * when the factory class is loaded.
      *
-     * @param AMQPConnection $connection
+     * @param AMQPConnection $connection Connected connection
      * @param array $queue Queue config
      * @param array $config Factory config
-     * @param array $parameters Connection parameters
      *
      * @return QueueInterface
      */
-    protected static function createQueue(
-        AMQPConnection $connection,
-        array $queue,
-        array $config,
-        array $parameters,
-    ): QueueInterface {
+    protected static function createQueue(AMQPConnection $connection, array $queue, array $config): QueueInterface
+    {
         return new AmqpQueue(
             connection: $connection,
             name: (string)($queue['name'] ?? 'default'),
             maxAttempts: (int)($queue['max_attempts'] ?? $config['max_attempts'] ?? 5),
             limiter: self::getRateLimiterFromConfig($queue['rate_limit'] ?? null),
         );
+    }
+
+    /**
+     * Create connected connection.
+     *
+     * @param array $config
+     *
+     * @return AMQPConnection
+     * @throws ConfigException
+     */
+    protected static function createConnection(array $config): AMQPConnection
+    {
+        $connection = new AMQPConnection(static::getConnectionParameters($config));
+
+        if (true === static::requiresTls($config)) {
+            static::assertTls($connection);
+        }
+
+        $connection->connect();
+
+        return $connection;
     }
 
     /**
@@ -103,6 +117,73 @@ class AmqpQueueFactory implements QueueFactory
     }
 
     /**
+     * Connection requires TLS?
+     *
+     * A secure DSN scheme ("amqps") requires TLS, whatever the explicit keys.
+     *
+     * @param array $config
+     *
+     * @return bool
+     * @throws ConfigException
+     */
+    protected static function requiresTls(array $config): bool
+    {
+        if (null === ($dsn = $config['amqp']['dsn'] ?? null)) {
+            return false;
+        }
+
+        return 'amqps' === self::getDsnScheme((string)$dsn);
+    }
+
+    /**
+     * Assert that the connection will use verified TLS.
+     *
+     * Checks the effective connection settings (explicit options or "amqp.*" INI settings), before connecting:
+     * ext-amqp only uses TLS when a CA certificate is given, and verifies peer and hostname with "verify".
+     *
+     * @param AMQPConnection $connection
+     *
+     * @throws ConfigException
+     */
+    protected static function assertTls(AMQPConnection $connection): void
+    {
+        if ('' === (string)$connection->getCACert()) {
+            throw new ConfigException(
+                'AMQPS connection requires a CA certificate to enable TLS, ' .
+                'set the "cacert" option or the "amqp.cacert" INI setting'
+            );
+        }
+        if (true !== $connection->getVerify()) {
+            throw new ConfigException(
+                'AMQPS connection requires the verification of the broker certificate and hostname, ' .
+                'the "verify" option or the "amqp.verify" INI setting must not be disabled'
+            );
+        }
+        if (('' === (string)$connection->getCert()) !== ('' === (string)$connection->getKey())) {
+            throw new ConfigException('AMQPS client certificate requires both "cert" and "key" options');
+        }
+    }
+
+    /**
+     * Get DSN scheme.
+     *
+     * @param string $dsn
+     *
+     * @return string
+     * @throws ConfigException
+     */
+    private static function getDsnScheme(string $dsn): string
+    {
+        $scheme = strtolower((string)parse_url($dsn, PHP_URL_SCHEME));
+
+        if (false === in_array($scheme, ['amqp', 'amqps'], true)) {
+            throw new ConfigException('Invalid AMQP DSN, expected an "amqp://" or "amqps://" URI');
+        }
+
+        return $scheme;
+    }
+
+    /**
      * Parse DSN.
      *
      * @param string $dsn
@@ -112,9 +193,10 @@ class AmqpQueueFactory implements QueueFactory
      */
     private static function parseDsn(string $dsn): array
     {
+        $scheme = self::getDsnScheme($dsn);
         $parts = parse_url($dsn);
 
-        if (false === $parts || false === in_array(strtolower($parts['scheme'] ?? ''), ['amqp', 'amqps'], true)) {
+        if (false === $parts) {
             throw new ConfigException('Invalid AMQP DSN, expected an "amqp://" or "amqps://" URI');
         }
         if (isset($parts['query']) || isset($parts['fragment'])) {
@@ -126,7 +208,7 @@ class AmqpQueueFactory implements QueueFactory
         return array_filter(
             [
                 'host' => $parts['host'] ?? null,
-                'port' => $parts['port'] ?? ('amqps' === strtolower($parts['scheme']) ? 5671 : 5672),
+                'port' => $parts['port'] ?? ('amqps' === $scheme ? 5671 : 5672),
                 'vhost' => '' === $vhost ? '/' : rawurldecode($vhost),
                 'login' => isset($parts['user']) ? rawurldecode($parts['user']) : null,
                 'password' => isset($parts['pass']) ? rawurldecode($parts['pass']) : null,
