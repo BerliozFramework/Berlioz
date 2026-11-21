@@ -25,9 +25,8 @@ class MemoryJob extends Job
         int $attempts,
         PayloadInterface|array $payload,
         protected readonly MemoryQueue $queue,
-        ?int $maxAttempts = null,
     ) {
-        parent::__construct($id, $name, $attempts, $payload, $maxAttempts);
+        parent::__construct($id, $name, $attempts, $payload);
     }
 
     /**

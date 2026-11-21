@@ -45,6 +45,11 @@ class FakeQueue implements QueueInterface
         return new NullRateLimiter();
     }
 
+    public function getMaxAttempts(): ?int
+    {
+        return null;
+    }
+
     public function size(): int
     {
         return $this->size;

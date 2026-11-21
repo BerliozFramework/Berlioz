@@ -46,9 +46,7 @@ readonly class DbQueue extends AbstractQueue implements PurgeableQueueInterface,
     }
 
     /**
-     * Get maximum number of attempts.
-     *
-     * @return int
+     * @inheritDoc
      */
     public function getMaxAttempts(): int
     {
@@ -200,7 +198,6 @@ readonly class DbQueue extends AbstractQueue implements PurgeableQueueInterface,
             attempts: $raw['attempts'] ?? 0,
             payload: $payload,
             queue: $this,
-            maxAttempts: $this->maxAttempts,
         );
     }
 

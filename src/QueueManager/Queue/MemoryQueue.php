@@ -41,9 +41,7 @@ readonly class MemoryQueue extends AbstractQueue implements PurgeableQueueInterf
     }
 
     /**
-     * Get maximum number of attempts.
-     *
-     * @return int
+     * @inheritDoc
      */
     public function getMaxAttempts(): int
     {
@@ -187,7 +185,6 @@ readonly class MemoryQueue extends AbstractQueue implements PurgeableQueueInterf
             attempts: $raw['attempts'] ?? 0,
             payload: $payload,
             queue: $this,
-            maxAttempts: $this->maxAttempts,
         );
     }
 

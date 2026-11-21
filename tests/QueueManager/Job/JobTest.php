@@ -15,7 +15,6 @@ declare(strict_types=1);
 namespace Berlioz\QueueManager\Tests\Job;
 
 use Berlioz\QueueManager\Job\Job;
-use Berlioz\QueueManager\Queue\NullQueue;
 use Berlioz\QueueManager\Queue\QueueInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -24,10 +23,23 @@ class JobTest extends TestCase
 {
     private function newJob(int $attempts, ?int $maxAttempts): Job
     {
-        return new class ('id', 'name', $attempts, [], $maxAttempts) extends Job {
+        $queue = $this->createMock(QueueInterface::class);
+        $queue->method('getMaxAttempts')->willReturn($maxAttempts);
+
+        return new class ('id', 'name', $attempts, [], $queue) extends Job {
+            public function __construct(
+                string $id,
+                ?string $name,
+                int $attempts,
+                array $payload,
+                private readonly QueueInterface $queue,
+            ) {
+                parent::__construct($id, $name, $attempts, $payload);
+            }
+
             public function getQueue(): QueueInterface
             {
-                return new NullQueue();
+                return $this->queue;
             }
         };
     }

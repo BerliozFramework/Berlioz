@@ -145,6 +145,14 @@ readonly class QueueManager implements QueueInterface, PurgeableQueueInterface, 
     /**
      * @inheritDoc
      */
+    public function getMaxAttempts(): ?int
+    {
+        return null;
+    }
+
+    /**
+     * @inheritDoc
+     */
     public function size(): int
     {
         $total = 0;

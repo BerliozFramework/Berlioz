@@ -48,6 +48,14 @@ readonly class NullQueue implements QueueInterface
     /**
      * @inheritDoc
      */
+    public function getMaxAttempts(): ?int
+    {
+        return null;
+    }
+
+    /**
+     * @inheritDoc
+     */
     public function size(): int
     {
         return 0;

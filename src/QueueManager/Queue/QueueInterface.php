@@ -38,6 +38,15 @@ interface QueueInterface
     public function getRateLimiter(): RateLimiterInterface;
 
     /**
+     * Get maximum number of attempts of a job.
+     *
+     * Returns NULL if the queue has no limit or if the limit is unknown.
+     *
+     * @return int|null
+     */
+    public function getMaxAttempts(): ?int;
+
+    /**
      * Number of jobs into queue.
      *
      * @return int

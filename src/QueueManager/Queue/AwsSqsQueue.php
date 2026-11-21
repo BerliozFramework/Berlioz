@@ -45,12 +45,10 @@ readonly class AwsSqsQueue extends AbstractQueue implements PurgeableQueueInterf
     }
 
     /**
-     * Get maximum number of attempts.
+     * @inheritDoc
      *
      * If not given to the constructor, read from the "maxReceiveCount" of the queue redrive policy.
      * Returns NULL if the queue has no redrive policy.
-     *
-     * @return int|null
      */
     public function getMaxAttempts(): ?int
     {

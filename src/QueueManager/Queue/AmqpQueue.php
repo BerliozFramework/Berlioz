@@ -58,9 +58,7 @@ readonly class AmqpQueue extends AbstractQueue implements PurgeableQueueInterfac
     }
 
     /**
-     * Get maximum number of attempts.
-     *
-     * @return int
+     * @inheritDoc
      */
     public function getMaxAttempts(): int
     {
