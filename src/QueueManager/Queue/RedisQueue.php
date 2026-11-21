@@ -37,6 +37,7 @@ readonly class RedisQueue extends AbstractQueue implements QueueInterface, Monit
         RateLimiterInterface $limiter = new NullRateLimiter(),
         private int $deletedJobsTtl = 86400,
         private int $maxAttempts = 5,
+        private int $retryTime = 30,
     ) {
         parent::__construct(name: $name, limiter: $limiter);
     }
@@ -49,10 +50,12 @@ readonly class RedisQueue extends AbstractQueue implements QueueInterface, Monit
         return $this->maxAttempts;
     }
 
-    /** @inheritDoc */
-    public function getRetryTime(): ?int
+    /**
+     * @inheritDoc
+     */
+    public function getRetryTime(): int
     {
-        return null;
+        return $this->retryTime;
     }
 
     /**
@@ -147,9 +150,21 @@ readonly class RedisQueue extends AbstractQueue implements QueueInterface, Monit
             $this->getRateLimiter()->wait();
 
             $this->freeDelayedJobs();
+            $this->recoverProcessingJobs();
 
-            $payload = $this->redis->lpop($this->name);
-            if ($payload === false) {
+            // Move the job to the processing set atomically, with the time after which it is recovered
+            $payload = $this->redis->eval(
+                <<<'LUA'
+                local message = redis.call('LPOP', KEYS[1])
+                if message then
+                    redis.call('ZADD', KEYS[2], ARGV[1], message)
+                end
+                return message
+                LUA,
+                [$this->name, $this->getProcessingQueueKey(), (string)(time() + $this->retryTime)],
+                2,
+            );
+            if (!is_string($payload)) {
                 return null;
             }
 
@@ -161,7 +176,7 @@ readonly class RedisQueue extends AbstractQueue implements QueueInterface, Monit
 
             $this->getRateLimiter()->pop();
 
-            return $this->createJob($jobRaw);
+            return $this->createJob($jobRaw, $payload);
         } catch (Exception $e) {
             throw new QueueException('Failed to consume a job.', 0, $e);
         }
@@ -171,10 +186,11 @@ readonly class RedisQueue extends AbstractQueue implements QueueInterface, Monit
      * Create job.
      *
      * @param array $raw
+     * @param string|null $message
      *
      * @return RedisJob
      */
-    protected function createJob(array $raw): RedisJob
+    protected function createJob(array $raw, ?string $message = null): RedisJob
     {
         $payload = json_decode((string)$raw['payload'], true);
 
@@ -191,6 +207,7 @@ readonly class RedisQueue extends AbstractQueue implements QueueInterface, Monit
             attempts: ($raw['attempts'] ?? 0) + 1,
             payload: $payload,
             queue: $this,
+            redisMessage: $message,
         );
     }
 
@@ -252,6 +269,11 @@ readonly class RedisQueue extends AbstractQueue implements QueueInterface, Monit
         $job->isReleased() && throw JobException::alreadyReleased($job);
         $job->isDeleted() && throw JobException::alreadyDeleted($job);
 
+        // Already recovered (retry time exceeded) and pushed back to the queue
+        if (false === $this->removeFromProcessing($job)) {
+            return;
+        }
+
         // Max attempts reached, move job to the dead list
         if ($job->getAttempts() >= $this->maxAttempts) {
             $this->redis->rPush(
@@ -282,6 +304,8 @@ readonly class RedisQueue extends AbstractQueue implements QueueInterface, Monit
         $job->isReleased() && throw JobException::alreadyReleased($job);
         $job->isDeleted() && throw JobException::alreadyDeleted($job);
 
+        $this->removeFromProcessing($job);
+
         $deletedJobsKey = $this->getDeletedJobsKey();
         $this->redis->hset($deletedJobsKey, $job->getId(), json_encode($job));
         if ($this->deletedJobsTtl > 0) {
@@ -292,6 +316,76 @@ readonly class RedisQueue extends AbstractQueue implements QueueInterface, Monit
     private function getDelayedQueueKey(): string
     {
         return $this->name . ':delayed';
+    }
+
+    /**
+     * Recover processing jobs whose retry time is exceeded.
+     *
+     * The consumer died (or is too long) without deleting or releasing the job: it is counted as a failed attempt,
+     * and the job is pushed back to the queue, or to the dead list once max attempts is reached.
+     *
+     * @return void
+     * @throws QueueException
+     */
+    public function recoverProcessingJobs(): void
+    {
+        try {
+            $messages = $this->redis->zrangebyscore($this->getProcessingQueueKey(), '-inf', (string)time());
+
+            foreach ($messages as $message) {
+                $destination = $this->getDeadQueueKey();
+                $recovered = $message;
+
+                if (null !== ($jobRaw = $this->decodeJobRaw($message))) {
+                    $jobRaw['attempts'] = ($jobRaw['attempts'] ?? 0) + 1;
+                    $jobRaw['availableAt'] = time();
+                    $destination = $jobRaw['attempts'] >= $this->maxAttempts ? $destination : $this->name;
+                    $recovered = json_encode($jobRaw, JSON_THROW_ON_ERROR);
+                }
+
+                // Atomically publish and remove, so a recovering worker crash cannot lose the job.
+                // Publish first: Redis scripts do not roll back writes if RPUSH fails (e.g. wrong key type).
+                $result = $this->redis->eval(
+                    <<<'LUA'
+                    if redis.call('ZSCORE', KEYS[1], ARGV[1]) then
+                        redis.call('RPUSH', KEYS[2], ARGV[2])
+                        redis.call('ZREM', KEYS[1], ARGV[1])
+                        return 1
+                    end
+                    return 0
+                    LUA,
+                    [$this->getProcessingQueueKey(), $destination, $message, $recovered],
+                    2,
+                );
+
+                if (false === $result) {
+                    throw new QueueException('Failed to publish a recovered job.');
+                }
+            }
+        } catch (Exception $e) {
+            throw new QueueException('Failed to recover processing jobs.', 0, $e);
+        }
+    }
+
+    /**
+     * Remove job from processing set.
+     *
+     * @param RedisJob $job
+     *
+     * @return bool FALSE if the job was no longer in processing set
+     */
+    private function removeFromProcessing(RedisJob $job): bool
+    {
+        if (null === ($message = $job->getRedisMessage())) {
+            return true;
+        }
+
+        return 1 === $this->redis->zrem($this->getProcessingQueueKey(), $message);
+    }
+
+    private function getProcessingQueueKey(): string
+    {
+        return $this->name . ':processing';
     }
 
     private function getDeadQueueKey(): string

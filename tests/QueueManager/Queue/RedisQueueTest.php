@@ -13,6 +13,7 @@
 namespace Berlioz\QueueManager\Tests\Queue;
 
 use Berlioz\QueueManager\Job\JobDescriptor;
+use Berlioz\QueueManager\Exception\QueueException;
 use Berlioz\QueueManager\Job\RedisJob;
 use Berlioz\QueueManager\Queue\MonitorableQueueInterface;
 use Berlioz\QueueManager\Queue\QueueInterface;
@@ -385,6 +386,119 @@ class RedisQueueTest extends QueueTestCase
 
     public function testGetRetryTime(): void
     {
-        $this->assertNull(static::newQueue()->getRetryTime());
+        $this->assertSame(30, static::newQueue()->getRetryTime());
+        $this->assertSame(60, (new RedisQueue(redis: self::$redis, retryTime: 60))->getRetryTime());
+    }
+
+    public function testConsume_keepsJobInProcessingUntilDeleted(): void
+    {
+        $queue = static::newQueue();
+        $queue->push(new JobDescriptor('test', ['foo' => 'value']));
+
+        $job = $queue->consume();
+        $this->assertSame(1, self::$redis->zcard('default:processing'));
+
+        $job->delete();
+        $this->assertSame(0, self::$redis->zcard('default:processing'));
+    }
+
+    public function testConsume_keepsJobInProcessingUntilReleased(): void
+    {
+        $queue = static::newQueue();
+        $queue->push(new JobDescriptor('test', ['foo' => 'value']));
+
+        $job = $queue->consume();
+        $this->assertSame(1, self::$redis->zcard('default:processing'));
+
+        $job->release();
+        $this->assertSame(0, self::$redis->zcard('default:processing'));
+        $this->assertSame(1, $queue->size());
+    }
+
+    public function testConsume_recoversJobAfterRetryTime(): void
+    {
+        $queue = new RedisQueue(redis: self::$redis, retryTime: 1);
+        $jobId = $queue->push(new JobDescriptor('test', ['foo' => 'value']));
+
+        // Consumed, then neither deleted nor released (worker crash)
+        $this->assertSame(1, $queue->consume()->getAttempts());
+        $this->assertNull($queue->consume());
+
+        sleep(2);
+
+        $job = $queue->consume();
+        $this->assertSame($jobId, $job->getId());
+        $this->assertSame(2, $job->getAttempts());
+        $this->assertSame(['foo' => 'value'], $job->getPayload()->getArrayCopy());
+    }
+
+    public function testConsume_recoveredJobReachesMaxAttempts(): void
+    {
+        $queue = new RedisQueue(redis: self::$redis, maxAttempts: 2, retryTime: 1);
+        $queue->push(new JobDescriptor('test', ['foo' => 'value']));
+
+        $this->assertSame(1, $queue->consume()->getAttempts());
+        sleep(2);
+        $this->assertSame(2, $queue->consume()->getAttempts());
+        sleep(2);
+
+        $this->assertNull($queue->consume());
+        $this->assertSame(0, self::$redis->zcard('default:processing'));
+        $this->assertSame(1, self::$redis->llen('default:dead'));
+        $this->assertSame(2, json_decode(self::$redis->lindex('default:dead', 0), true)['attempts']);
+    }
+
+    public function testRelease_afterRecoveryDoesNotDuplicateJob(): void
+    {
+        $queue = new RedisQueue(redis: self::$redis, retryTime: 1);
+        $queue->push(new JobDescriptor('test', ['foo' => 'value']));
+
+        $job = $queue->consume();
+        sleep(2);
+        $queue->recoverProcessingJobs();
+
+        $this->assertSame(1, $queue->size());
+
+        $job->release();
+
+        $this->assertSame(1, $queue->size());
+        $this->assertSame(0, $queue->delayed());
+    }
+
+    public function testRecoverProcessingJobs_doesNotRecoverTwice(): void
+    {
+        $queue = static::newQueue();
+        $id = $queue->push(new JobDescriptor('test', []));
+        $job = $queue->consume();
+        self::$redis->zadd('default:processing', 0, $job->getRedisMessage());
+
+        $queue->recoverProcessingJobs();
+        $queue->recoverProcessingJobs();
+
+        $this->assertSame(1, $queue->size());
+        $recovered = $queue->consume();
+        $this->assertSame($id, $recovered->getId());
+        $this->assertSame(2, $recovered->getAttempts());
+    }
+
+    public function testRecoverProcessingJobs_keepsJobWhenPublishingFails(): void
+    {
+        $queue = static::newQueue();
+        $id = $queue->push(new JobDescriptor('test', []));
+        $job = $queue->consume();
+        self::$redis->zadd('default:processing', 0, $job->getRedisMessage());
+        self::$redis->set('default', 'not a list');
+
+        try {
+            $queue->recoverProcessingJobs();
+            $this->fail('Publishing to a key with the wrong type must fail');
+        } catch (QueueException) {
+            $this->assertSame(1, self::$redis->zcard('default:processing'));
+        } finally {
+            self::$redis->del('default');
+        }
+
+        $queue->recoverProcessingJobs();
+        $this->assertSame($id, $queue->consume()->getId());
     }
 }
