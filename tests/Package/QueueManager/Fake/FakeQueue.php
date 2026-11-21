@@ -50,6 +50,11 @@ class FakeQueue implements QueueInterface
         return null;
     }
 
+    public function getRetryTime(): ?int
+    {
+        return null;
+    }
+
     public function size(): int
     {
         return $this->size;

@@ -53,6 +53,12 @@ readonly class DbQueue extends AbstractQueue implements PurgeableQueueInterface,
         return $this->maxAttempts;
     }
 
+    /** @inheritDoc */
+    public function getRetryTime(): int
+    {
+        return $this->retryTime;
+    }
+
     private function getRetryDateTimeLimit(): DateTimeInterface
     {
         return $this->now()->sub(new DateInterval('PT' . $this->retryTime . 'S'));

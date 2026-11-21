@@ -47,6 +47,16 @@ interface QueueInterface
     public function getMaxAttempts(): ?int;
 
     /**
+     * Get retry time.
+     *
+     * Time (in seconds) after which a consumed job, neither deleted nor released, becomes available again.
+     * Returns NULL if the queue does not make such jobs available again after a delay.
+     *
+     * @return int|null
+     */
+    public function getRetryTime(): ?int;
+
+    /**
      * Number of jobs into queue.
      *
      * @return int

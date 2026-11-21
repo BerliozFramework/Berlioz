@@ -392,4 +392,14 @@ class AwsSqsQueueTest extends TestCase
         $this->assertSame(4, $job->getMaxAttempts());
         $this->assertTrue($job->isLastAttempt());
     }
+
+    public function testGetRetryTime(): void
+    {
+        $this->assertSame(30, $this->queue->getRetryTime());
+        $this->assertSame(
+            60,
+            (new AwsSqsQueue($this->sqsClientMock, 'https://sqs.us-east-1.amazonaws.com/123456789012/q', retryTime: 60))
+                ->getRetryTime(),
+        );
+    }
 }

@@ -65,6 +65,12 @@ readonly class AmqpQueue extends AbstractQueue implements PurgeableQueueInterfac
         return $this->maxAttempts;
     }
 
+    /** @inheritDoc */
+    public function getRetryTime(): ?int
+    {
+        return null;
+    }
+
     private function createChannel(AMQPConnection $connection): AMQPChannel
     {
         return new AMQPChannel($connection);

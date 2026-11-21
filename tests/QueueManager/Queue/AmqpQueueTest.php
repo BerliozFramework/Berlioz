@@ -79,4 +79,9 @@ class AmqpQueueTest extends QueueTestCase
 
         $this->assertEquals(0, $queue->size());
     }
+
+    public function testGetRetryTime(): void
+    {
+        $this->assertNull(static::newQueue()->getRetryTime());
+    }
 }

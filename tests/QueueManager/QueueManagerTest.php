@@ -296,4 +296,9 @@ class QueueManagerTest extends TestCase
         $queueManager = new QueueManager($this->primaryQueueMock, $purgeableQueueMock);
         $queueManager->purge();
     }
+
+    public function testGetRetryTime(): void
+    {
+        $this->assertNull($this->queueManager->getRetryTime());
+    }
 }

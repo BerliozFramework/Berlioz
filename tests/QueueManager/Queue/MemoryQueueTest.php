@@ -60,4 +60,10 @@ class MemoryQueueTest extends QueueTestCase
 
         $this->assertLessThanOrEqual(2, $queue->waitTime());
     }
+
+    public function testGetRetryTime(): void
+    {
+        $this->assertSame(30, static::newQueue()->getRetryTime());
+        $this->assertSame(10, (new MemoryQueue(retryTime: 10))->getRetryTime());
+    }
 }

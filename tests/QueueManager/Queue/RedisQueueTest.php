@@ -357,4 +357,9 @@ class RedisQueueTest extends QueueTestCase
         $this->assertNull($job->getMaxAttempts());
         $this->assertFalse($job->isLastAttempt());
     }
+
+    public function testGetRetryTime(): void
+    {
+        $this->assertNull(static::newQueue()->getRetryTime());
+    }
 }

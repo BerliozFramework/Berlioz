@@ -108,4 +108,10 @@ class DbQueueTest extends QueueTestCase
         $this->assertCount(1, $statements);
         $this->assertStringEndsWith(' FOR UPDATE SKIP LOCKED', $statements[0]);
     }
+
+    public function testGetRetryTime(): void
+    {
+        $this->assertSame(30, static::newQueue()->getRetryTime());
+        $this->assertSame(10, (new DbQueue(new Connection('sqlite::memory:'), retryTime: 10))->getRetryTime());
+    }
 }

@@ -72,6 +72,14 @@ readonly class AwsSqsQueue extends AbstractQueue implements PurgeableQueueInterf
     /**
      * @inheritDoc
      */
+    public function getRetryTime(): int
+    {
+        return $this->retryTime;
+    }
+
+    /**
+     * @inheritDoc
+     */
     public function size(): int
     {
         $response = $this->sqsClient->getQueueAttributes([
