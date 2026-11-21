@@ -333,23 +333,34 @@ readonly class RedisQueue extends AbstractQueue implements QueueInterface, Monit
             $messages = $this->redis->zrangebyscore($this->getProcessingQueueKey(), '-inf', (string)time());
 
             foreach ($messages as $message) {
-                // Already recovered by another process
-                if (1 !== $this->redis->zrem($this->getProcessingQueueKey(), $message)) {
-                    continue;
+                $destination = $this->getDeadQueueKey();
+                $recovered = $message;
+
+                if (null !== ($jobRaw = $this->decodeJobRaw($message))) {
+                    $jobRaw['attempts'] = ($jobRaw['attempts'] ?? 0) + 1;
+                    $jobRaw['availableAt'] = time();
+                    $destination = $jobRaw['attempts'] >= $this->maxAttempts ? $destination : $this->name;
+                    $recovered = json_encode($jobRaw, JSON_THROW_ON_ERROR);
                 }
 
-                if (null === ($jobRaw = $this->decodeJobRaw($message))) {
-                    $this->redis->rPush($this->getDeadQueueKey(), $message);
-                    continue;
-                }
-
-                $jobRaw['attempts'] = ($jobRaw['attempts'] ?? 0) + 1;
-                $jobRaw['availableAt'] = time();
-
-                $this->redis->rPush(
-                    $jobRaw['attempts'] >= $this->maxAttempts ? $this->getDeadQueueKey() : $this->name,
-                    json_encode($jobRaw),
+                // Atomically publish and remove, so a recovering worker crash cannot lose the job.
+                // Publish first: Redis scripts do not roll back writes if RPUSH fails (e.g. wrong key type).
+                $result = $this->redis->eval(
+                    <<<'LUA'
+                    if redis.call('ZSCORE', KEYS[1], ARGV[1]) then
+                        redis.call('RPUSH', KEYS[2], ARGV[2])
+                        redis.call('ZREM', KEYS[1], ARGV[1])
+                        return 1
+                    end
+                    return 0
+                    LUA,
+                    [$this->getProcessingQueueKey(), $destination, $message, $recovered],
+                    2,
                 );
+
+                if (false === $result) {
+                    throw new QueueException('Failed to publish a recovered job.');
+                }
             }
         } catch (Exception $e) {
             throw new QueueException('Failed to recover processing jobs.', 0, $e);

@@ -12,7 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `QueueInterface::getMaxAttempts()`, implemented by all queues (`null` if the queue has no limit or if the limit is unknown); custom `QueueInterface` implementations must implement it
 - `JobInterface::getMaxAttempts()` (from the job queue) and `JobInterface::isLastAttempt()` to let a job handler know whether the current attempt is the last one; custom `JobInterface` implementations not extending `Job` must implement them
 - Optional `maxAttempts` constructor parameter on `AwsSqsQueue`; if not given, `AwsSqsQueue::getMaxAttempts()` reads the `maxReceiveCount` of the queue redrive policy
-- `QueueInterface::getRetryTime()`, time after which a consumed job, neither deleted nor released, becomes available again (`null` for queues without such a delay: AMQP, Redis, null queue and queue manager); custom `QueueInterface` implementations must implement it
+- `QueueInterface::getRetryTime()`, time after which a consumed job, neither deleted nor released, becomes available again (`null` for queues without such a delay: AMQP, null queue and queue manager); custom `QueueInterface` implementations must implement it
 - `RedisQueue::getMaxAttempts()`
 - `RedisQueue::getRetryTime()` and `RedisQueue::recoverProcessingJobs()`
 - `RedisJob::getRedisMessage()`

@@ -13,6 +13,7 @@
 namespace Berlioz\QueueManager\Tests\Queue;
 
 use Berlioz\QueueManager\Job\JobDescriptor;
+use Berlioz\QueueManager\Exception\QueueException;
 use Berlioz\QueueManager\Job\RedisJob;
 use Berlioz\QueueManager\Queue\MonitorableQueueInterface;
 use Berlioz\QueueManager\Queue\QueueInterface;
@@ -462,5 +463,42 @@ class RedisQueueTest extends QueueTestCase
 
         $this->assertSame(1, $queue->size());
         $this->assertSame(0, $queue->delayed());
+    }
+
+    public function testRecoverProcessingJobs_doesNotRecoverTwice(): void
+    {
+        $queue = static::newQueue();
+        $id = $queue->push(new JobDescriptor('test', []));
+        $job = $queue->consume();
+        self::$redis->zadd('default:processing', 0, $job->getRedisMessage());
+
+        $queue->recoverProcessingJobs();
+        $queue->recoverProcessingJobs();
+
+        $this->assertSame(1, $queue->size());
+        $recovered = $queue->consume();
+        $this->assertSame($id, $recovered->getId());
+        $this->assertSame(2, $recovered->getAttempts());
+    }
+
+    public function testRecoverProcessingJobs_keepsJobWhenPublishingFails(): void
+    {
+        $queue = static::newQueue();
+        $id = $queue->push(new JobDescriptor('test', []));
+        $job = $queue->consume();
+        self::$redis->zadd('default:processing', 0, $job->getRedisMessage());
+        self::$redis->set('default', 'not a list');
+
+        try {
+            $queue->recoverProcessingJobs();
+            $this->fail('Publishing to a key with the wrong type must fail');
+        } catch (QueueException) {
+            $this->assertSame(1, self::$redis->zcard('default:processing'));
+        } finally {
+            self::$redis->del('default');
+        }
+
+        $queue->recoverProcessingJobs();
+        $this->assertSame($id, $queue->consume()->getId());
     }
 }
