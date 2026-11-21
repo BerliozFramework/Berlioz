@@ -67,6 +67,26 @@ abstract class Job extends JobDescriptor implements JobInterface
     /**
      * @inheritDoc
      */
+    public function getMaxAttempts(): ?int
+    {
+        return $this->getQueue()->getMaxAttempts();
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function isLastAttempt(): bool
+    {
+        if (null === ($maxAttempts = $this->getMaxAttempts())) {
+            return false;
+        }
+
+        return $this->getAttempts() >= $maxAttempts;
+    }
+
+    /**
+     * @inheritDoc
+     */
     public function release(int $delay = 0): void
     {
         $this->released = true;

@@ -311,4 +311,85 @@ class AwsSqsQueueTest extends TestCase
 
         $this->queue->delete($jobMock);
     }
+
+    public function testGetMaxAttempts_fromConstructor(): void
+    {
+        $queue = new AwsSqsQueue(
+            $this->sqsClientMock,
+            'https://sqs.us-east-1.amazonaws.com/123456789012/testQueue',
+            'testQueue',
+            maxAttempts: 3,
+        );
+
+        $this->sqsClientMock
+            ->expects($this->never())
+            ->method('__call');
+
+        $this->assertSame(3, $queue->getMaxAttempts());
+    }
+
+    public function testGetMaxAttempts_fromRedrivePolicy(): void
+    {
+        $this->sqsClientMock
+            ->expects($this->once())
+            ->method('__call')
+            ->with(
+                'getQueueAttributes',
+                [
+                    [
+                        'QueueUrl' => 'https://sqs.us-east-1.amazonaws.com/123456789012/testQueue',
+                        'AttributeNames' => ['RedrivePolicy'],
+                    ]
+                ]
+            )
+            ->willReturn(
+                new Result([
+                    'Attributes' => [
+                        'RedrivePolicy' => json_encode([
+                            'deadLetterTargetArn' => 'arn:aws:sqs:us-east-1:123456789012:testQueue-dlq',
+                            'maxReceiveCount' => '4',
+                        ]),
+                    ],
+                ])
+            );
+
+        $this->assertSame(4, $this->queue->getMaxAttempts());
+    }
+
+    public function testGetMaxAttempts_withoutRedrivePolicy(): void
+    {
+        $this->sqsClientMock
+            ->expects($this->once())
+            ->method('__call')
+            ->with('getQueueAttributes', $this->isType('array'))
+            ->willReturn(new Result(['Attributes' => []]));
+
+        $this->assertNull($this->queue->getMaxAttempts());
+    }
+
+    public function testJobIsLastAttempt(): void
+    {
+        $message = [
+            'Attributes' => ['ApproximateReceiveCount' => '4'],
+            'MD5OfBody' => md5($body = '{"test":"value"}'),
+            'Body' => $body,
+            'MessageId' => 'foo',
+            'ReceiptHandle' => 'abc123',
+        ];
+
+        $this->sqsClientMock
+            ->expects($this->exactly(2))
+            ->method('__call')
+            ->willReturnCallback(fn(string $name) => match ($name) {
+                'receiveMessage' => new Result(['Messages' => [$message]]),
+                'getQueueAttributes' => new Result([
+                    'Attributes' => ['RedrivePolicy' => json_encode(['maxReceiveCount' => 4])],
+                ]),
+            });
+
+        $job = $this->queue->consume();
+
+        $this->assertSame(4, $job->getMaxAttempts());
+        $this->assertTrue($job->isLastAttempt());
+    }
 }

@@ -43,6 +43,14 @@ readonly class RedisQueue extends AbstractQueue implements QueueInterface, Monit
     /**
      * @inheritDoc
      */
+    public function getMaxAttempts(): ?int
+    {
+        return null;
+    }
+
+    /**
+     * @inheritDoc
+     */
     public function size(): int
     {
         $this->freeDelayedJobs();

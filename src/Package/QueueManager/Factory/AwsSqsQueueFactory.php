@@ -54,6 +54,8 @@ class AwsSqsQueueFactory implements QueueFactory
                     (string)$queueName));
             }
 
+            $maxAttempts = $queue['max_attempts'] ?? $config['max_attempts'] ?? null;
+
             yield new AwsSqsQueue(
                 sqsClient: $sqsClient,
                 queueUrl: $queueUrl,
@@ -61,6 +63,7 @@ class AwsSqsQueueFactory implements QueueFactory
                 retryTime: (int)($queue['retry_time'] ?? $config['retry_time'] ?? 30),
                 limiter: self::getRateLimiterFromConfig($queue['rate_limit'] ?? null),
                 cloudWatchClient: $cloudWatchClient,
+                maxAttempts: null !== $maxAttempts ? (int)$maxAttempts : null,
             );
         }
     }

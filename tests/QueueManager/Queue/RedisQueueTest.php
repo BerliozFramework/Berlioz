@@ -12,6 +12,7 @@
 
 namespace Berlioz\QueueManager\Tests\Queue;
 
+use Berlioz\QueueManager\Job\JobDescriptor;
 use Berlioz\QueueManager\Job\RedisJob;
 use Berlioz\QueueManager\Queue\MonitorableQueueInterface;
 use Berlioz\QueueManager\Queue\QueueInterface;
@@ -344,5 +345,16 @@ class RedisQueueTest extends QueueTestCase
             ->willReturn(4);
 
         $this->assertSame(4, $queue->delayed());
+    }
+
+    public function testIsLastAttempt_withoutLimit(): void
+    {
+        $queue = static::newQueue();
+        $queue->push(new JobDescriptor('test', ['foo' => 'value']));
+
+        $job = $queue->consume();
+
+        $this->assertNull($job->getMaxAttempts());
+        $this->assertFalse($job->isLastAttempt());
     }
 }

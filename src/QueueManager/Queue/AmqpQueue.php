@@ -57,6 +57,14 @@ readonly class AmqpQueue extends AbstractQueue implements PurgeableQueueInterfac
         $this->queue->bind($this->exchange->getName(), $this->name);
     }
 
+    /**
+     * @inheritDoc
+     */
+    public function getMaxAttempts(): int
+    {
+        return $this->maxAttempts;
+    }
+
     private function createChannel(AMQPConnection $connection): AMQPChannel
     {
         return new AMQPChannel($connection);

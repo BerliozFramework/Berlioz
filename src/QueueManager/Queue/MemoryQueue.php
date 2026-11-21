@@ -40,6 +40,14 @@ readonly class MemoryQueue extends AbstractQueue implements PurgeableQueueInterf
         $this->stack = new ArrayObject();
     }
 
+    /**
+     * @inheritDoc
+     */
+    public function getMaxAttempts(): int
+    {
+        return $this->maxAttempts;
+    }
+
     public function nowDeltaRetry(): DateTimeImmutable
     {
         return $this->now()->sub(new DateInterval('PT' . $this->retryTime . 'S'));

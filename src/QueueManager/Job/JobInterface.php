@@ -34,6 +34,24 @@ interface JobInterface extends JobDescriptorInterface
     public function getAttempts(): int;
 
     /**
+     * Get maximum number of attempts.
+     *
+     * Returns NULL if the queue has no limit or if the limit is unknown.
+     *
+     * @return int|null
+     */
+    public function getMaxAttempts(): ?int;
+
+    /**
+     * Is the last attempt?
+     *
+     * Returns FALSE if the maximum number of attempts is unknown.
+     *
+     * @return bool
+     */
+    public function isLastAttempt(): bool;
+
+    /**
      * Release job.
      *
      * @param int $delay

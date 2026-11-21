@@ -72,6 +72,8 @@ class AmqpQueueTest extends QueueTestCase
         for ($i = 1; $i <= 5; $i++) {
             $job = $queue->consume();
             $this->assertEquals($i, $job->getAttempts());
+            $this->assertSame(5, $job->getMaxAttempts());
+            $this->assertSame(5 === $i, $job->isLastAttempt());
             $job->release();
         }
 

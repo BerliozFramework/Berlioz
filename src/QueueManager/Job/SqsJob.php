@@ -19,6 +19,9 @@ use Berlioz\QueueManager\Queue\AwsSqsQueue;
 
 class SqsJob extends Job
 {
+    private bool $maxAttemptsResolved = false;
+    private ?int $resolvedMaxAttempts = null;
+
     public function __construct(
         protected array $awsResult,
         protected readonly AwsSqsQueue $queue,
@@ -35,6 +38,19 @@ class SqsJob extends Job
             attempts: (int)(($this->awsResult['Attributes'] ?? [])['ApproximateReceiveCount'] ?? 0),
             payload: $payload,
         );
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function getMaxAttempts(): ?int
+    {
+        if (false === $this->maxAttemptsResolved) {
+            $this->resolvedMaxAttempts = $this->queue->getMaxAttempts();
+            $this->maxAttemptsResolved = true;
+        }
+
+        return $this->resolvedMaxAttempts;
     }
 
     /**

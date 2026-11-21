@@ -57,6 +57,23 @@ abstract class JobTestCase extends TestCase
         $this->assertEquals(2, $job->getAttempts());
     }
 
+    public function testIsLastAttempt(): void
+    {
+        $queue = $this->newQueue();
+        $queue->push(new JobDescriptor('bar', ['foo' => 'value']));
+
+        for ($i = 1; $i <= 5; $i++) {
+            $job = $queue->consume();
+
+            $this->assertSame(5, $job->getMaxAttempts());
+            $this->assertSame(5 === $i, $job->isLastAttempt());
+
+            $job->release();
+        }
+
+        $this->assertNull($queue->consume());
+    }
+
     public function testGetPayload(): void
     {
         $job = $this->newJob();
