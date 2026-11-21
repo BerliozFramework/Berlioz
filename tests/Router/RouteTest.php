@@ -218,9 +218,29 @@ class RouteTest extends AbstractTestCase
                 Request::HTTP_METHOD_PUT,
                 Request::HTTP_METHOD_PATCH,
                 Request::HTTP_METHOD_DELETE,
+                Request::HTTP_METHOD_QUERY,
             ],
             $route->getMethods()
         );
+    }
+
+    public function testGetMethodsWithQuery()
+    {
+        $route = new Route('/my-path', method: ['get', 'query']);
+
+        $this->assertEquals(
+            [Request::HTTP_METHOD_GET, Request::HTTP_METHOD_QUERY],
+            array_values($route->getMethods())
+        );
+    }
+
+    public function testTestRouteWithQueryMethod()
+    {
+        $route = new Route('/my-path', method: Request::HTTP_METHOD_QUERY);
+
+        $this->assertTrue($route->test($this->getServerRequest('/my-path', Request::HTTP_METHOD_QUERY)));
+        $this->assertFalse($route->test($this->getServerRequest('/my-path', Request::HTTP_METHOD_POST)));
+        $this->assertTrue((new Route('/my-path'))->test($this->getServerRequest('/my-path', 'QUERY')));
     }
 
     public function testGetHostsInheritedFromParent()

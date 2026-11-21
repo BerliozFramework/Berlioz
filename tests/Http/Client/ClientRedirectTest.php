@@ -220,6 +220,11 @@ class ClientRedirectTest extends TestCase
         yield '303 discards body' => [303, 'GET', ''];
         yield '307 preserves body' => [307, 'POST', '{"message":"hello"}'];
         yield '308 preserves body' => [308, 'POST', '{"message":"hello"}'];
+        yield 'QUERY 301 preserves method and body' => [301, 'QUERY', '{"message":"hello"}', 'QUERY'];
+        yield 'QUERY 302 preserves method and body' => [302, 'QUERY', '{"message":"hello"}', 'QUERY'];
+        yield 'QUERY 303 switches to GET' => [303, 'GET', '', 'QUERY'];
+        yield 'QUERY 307 preserves method and body' => [307, 'QUERY', '{"message":"hello"}', 'QUERY'];
+        yield 'QUERY 308 preserves method and body' => [308, 'QUERY', '{"message":"hello"}', 'QUERY'];
     }
 
     public function testRedirectWithAutomaticCookiesDisabled(): void
@@ -250,8 +255,12 @@ class ClientRedirectTest extends TestCase
     }
 
     #[DataProvider('provideRedirectBodies')]
-    public function testRedirectMethodAndBody(int $status, string $method, string $body): void
-    {
+    public function testRedirectMethodAndBody(
+        int $status,
+        string $method,
+        string $body,
+        string $requestMethod = 'POST',
+    ): void {
         $requests = [];
         $adapter = new FakeAdapter(
             static function (RequestInterface $request) use (&$requests, $status): ResponseInterface {
@@ -263,7 +272,7 @@ class ClientRedirectTest extends TestCase
             },
         );
         $client = new Client(['headers' => ['Authorization' => 'Bearer secret']], $adapter);
-        $request = (new Request('POST', 'https://api.example.test/start', '{"message":"hello"}'))
+        $request = (new Request($requestMethod, 'https://api.example.test/start', '{"message":"hello"}'))
             ->withHeader('Content-Type', 'application/json');
         $client->sendRequest($request);
 

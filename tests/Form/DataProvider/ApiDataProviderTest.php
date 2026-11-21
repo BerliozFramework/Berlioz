@@ -146,6 +146,7 @@ class ApiDataProviderTest extends TestCase
             'PATCH' => ['PATCH', true],
             'POST' => ['POST', true],
             'PUT' => ['PUT', true],
+            'QUERY' => ['QUERY', true],
             'GET' => ['GET', false],
             'HEAD' => ['HEAD', false],
             'OPTIONS' => ['OPTIONS', false],
