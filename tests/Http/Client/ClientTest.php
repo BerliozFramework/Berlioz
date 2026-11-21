@@ -513,4 +513,23 @@ class ClientTest extends TestCase
         $client = new Client(adapter: new FakeAdapter($test));
         $client->get('', options: ['retryTime' => 10]);
     }
+
+    public function testQuery()
+    {
+        $sent = null;
+        $client = new Client(adapter: new FakeAdapter(function (RequestInterface $request) use (&$sent) {
+            $sent = $request;
+
+            return new Response();
+        }));
+        $client->query(
+            'https://api.example.test/contacts',
+            '{"limit":10}',
+            ['headers' => ['Content-Type' => 'application/json']]
+        );
+
+        $this->assertSame(Request::HTTP_METHOD_QUERY, $sent->getMethod());
+        $this->assertSame('{"limit":10}', (string)$sent->getBody());
+        $this->assertSame('application/json', $sent->getHeaderLine('Content-Type'));
+    }
 }
