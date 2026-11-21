@@ -180,7 +180,7 @@
     <a href="#"
        data-toggle="detail"
        data-type="twig"
-       data-content="{{ block('profileDetail')|spaceless|e('html_attr') }}">{{ profile.name }}</a>
+       data-content="{{ block('profileDetail')|e('html_attr') }}">{{ profile.name }}</a>
 {%- endblock %}
 
 {% block profileDetail %}
