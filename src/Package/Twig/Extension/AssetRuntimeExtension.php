@@ -103,26 +103,23 @@ class AssetRuntimeExtension
             $entryPoints = [$type => $entryPoints];
         }
 
+        // Preload option
+        $preload = $options['preload'] ?? null;
+        $preloadOptions = is_array($preload) ? $preload : [];
+        $preload = null !== $preload && false !== $preload;
+        unset($options['preload']);
+
         foreach ($entryPoints as $type => $entryPointsByType) {
             foreach ($entryPointsByType as $entryPoint) {
                 $entryPoint = strip_tags((string)$entryPoint);
 
-                // Preload option
-                $preloadOptions = [];
-                if (isset($options['preload'])) {
-                    if (is_array($options['preload'])) {
-                        $preloadOptions = $options['preload'];
-                    }
-                }
-
                 switch ($type) {
                     case 'js':
-                        if (isset($options['preload'])) {
+                        if ($preload) {
                             $entryPoint = $this->preload(
                                 $entryPoint,
                                 array_merge(['as' => 'script'], $preloadOptions)
                             );
-                            unset($options['preload']);
                         } else {
                             $entryPoint = $this->getRouter()->finalizePath($entryPoint);
                         }
@@ -138,12 +135,11 @@ class AssetRuntimeExtension
                             ) . PHP_EOL;
                         break;
                     case 'css':
-                        if (isset($options['preload'])) {
+                        if ($preload) {
                             $entryPoint = $this->preload(
                                 $entryPoint,
                                 array_merge(['as' => 'style'], $preloadOptions)
                             );
-                            unset($options['preload']);
                         } else {
                             $entryPoint = $this->getRouter()->finalizePath($entryPoint);
                         }

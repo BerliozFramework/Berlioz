@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `date_format` filter accepts any `DateTimeInterface`, `DateTimeImmutable` no longer throws a `TypeError`
 - `path()` keeps the routing exception as previous exception of the Twig `RuntimeError`
 - `path_exists()` accepts a `RouteAttributes` object, like `path()`
+- `entrypoints()` with the `preload` option now preloads every rendered file, not only the first one
+- `entrypoints()` no longer preloads files when the `preload` option is `false`
 
 
 ## [3.3.2] - 2026-10-25
