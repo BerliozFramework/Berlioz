@@ -16,6 +16,8 @@ use Berlioz\Core\Core;
 use Berlioz\Core\Tests\RestoresErrorHandler;
 use Berlioz\Package\Twig\Extension\DefaultExtension;
 use Berlioz\Package\Twig\TestProject\FakeDefaultDirectories;
+use DateTime;
+use DateTimeImmutable;
 use PHPUnit\Framework\TestCase;
 
 class DefaultExtensionTest extends TestCase
@@ -31,6 +33,21 @@ class DefaultExtensionTest extends TestCase
         $this->assertEquals(
             '14/09/2021 23:00',
             $extension->filterDateFormat('2021-09-14 23:00:00', 'dd/MM/yyyy HH:mm')
+        );
+    }
+
+    public function testFilterDateFormat_withDateTimeInterface()
+    {
+        $core = new Core(new FakeDefaultDirectories(), false);
+        $extension = new DefaultExtension($core);
+
+        $this->assertEquals(
+            '14/09/2021 23:00',
+            $extension->filterDateFormat(new DateTime('2021-09-14 23:00:00'), 'dd/MM/yyyy HH:mm')
+        );
+        $this->assertEquals(
+            '14/09/2021 23:00',
+            $extension->filterDateFormat(new DateTimeImmutable('2021-09-14 23:00:00'), 'dd/MM/yyyy HH:mm')
         );
     }
 
