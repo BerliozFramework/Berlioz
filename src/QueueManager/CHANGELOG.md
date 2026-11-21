@@ -16,15 +16,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `RedisQueue::getMaxAttempts()`
 - `RedisQueue::getRetryTime()` and `RedisQueue::recoverProcessingJobs()`
 - `RedisJob::getRedisMessage()`
+- `Worker::drain()` to process jobs until the queue is empty (optional time limit), without sleep, limits nor signal handlers
+- `Worker::processJob()` extracted from `Worker::run()` (execute, then delete or release on failure)
 
 ### Changed
 
 - `RedisQueue` stops retrying a job after `maxAttempts` (new constructor parameter, 5 by default like the other queues): the job is moved to the `<name>:dead` list instead of being released again
+- `Worker` installs its signal handlers when `run()` starts instead of in the constructor
 
 ### Fixed
 
 - `RedisQueue` no longer loses a job when the worker dies during its processing: consumed jobs are kept in a `<name>:processing` set and, if neither deleted nor released within `retryTime` (new constructor parameter, 30 seconds by default like the other queues), pushed back to the queue as a failed attempt (or moved to the `<name>:dead` list once `maxAttempts` is reached)
 - `AmqpQueue` counts a message redelivered by the broker (consumer died without deleting or releasing the job) as a failed attempt: it is published again with incremented attempts, or to the dead queue once `maxAttempts` is reached, instead of being redelivered indefinitely
+
 
 ## [3.3.2] - 2026-10-25
 

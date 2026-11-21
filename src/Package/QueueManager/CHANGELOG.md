@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - `max_attempts` option for AWS SQS queues
+- Deferred queues consumed on application terminate (after the HTTP response is sent, or at the end of a CLI command), configured with `berlioz.queues.deferred.queues` and `berlioz.queues.deferred.time_limit`; memory queues are purged afterwards
+- Debug activities for deferred queues and jobs (`Terminate` group)
+
 
 ## [3.3.2] - 2026-10-25
 

@@ -13,14 +13,18 @@
 namespace Berlioz\QueueManager\Tests;
 
 use Berlioz\QueueManager\Handler\JobHandlerInterface;
+use Berlioz\QueueManager\Job\JobDescriptor;
 use Berlioz\QueueManager\Job\JobInterface;
+use Berlioz\QueueManager\Queue\MemoryQueue;
 use Berlioz\QueueManager\Queue\QueueInterface;
 use Berlioz\QueueManager\RateLimiter\RateLimiterInterface;
 use Berlioz\QueueManager\Worker;
 use Berlioz\QueueManager\WorkerExit;
 use Berlioz\QueueManager\WorkerOptions;
+use Closure;
 use Exception;
 use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\RunInSeparateProcess;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
@@ -312,6 +316,81 @@ class WorkerTest extends TestCase
 
         $exitCode = $this->worker->run($this->queueMock, new WorkerOptions(limit: 1));
         $this->assertSame(WorkerExit::LIMIT_EXCEEDED->code(), $exitCode);
+    }
+
+    public function testDrain(): void
+    {
+        $queue = new MemoryQueue();
+        $queue->push(new JobDescriptor('foo', ['id' => 1]));
+        $queue->push(new JobDescriptor('foo', ['id' => 2]));
+        $handled = [];
+
+        $this->jobHandlerMock->method('handle')->willReturnCallback(
+            function (JobInterface $job) use ($queue, &$handled): void {
+                $handled[] = $job->getPayload()->get('id');
+
+                // Job pushed while draining
+                if (1 === $job->getPayload()->get('id')) {
+                    $queue->push(new JobDescriptor('foo', ['id' => 3]));
+                }
+            }
+        );
+
+        $this->assertSame(3, $this->worker->drain($queue));
+        $this->assertEqualsCanonicalizing([1, 2, 3], $handled);
+        $this->assertSame(0, $queue->size());
+    }
+
+    public function testDrain_emptyQueue(): void
+    {
+        $this->jobHandlerMock->expects($this->never())->method('handle');
+
+        $this->assertSame(0, $this->worker->drain(new MemoryQueue()));
+    }
+
+    public function testDrain_failedJobIsReleased(): void
+    {
+        $queue = new MemoryQueue(maxAttempts: 2);
+        $queue->push(new JobDescriptor('foo', []));
+        $this->jobHandlerMock->method('handle')->willThrowException(new Exception('Job failed'));
+
+        // Released without delay (backoff 0), so retried until max attempts
+        $this->assertSame(2, $this->worker->drain($queue));
+        $this->assertSame(0, $queue->size());
+    }
+
+    public function testDrain_timeLimit(): void
+    {
+        $queue = new MemoryQueue();
+        $queue->push(new JobDescriptor('foo', []));
+        $queue->push(new JobDescriptor('foo', []));
+
+        $workerStub = $this->getMockBuilder(Worker::class)
+            ->setConstructorArgs([$this->jobHandlerMock])
+            ->onlyMethods(['hrtime'])
+            ->getMock();
+        // Start, 1st check, 1st job execution, 2nd check (time limit of 1 second exceeded)
+        $workerStub->method('hrtime')->willReturnOnConsecutiveCalls(0, 0, 0, 2_000_000_000);
+
+        $this->assertSame(1, $workerStub->drain($queue, timeLimit: 1));
+        $this->assertSame(1, $queue->size());
+    }
+
+    #[RunInSeparateProcess]
+    public function testSignalHandler_onlyInstalledByRun(): void
+    {
+        if (!extension_loaded('pcntl')) {
+            $this->markTestSkipped('pcntl extension required');
+        }
+
+        $worker = new Worker($this->createMock(JobHandlerInterface::class));
+        $worker->drain(new MemoryQueue());
+
+        $this->assertSame(SIG_DFL, pcntl_signal_get_handler(SIGTERM));
+
+        $worker->run(new MemoryQueue(), new WorkerOptions(stopNoJob: true, sleepNoJob: 0));
+
+        $this->assertInstanceOf(Closure::class, pcntl_signal_get_handler(SIGTERM));
     }
 
     public function testRunJobAlreadyDeletedByHandlerThenException(): void

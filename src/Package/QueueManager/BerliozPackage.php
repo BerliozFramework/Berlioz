@@ -16,6 +16,8 @@ namespace Berlioz\Package\QueueManager;
 
 use Berlioz\Config\Adapter\ArrayAdapter;
 use Berlioz\Config\ConfigInterface;
+use Berlioz\Core\Core;
+use Berlioz\Core\Event\TerminateEvent;
 use Berlioz\Core\Package\AbstractPackage;
 use Berlioz\Package\QueueManager\Command\QueuePurgeCommand;
 use Berlioz\Package\QueueManager\Command\QueueSizeCommand;
@@ -26,6 +28,7 @@ use Berlioz\Package\QueueManager\Factory\DbQueueFactory;
 use Berlioz\Package\QueueManager\Factory\MemoryQueueFactory;
 use Berlioz\Package\QueueManager\Handler\BerliozCommandJobHandler;
 use Berlioz\Package\QueueManager\Http\QueueMetricsMiddleware;
+use Berlioz\Package\QueueManager\Listener\DeferredQueueListener;
 use Berlioz\ServiceContainer\Container;
 
 class BerliozPackage extends AbstractPackage
@@ -51,6 +54,12 @@ class BerliozPackage extends AbstractPackage
                             MemoryQueueFactory::class,
                             AwsSqsQueueFactory::class,
                             DbQueueFactory::class,
+                        ],
+                        // Queues consumed on application terminate, i.e. after the HTTP response has been
+                        // sent (or at the end of a CLI command). Memory queues are purged afterwards.
+                        'deferred' => [
+                            'queues' => [],
+                            'time_limit' => null,
                         ],
                         // HTTP metrics endpoint. Opt-in: disabled by default. When `berlioz/http-core`
                         // is installed, the middleware below serves queue metrics on `path`, gated by
@@ -88,5 +97,16 @@ class BerliozPackage extends AbstractPackage
     public static function register(Container $container): void
     {
         $container->addProvider(new QueueManagerProvider());
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public static function boot(Core $core): void
+    {
+        $core->getEventDispatcher()->addEventListener(
+            TerminateEvent::class,
+            [DeferredQueueListener::class, 'onTerminate'],
+        );
     }
 }

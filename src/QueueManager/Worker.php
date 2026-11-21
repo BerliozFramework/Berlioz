@@ -28,24 +28,28 @@ class Worker implements LoggerAwareInterface
     use LoggerAwareTrait;
 
     private bool $shouldTerminate = false;
+    private bool $signalHandlerInitialized = false;
 
     public function __construct(
         private readonly JobHandlerInterface $jobHandlerManager,
     ) {
-        $this->initSignalHandler();
     }
 
     /**
      * Init signal handler.
      *
+     * Called when run() starts, not by drain(): draining a queue inside another
+     * process (e.g. PHP-FPM) must not override its signal handlers.
+     *
      * @return void
      */
     public function initSignalHandler(): void
     {
-        if (!extension_loaded('pcntl')) {
+        if (true === $this->signalHandlerInitialized || !extension_loaded('pcntl')) {
             return;
         }
 
+        $this->signalHandlerInitialized = true;
         pcntl_async_signals(true);
         pcntl_signal(SIGQUIT, fn() => $this->shouldTerminate = true);
         pcntl_signal(SIGTERM, fn() => $this->shouldTerminate = true);
@@ -157,6 +161,7 @@ class Worker implements LoggerAwareInterface
      */
     public function run(QueueInterface $queue, WorkerOptions $options = new WorkerOptions()): int
     {
+        $this->initSignalHandler();
         $startTime = $this->hrtime();
         $nbJobsExecuted = 0;
 
@@ -191,54 +196,105 @@ class Worker implements LoggerAwareInterface
             $options->rateLimiter->pop();
             $nbJobsExecuted++;
 
-            $this->logger?->info(
-                sprintf(
-                    'Job %s consumed from queue %s',
-                    $job->getId(),
-                    $job->getQueue()->getName() ?? '--'
-                ),
-            );
-
-            $execStartTime = $this->hrtime();
-            try {
-                // Exec
-                $this->executeJob($job);
-
-                // Delete job (if not already handled by the handler)
-                if (false === $job->isDeleted() && false === $job->isReleased()) {
-                    $job->delete();
-                }
-
-                $this->logger?->info(
-                    sprintf(
-                        'Job %s executed from queue %s (%f ms)',
-                        $job->getId(),
-                        $job->getQueue()->getName() ?? '--',
-                        ($this->hrtime() - $execStartTime) / 1000000,
-                    ),
-                );
-            } catch (Throwable $exception) {
-                // Release job (if not already handled by the handler)
-                if (false === $job->isDeleted() && false === $job->isReleased()) {
-                    $job->release($this->nextDelayAfterFailure($job, $options));
-                }
-
-                $this->logger?->error(
-                    sprintf(
-                        'Job %s failed from queue %s (%f ms)',
-                        $job->getId(),
-                        $job->getQueue()->getName() ?? '--',
-                        ($this->hrtime() - $execStartTime) / 1000000,
-                    ),
-                    ['exception' => $exception],
-                );
-                continue;
-            }
+            $this->processJob($job, $options);
         } while (null === ($exit = $this->continue($options, $startTime, $job, $nbJobsExecuted)));
 
         $this->logger?->info(sprintf('Exit(%d): %s', $exit->code(), $exit->reason()));
 
         return $exit->code();
+    }
+
+    /**
+     * Drain queue: process jobs until the queue is empty.
+     *
+     * Unlike run(), no sleep, kill file, memory or job limit, and no signal handler.
+     * Intended to consume a queue inside another process (e.g. after an HTTP response).
+     *
+     * @param QueueInterface $queue
+     * @param int|float $timeLimit Time limit in seconds; jobs already started are not interrupted
+     * @param WorkerOptions $options Options used for job failures (backoff)
+     *
+     * @return int Number of processed jobs
+     */
+    public function drain(
+        QueueInterface $queue,
+        int|float $timeLimit = INF,
+        WorkerOptions $options = new WorkerOptions(),
+    ): int {
+        $startTime = $this->hrtime();
+        $nbJobsExecuted = 0;
+        $timeLimitOptions = new WorkerOptions(timeLimit: $timeLimit);
+
+        while (false === $this->timeLimitExceeded($startTime, $timeLimitOptions)) {
+            if (null === ($job = $queue->consume())) {
+                break;
+            }
+
+            $nbJobsExecuted++;
+            $this->processJob($job, $options);
+        }
+
+        return $nbJobsExecuted;
+    }
+
+    /**
+     * Process job: execute it, then delete it, or release it on failure.
+     *
+     * Deletion and release are skipped if already done by the job handler.
+     *
+     * @param JobInterface $job
+     * @param WorkerOptions $options
+     *
+     * @return bool True if the job succeeded
+     */
+    public function processJob(JobInterface $job, WorkerOptions $options): bool
+    {
+        $this->logger?->info(
+            sprintf(
+                'Job %s consumed from queue %s',
+                $job->getId(),
+                $job->getQueue()->getName() ?? '--'
+            ),
+        );
+
+        $execStartTime = $this->hrtime();
+        try {
+            // Exec
+            $this->executeJob($job);
+
+            // Delete job (if not already handled by the handler)
+            if (false === $job->isDeleted() && false === $job->isReleased()) {
+                $job->delete();
+            }
+
+            $this->logger?->info(
+                sprintf(
+                    'Job %s executed from queue %s (%f ms)',
+                    $job->getId(),
+                    $job->getQueue()->getName() ?? '--',
+                    ($this->hrtime() - $execStartTime) / 1000000,
+                ),
+            );
+
+            return true;
+        } catch (Throwable $exception) {
+            // Release job (if not already handled by the handler)
+            if (false === $job->isDeleted() && false === $job->isReleased()) {
+                $job->release($this->nextDelayAfterFailure($job, $options));
+            }
+
+            $this->logger?->error(
+                sprintf(
+                    'Job %s failed from queue %s (%f ms)',
+                    $job->getId(),
+                    $job->getQueue()->getName() ?? '--',
+                    ($this->hrtime() - $execStartTime) / 1000000,
+                ),
+                ['exception' => $exception],
+            );
+
+            return false;
+        }
     }
 
     /**
