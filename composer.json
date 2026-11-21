@@ -127,6 +127,7 @@
   "suggest": {
     "ext-curl": "To use CURL adapter with HttpClient",
     "ext-gd": "Allows to use image helpers functions",
+    "ext-openssl": "To use encrypted SMTP connections (STARTTLS or implicit TLS) in Mailer",
     "ext-simplexml": "Allows to use XML helpers functions",
     "ext-yaml": "To use YamlAdapter with Config",
     "ext-zlib": "To use GzStream in HttpMessage",
