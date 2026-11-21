@@ -12,7 +12,11 @@
       factories: [
         "Berlioz\\Package\\QueueManager\\Factory\\MemoryQueueFactory",
         "Berlioz\\Package\\QueueManager\\Factory\\AwsSqsQueueFactory",
-        "Berlioz\\Package\\QueueManager\\Factory\\DbQueueFactory"
+        "Berlioz\\Package\\QueueManager\\Factory\\DbQueueFactory",
+        "Berlioz\\Package\\QueueManager\\Factory\\RedisQueueFactory",
+        "Berlioz\\Package\\QueueManager\\Factory\\AmqpQueueFactory",
+        "Berlioz\\Package\\QueueManager\\Factory\\RabbitMqQueueFactory",
+        "Berlioz\\Package\\QueueManager\\Factory\\NullQueueFactory"
       ],
       // Queues consumed on application terminate, i.e. after the HTTP response has been sent
       // (or at the end of a CLI command). Memory queues are purged afterwards.

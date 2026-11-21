@@ -44,7 +44,7 @@ class QueueFactories
      */
     public function createFromConfig(array $config): iterable
     {
-            $config['type'] ?? throw new ConfigException(sprintf('No queue type given'));
+        $config['type'] ?? throw new ConfigException(sprintf('No queue type given'));
 
         if (false === array_key_exists($config['type'], $this->factories)) {
             throw new ConfigException(sprintf('No factory found for queue of type "%s"', $config['type']));
