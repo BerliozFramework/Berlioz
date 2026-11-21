@@ -347,15 +347,40 @@ class RedisQueueTest extends QueueTestCase
         $this->assertSame(4, $queue->delayed());
     }
 
-    public function testIsLastAttempt_withoutLimit(): void
+    public function testMaxAttempts(): void
     {
         $queue = static::newQueue();
         $queue->push(new JobDescriptor('test', ['foo' => 'value']));
 
-        $job = $queue->consume();
+        for ($i = 1; $i <= 5; $i++) {
+            $job = $queue->consume();
+            $this->assertEquals($i, $job->getAttempts());
+            $this->assertSame(5, $job->getMaxAttempts());
+            $this->assertSame($i === 5, $job->isLastAttempt());
+            $job->release();
+        }
 
-        $this->assertNull($job->getMaxAttempts());
-        $this->assertFalse($job->isLastAttempt());
+        $this->assertSame(5, $queue->getMaxAttempts());
+        $this->assertNull($queue->consume());
+        $this->assertEquals(0, $queue->size());
+        $this->assertEquals(0, $queue->delayed());
+
+        $dead = json_decode(self::$redis->lindex('default:dead', 0), true);
+        $this->assertSame(1, self::$redis->llen('default:dead'));
+        $this->assertSame(5, $dead['attempts']);
+        $this->assertSame('test', json_decode($dead['payload'], true)['jobName']);
+    }
+
+    public function testMaxAttempts_custom(): void
+    {
+        $queue = new RedisQueue(redis: self::$redis, maxAttempts: 2);
+        $queue->push(new JobDescriptor('test', ['foo' => 'value']));
+
+        $queue->consume()->release();
+        $queue->consume()->release();
+
+        $this->assertNull($queue->consume());
+        $this->assertSame(1, self::$redis->llen('default:dead'));
     }
 
     public function testGetRetryTime(): void
