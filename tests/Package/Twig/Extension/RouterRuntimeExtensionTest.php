@@ -13,7 +13,9 @@
 namespace Berlioz\Package\Twig\Tests\Extension;
 
 use Berlioz\Package\Twig\Extension\RouterRuntimeExtension;
+use Berlioz\Router\Exception\NotFoundException;
 use Berlioz\Router\Route;
+use Berlioz\Router\RouteAttributes;
 use Berlioz\Router\Router;
 use PHPUnit\Framework\TestCase;
 use Twig\Error\RuntimeError;
@@ -66,6 +68,18 @@ class RouterRuntimeExtensionTest extends TestCase
         $extensionRuntime->functionPath('unknown-route');
     }
 
+    public function testFunctionPath_keepsRoutingException()
+    {
+        $extensionRuntime = new RouterRuntimeExtension($this->router);
+
+        try {
+            $extensionRuntime->functionPath('unknown-route');
+            $this->fail('A RuntimeError is expected');
+        } catch (RuntimeError $exception) {
+            $this->assertInstanceOf(NotFoundException::class, $exception->getPrevious());
+        }
+    }
+
     public function testFunctionPathExists()
     {
         $extensionRuntime = new RouterRuntimeExtension($this->router);
@@ -75,6 +89,20 @@ class RouterRuntimeExtensionTest extends TestCase
         $this->assertTrue($extensionRuntime->functionPathExists('a-route', ['var' => 'foo', 'var2' => 'bar']));
         $this->assertFalse($extensionRuntime->functionPathExists('a-route'));
         $this->assertFalse($extensionRuntime->functionPathExists('unknown-route'));
+    }
+
+    public function testFunctionPathExists_withRouteAttributes()
+    {
+        $extensionRuntime = new RouterRuntimeExtension($this->router);
+        $attributes = new class implements RouteAttributes {
+            public function routeAttributes(): array
+            {
+                return ['var' => 'foo'];
+            }
+        };
+
+        $this->assertTrue($extensionRuntime->functionPathExists('a-route', $attributes));
+        $this->assertSame('/route/foo/test', $extensionRuntime->functionPath('a-route', $attributes));
     }
 
     public function testFunctionFinalizePath()
