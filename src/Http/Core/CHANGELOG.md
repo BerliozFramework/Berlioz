@@ -12,8 +12,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `HttpApp::terminate()` releasing the session lock and dispatching an `HttpTerminateEvent` (request and response metadata)
 - `berlioz.http.finish_request` configuration (default `true`)
 - `acceptQuery` route option and `AcceptQueryMiddleware` (enabled by default) for the HTTP `QUERY` method
-  (RFC 10008): sends the `Accept-Query` header and rejects `QUERY` requests with a missing (400) or unsupported (415)
-  content type
+  (RFC 10008): sends the `Accept-Query` header and rejects `QUERY` requests with a missing or malformed (400) or
+  unsupported (415) content type
+- `MediaType` parser for media types and media ranges (RFC 9110), with quoted parameter values
 - `UnsupportedMediaTypeHttpException`
 
 ### Changed

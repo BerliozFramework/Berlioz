@@ -20,6 +20,7 @@ use Berlioz\Http\Core\Exception\Http\UnsupportedMediaTypeHttpException;
 use Berlioz\Http\Core\Exception\HttpAppException;
 use Berlioz\Http\Core\Exception\HttpException;
 use Berlioz\Http\Core\Http\Handler\Error\ErrorHandler;
+use Berlioz\Http\Core\Http\MediaType;
 use Berlioz\Http\Message\Request;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -30,7 +31,8 @@ use Psr\Http\Server\RequestHandlerInterface;
  * Class AcceptQueryMiddleware.
  *
  * Handles the "acceptQuery" route option (RFC 10008): advertises the accepted query media types
- * with the "Accept-Query" response header and rejects QUERY requests with a missing or unsupported content type.
+ * with the "Accept-Query" response header and rejects QUERY requests with a missing, invalid or unsupported
+ * content type.
  */
 class AcceptQueryMiddleware implements MiddlewareInterface
 {
@@ -57,13 +59,7 @@ class AcceptQueryMiddleware implements MiddlewareInterface
         $headerValue = $this->serializeHeader($mediaRanges);
 
         if (Request::HTTP_METHOD_QUERY === strtoupper($request->getMethod())) {
-            $contentType = $this->getMediaType($request->getHeaderLine('Content-Type'));
-
-            $exception = match (true) {
-                null === $contentType => new BadRequestHttpException('Missing content type for QUERY request'),
-                !$this->isAccepted($contentType, $mediaRanges) => new UnsupportedMediaTypeHttpException(),
-                default => null,
-            };
+            $exception = $this->checkContentType($request->getHeaderLine('Content-Type'), $mediaRanges);
 
             if (null !== $exception) {
                 return $this->createErrorResponse($request, $exception)->withHeader(static::HEADER, $headerValue);
@@ -76,7 +72,7 @@ class AcceptQueryMiddleware implements MiddlewareInterface
     /**
      * Get accepted media ranges from the current route.
      *
-     * @return string[]
+     * @return MediaType[]
      * @throws HttpAppException
      */
     protected function getMediaRanges(): array
@@ -87,66 +83,56 @@ class AcceptQueryMiddleware implements MiddlewareInterface
             return [];
         }
 
-        $mediaRanges = (array)$option;
+        $mediaRanges = [];
 
-        foreach ($mediaRanges as $mediaRange) {
-            if (!is_string($mediaRange) || null === $this->getMediaType($mediaRange)) {
+        foreach ((array)$option as $mediaRange) {
+            if (!is_string($mediaRange) || null === ($parsed = MediaType::parse($mediaRange, allowWildcard: true))) {
                 throw new HttpAppException(
-                    sprintf('Route option "%s" must contain media ranges as strings', static::ROUTE_OPTION)
+                    sprintf(
+                        'Route option "%s" must contain valid media ranges, "%s" given',
+                        static::ROUTE_OPTION,
+                        is_string($mediaRange) ? $mediaRange : get_debug_type($mediaRange),
+                    )
                 );
             }
+
+            $mediaRanges[] = $parsed;
         }
 
-        return array_values($mediaRanges);
+        return $mediaRanges;
     }
 
     /**
-     * Get the lowercase media type, without parameters.
-     *
-     * @param string $value
-     *
-     * @return string|null
-     */
-    protected function getMediaType(string $value): ?string
-    {
-        $mediaType = strtolower(trim(explode(';', $value, 2)[0]));
-
-        if (1 !== preg_match('#^[^/\s]+/[^/\s]+$#', $mediaType)) {
-            return null;
-        }
-
-        return $mediaType;
-    }
-
-    /**
-     * Is content type accepted by one of media ranges?
-     *
-     * Media range parameters are ignored for matching.
+     * Check content type of a QUERY request.
      *
      * @param string $contentType
-     * @param string[] $mediaRanges
+     * @param MediaType[] $mediaRanges
      *
-     * @return bool
+     * @return HttpException|null NULL if accepted
      */
-    protected function isAccepted(string $contentType, array $mediaRanges): bool
+    protected function checkContentType(string $contentType, array $mediaRanges): ?HttpException
     {
-        [$type] = explode('/', $contentType, 2);
+        if ('' === trim($contentType)) {
+            return new BadRequestHttpException('Missing content type for QUERY request');
+        }
+
+        if (null === ($mediaType = MediaType::parse($contentType))) {
+            return new BadRequestHttpException('Invalid content type for QUERY request');
+        }
 
         foreach ($mediaRanges as $mediaRange) {
-            $mediaRange = $this->getMediaType($mediaRange);
-
-            if ('*/*' === $mediaRange || $type . '/*' === $mediaRange || $contentType === $mediaRange) {
-                return true;
+            if ($mediaRange->matches($mediaType)) {
+                return null;
             }
         }
 
-        return false;
+        return new UnsupportedMediaTypeHttpException();
     }
 
     /**
      * Serialize media ranges as a structured field list (RFC 9651) of strings with parameters.
      *
-     * @param string[] $mediaRanges
+     * @param MediaType[] $mediaRanges
      *
      * @return string
      * @throws HttpAppException
@@ -156,23 +142,12 @@ class AcceptQueryMiddleware implements MiddlewareInterface
         $members = [];
 
         foreach ($mediaRanges as $mediaRange) {
-            $parts = explode(';', $mediaRange);
-            $member = $this->serializeString((string)$this->getMediaType(array_shift($parts)));
+            $member = $this->serializeString($mediaRange->getMediaType());
 
-            foreach ($parts as $parameter) {
-                if ('' === ($parameter = trim($parameter))) {
-                    continue;
-                }
-
-                [$name, $value] = array_map(trim(...), explode('=', $parameter, 2)) + [1 => ''];
-                $name = strtolower($name);
-
-                if (1 !== preg_match('/^[a-z*][a-z0-9_\-.*]*$/', $name)) {
+            foreach ($mediaRange->parameters as $name => $value) {
+                // Structured field keys: lcalpha / "*", followed by lcalpha / DIGIT / "_" / "-" / "." / "*"
+                if (1 !== preg_match('/^[a-z*][a-z0-9_\-.*]*$/', (string)$name)) {
                     throw new HttpAppException(sprintf('Invalid media type parameter name "%s"', $name));
-                }
-
-                if (str_starts_with($value, '"') && str_ends_with($value, '"') && strlen($value) >= 2) {
-                    $value = stripslashes(substr($value, 1, -1));
                 }
 
                 $member .= ';' . $name . '=' . $this->serializeString($value);

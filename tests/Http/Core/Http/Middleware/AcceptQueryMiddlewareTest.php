@@ -113,6 +113,31 @@ class AcceptQueryMiddlewareTest extends AbstractTestCase
         $this->assertSame('"application/json"', $response->getHeaderLine('Accept-Query'));
     }
 
+    public static function provideInvalidContentTypes(): array
+    {
+        return [
+            'whitespace only' => [' '],
+            'full wildcard' => ['*/*'],
+            'type wildcard' => ['application/*'],
+            'invalid token' => ['application/(json)'],
+            'missing subtype' => ['application'],
+            'missing parameter value' => ['application/json; charset'],
+            'unclosed quoted string' => ['application/json; profile="broken'],
+            'several values' => ['application/json, text/plain'],
+        ];
+    }
+
+    #[DataProvider('provideInvalidContentTypes')]
+    public function testProcess_invalidContentType(string $contentType): void
+    {
+        $route = new Route('/contacts', options: ['acceptQuery' => ['*/*']]);
+        $response = $this->process($route, contentType: $contentType, handler: $handler);
+
+        $this->assertFalse($handler->isHandled());
+        $this->assertSame(400, $response->getStatusCode());
+        $this->assertSame('"*/*"', $response->getHeaderLine('Accept-Query'));
+    }
+
     public static function provideUnsupportedContentTypes(): array
     {
         return [
@@ -152,6 +177,13 @@ class AcceptQueryMiddlewareTest extends AbstractTestCase
             'quoted parameter' => ['application/sql;Charset="UTF-8"', '"application/sql";charset="UTF-8"'],
             'escaped parameter' => ['text/plain; foo="a\\"b"', '"text/plain";foo="a\\"b"'],
             'leading digit' => ['application/3gpp-ims+xml', '"application/3gpp-ims+xml"'],
+            'embedded semicolon' => [
+                'application/json; profile="urn:example;a=b"',
+                '"application/json";profile="urn:example;a=b"',
+            ],
+            'escaped backslash' => ['text/plain; foo="a\\\\b"', '"text/plain";foo="a\\\\b"'],
+            'quoted pair of a regular char' => ['text/plain; foo="a\\0b"', '"text/plain";foo="a0b"'],
+            'wildcards' => [['*/*', 'text/*'], '"*/*", "text/*"'],
         ];
     }
 
@@ -170,7 +202,13 @@ class AcceptQueryMiddlewareTest extends AbstractTestCase
             'not a string' => [[42]],
             'not a media type' => [['json']],
             'invalid parameter name' => [['application/json; 1charset=utf-8']],
-            'non ascii parameter value' => [['application/json; charset=é']],
+            'non ascii parameter value' => [['application/json; charset="é"']],
+            'invalid token' => [['application/(json)']],
+            'type wildcard only' => [['*/json']],
+            'partial wildcard' => [['application/j*']],
+            'unclosed quoted string' => [['application/json; profile="broken']],
+            'missing parameter value' => [['application/json; charset']],
+            'invalid unquoted value' => [['application/json; profile=a b']],
         ];
     }
 
