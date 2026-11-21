@@ -12,9 +12,12 @@
 
 namespace Berlioz\QueueManager\Tests\Queue;
 
+use AMQPChannel;
 use AMQPConnection;
 use AMQPConnectionException;
+use AMQPQueue as AmqpExtensionQueue;
 use Berlioz\QueueManager\Job\JobDescriptor;
+use Berlioz\QueueManager\Job\JobInterface;
 use Berlioz\QueueManager\Queue\AmqpQueue;
 use Berlioz\QueueManager\Queue\PurgeableQueueInterface;
 use Berlioz\QueueManager\Queue\QueueInterface;
@@ -83,5 +86,72 @@ class AmqpQueueTest extends QueueTestCase
     public function testGetRetryTime(): void
     {
         $this->assertNull(static::newQueue()->getRetryTime());
+    }
+
+    private static function newConnection(): AMQPConnection
+    {
+        $connection = new AMQPConnection([
+            'host' => '127.0.0.1',
+            'port' => 5672,
+            'login' => 'guest',
+            'password' => 'guest',
+            'vhost' => '/',
+        ]);
+        $connection->connect();
+
+        return $connection;
+    }
+
+    private static function deadQueueSize(): int
+    {
+        $queue = new AmqpExtensionQueue(new AMQPChannel(self::$amqpConnection));
+        $queue->setName('default:dead');
+        $queue->setFlags(AMQP_PASSIVE);
+
+        return $queue->declareQueue();
+    }
+
+    /**
+     * Consume a job with another connection, and close it without delete nor release (simulates a worker crash).
+     */
+    private static function consumeAndCrash(): JobInterface
+    {
+        $connection = self::newConnection();
+        $job = (new AmqpQueue(connection: $connection))->consume();
+        $connection->disconnect();
+
+        return $job;
+    }
+
+    public function testConsume_redeliveryCountsAsAttempt(): void
+    {
+        $queue = static::newQueue();
+        $jobId = $queue->push(new JobDescriptor('test', ['foo' => 'value']));
+
+        $this->assertSame(1, self::consumeAndCrash()->getAttempts());
+
+        $job = $queue->consume();
+
+        $this->assertSame($jobId, $job->getId());
+        $this->assertSame(2, $job->getAttempts());
+        $this->assertSame('value', $job->getPayload()->get('foo'));
+
+        $job->delete();
+        $this->assertNull($queue->consume());
+    }
+
+    public function testConsume_redeliveryReachesMaxAttempts(): void
+    {
+        $queue = static::newQueue();
+        $queue->push(new JobDescriptor('test', ['foo' => 'value']));
+        $deadQueueSize = self::deadQueueSize();
+
+        for ($i = 1; $i <= 5; $i++) {
+            $this->assertSame($i, self::consumeAndCrash()->getAttempts());
+        }
+
+        $this->assertNull($queue->consume());
+        $this->assertSame(0, $queue->size());
+        $this->assertSame($deadQueueSize + 1, self::deadQueueSize());
     }
 }
