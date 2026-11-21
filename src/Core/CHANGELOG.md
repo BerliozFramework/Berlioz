@@ -20,6 +20,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - `AbstractApp::terminate()` dispatching a `TerminateEvent`, to run work once the application has done its job (debug activity in the `Terminate` group)
+- Debug response time: `DebugHandler::markResponseSent()`, `Snapshot::getResponseTime()` and `Timeline::getDurationUntil()`
+- Pending debug snapshot marker: `SnapshotLoader::markPending()`, `SnapshotLoader::status()` (`SnapshotStatus` enum) and `berlioz.debug.pending_ttl` configuration (default to `max_execution_time`, or 300 seconds if unlimited)
+
+### Changed
+
+- `SnapshotLoader::save()` removes the pending marker of the snapshot
+- `SnapshotCleaner` also removes expired pending markers (`clean()`), all markers (`clear()`) and the marker of a deleted snapshot (`delete()`)
 
 
 ## [3.3.2] - 2026-10-25

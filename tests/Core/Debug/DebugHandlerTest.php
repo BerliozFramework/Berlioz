@@ -15,6 +15,7 @@ namespace Berlioz\Core\Tests\Debug;
 use Berlioz\Config\Adapter\ArrayAdapter;
 use Berlioz\Core\Core;
 use Berlioz\Core\Debug\DebugHandler;
+use Berlioz\Core\Debug\Snapshot;
 use Berlioz\Core\Debug\Snapshot\Event;
 use Berlioz\Core\Debug\Snapshot\TimelineActivity;
 use Berlioz\Core\Exception\BerliozException;
@@ -22,6 +23,7 @@ use Berlioz\Core\Tests\Directories\FakeDefaultDirectories;
 use Berlioz\Core\Tests\RestoresErrorHandler;
 use DateTime;
 use PHPUnit\Framework\TestCase;
+use ReflectionClass;
 
 class DebugHandlerTest extends TestCase
 {
@@ -320,5 +322,38 @@ class DebugHandlerTest extends TestCase
         $this->assertFalse($debug->isEnabledInConfig($config));
 
         unset($_SERVER['REMOTE_ADDR'], $_SERVER['HTTP_X_FORWARDED_FOR']);
+    }
+
+    public function testMarkResponseSent()
+    {
+        $handler = new DebugHandler();
+        $handler->handle(new Core(new FakeDefaultDirectories()));
+        $handler->setEnabled(true);
+        $handler->newActivity('Foo')->start(10000)->end(30000);
+
+        $this->assertNull($handler->getResponseSentTime());
+        $this->assertNull($handler->getResponseTime());
+        $this->assertNull($handler->getSnapshot()->getResponseTime());
+
+        $handler->markResponseSent(12000);
+
+        $this->assertEquals(12000, $handler->getResponseSentTime());
+        $this->assertEquals(2000, $handler->getResponseTime());
+
+        $snapshot = unserialize(serialize($handler->getSnapshot()));
+        $this->assertEquals(12000, $snapshot->getResponseSentTime());
+        $this->assertEquals(2000, $snapshot->getResponseTime());
+        $this->assertEquals(20000, $snapshot->getTimeline()->getDuration());
+
+        $handler->reset();
+        $this->assertNull($handler->getResponseSentTime());
+    }
+
+    public function testSnapshot_withoutResponseSentTimeProperty()
+    {
+        // Snapshots serialized before the response time existed have the property uninitialized
+        $snapshot = (new ReflectionClass(Snapshot::class))->newInstanceWithoutConstructor();
+
+        $this->assertNull($snapshot->getResponseSentTime());
     }
 }

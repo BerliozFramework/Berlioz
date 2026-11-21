@@ -5,6 +5,7 @@
     "debug": {
       "enable": false,
       "ip": [],
+      "pending_ttl": null,
       "gc": {
         "probability": 1,
         "divisor": 100,

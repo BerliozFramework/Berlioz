@@ -58,10 +58,55 @@ class SnapshotCleaner
     }
 
     /**
+     * List pending snapshot markers.
+     *
+     * @return FileAttributes[]
+     * @throws BerliozException
+     */
+    public function listPendings(): array
+    {
+        try {
+            return $this->filesystem
+                ->listContents('debug://')
+                ->filter(fn(StorageAttributes $attr): bool => $attr->isFile())
+                ->filter(fn(StorageAttributes $attr): bool => str_ends_with($attr->path(), '.pending'))
+                ->toArray();
+        } catch (FilesystemException $exception) {
+            throw new BerliozException('Filesystem error', 0, $exception);
+        }
+    }
+
+    /**
+     * Clean expired (or invalid) pending snapshot markers.
+     *
+     * @return int Number of deleted markers
+     * @throws BerliozException
+     */
+    public function cleanPendings(): int
+    {
+        $toDelete = [];
+
+        try {
+            foreach ($this->listPendings() as $pending) {
+                $data = json_decode($this->filesystem->read($pending->path()), true);
+
+                if (!is_array($data) || (float)($data['expire'] ?? 0) < microtime(true)) {
+                    $toDelete[] = $pending;
+                }
+            }
+        } catch (FilesystemException $exception) {
+            throw new BerliozException('Filesystem error', 0, $exception);
+        }
+
+        return $this->deleteFiles($toDelete);
+    }
+
+    /**
      * Clean snapshots according to retention policy.
      *
      * Both rules are applied: snapshots older than `$maxAge` days are removed,
      * then only the `$maxFiles` most recent remaining snapshots are kept.
+     * Expired pending markers are always removed.
      *
      * @param int|null $maxAge Maximum age in days (null to disable)
      * @param int|null $maxFiles Maximum number of files to keep (null to disable)
@@ -71,6 +116,8 @@ class SnapshotCleaner
      */
     public function clean(?int $maxAge = null, ?int $maxFiles = null): int
     {
+        $this->cleanPendings();
+
         if (null === $maxAge && null === $maxFiles) {
             return 0;
         }
@@ -113,6 +160,8 @@ class SnapshotCleaner
      */
     public function clear(): int
     {
+        $this->deleteFiles($this->listPendings());
+
         return $this->deleteFiles($this->listSnapshots());
     }
 
@@ -127,6 +176,10 @@ class SnapshotCleaner
     {
         try {
             $this->filesystem->delete(sprintf('debug://%s.debug', basename($uniqid, '.debug')));
+
+            if ($this->filesystem->fileExists($pending = sprintf('debug://%s.pending', basename($uniqid, '.debug')))) {
+                $this->filesystem->delete($pending);
+            }
         } catch (FilesystemException $exception) {
             throw new BerliozException('Filesystem error', 0, $exception);
         }

@@ -162,6 +162,22 @@ class Timeline implements Countable
     }
 
     /**
+     * Get duration from the first activity until the given time.
+     *
+     * @param float|null $microTime
+     *
+     * @return float|null
+     */
+    public function getDurationUntil(?float $microTime): ?float
+    {
+        if (null === $microTime || null === ($firstTime = $this->getFirstTime())) {
+            return null;
+        }
+
+        return max(0, $microTime - $firstTime);
+    }
+
+    /**
      * Get memory usages.
      *
      * @param string|null $group Group name, null for all

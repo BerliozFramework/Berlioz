@@ -16,6 +16,8 @@ namespace Berlioz\Http\Core\Tests\App;
 
 use Berlioz\Config\Adapter\ArrayAdapter;
 use Berlioz\Core\Core;
+use Berlioz\Core\Debug\SnapshotLoader;
+use Berlioz\Core\Debug\SnapshotStatus;
 use Berlioz\Core\Event\TerminateEvent;
 use Berlioz\Core\Tests\RestoresErrorHandler;
 use Berlioz\Http\Core\App\HttpApp;
@@ -593,6 +595,41 @@ class HttpAppTest extends TestCase
         $app->print(new Response('FOO'));
 
         $this->assertSame(0, $GLOBALS['berlioz_test_fastcgi_finish_request'] ?? 0);
+    }
+
+    public function testPrint_debugMarksResponseSent(): void
+    {
+        $core = new Core(new FakeDefaultDirectories(), false);
+        $app = new HttpApp($core);
+        $app->getDebug()->setEnabled(true);
+        $loader = new SnapshotLoader($core->getFilesystem(), $core->getConfig());
+
+        $this->expectOutputString('FOO');
+        $app->print(new Response('FOO'));
+
+        $this->assertNotNull($app->getDebug()->getResponseSentTime());
+        $this->assertSame(SnapshotStatus::PENDING, $loader->status($app->getDebug()->getUniqid()));
+        $this->assertSame(
+            $app->getDebug()->getResponseTime(),
+            $loader->getPending($app->getDebug()->getUniqid())['responseTime'],
+        );
+
+        // Final snapshot save replaces the marker
+        $loader->save($app->getDebug()->getSnapshot());
+        $this->assertSame(SnapshotStatus::READY, $loader->status($app->getDebug()->getUniqid()));
+    }
+
+    public function testPrint_debugDisabledNoMarker(): void
+    {
+        $core = new Core(new FakeDefaultDirectories(), false);
+        $app = new HttpApp($core);
+        $loader = new SnapshotLoader($core->getFilesystem(), $core->getConfig());
+
+        $this->expectOutputString('FOO');
+        $app->print(new Response('FOO'));
+
+        $this->assertNull($app->getDebug()->getResponseSentTime());
+        $this->assertNull($loader->getPending($app->getDebug()->getUniqid()));
     }
 
     public function testTerminate(): void
