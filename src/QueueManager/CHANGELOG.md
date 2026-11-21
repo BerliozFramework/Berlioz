@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - `RedisQueue` no longer loses a job when the worker dies during its processing: consumed jobs are kept in a `<name>:processing` set and, if neither deleted nor released within `retryTime` (new constructor parameter, 30 seconds by default like the other queues), pushed back to the queue as a failed attempt (or moved to the `<name>:dead` list once `maxAttempts` is reached)
+- `AmqpQueue` counts a message redelivered by the broker (consumer died without deleting or releasing the job) as a failed attempt: it is published again with incremented attempts, or to the dead queue once `maxAttempts` is reached, instead of being redelivered indefinitely
 
 ## [3.3.2] - 2026-10-25
 

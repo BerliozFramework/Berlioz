@@ -16,6 +16,7 @@ namespace Berlioz\QueueManager\Queue;
 
 use AMQPChannel;
 use AMQPConnection;
+use AMQPEnvelope;
 use AMQPExchange;
 use Berlioz\QueueManager\Exception\JobException;
 use Berlioz\QueueManager\Exception\QueueException;
@@ -189,14 +190,19 @@ readonly class AmqpQueue extends AbstractQueue implements PurgeableQueueInterfac
             // Rate limit reached? Wait...
             $this->getRateLimiter()->wait();
 
-            $envelope = $this->queue->get(AMQP_NOPARAM);
-            if (null === $envelope) {
-                return null;
+            while (null !== ($envelope = $this->queue->get(AMQP_NOPARAM))) {
+                // Redelivered by the broker: the consumer died without delete or release of the job
+                if (true === $envelope->isRedelivery()) {
+                    $this->recoverRedelivered($envelope);
+                    continue;
+                }
+
+                $this->getRateLimiter()->pop();
+
+                return new AmqpJob($envelope, $this);
             }
 
-            $this->getRateLimiter()->pop();
-
-            return new AmqpJob($envelope, $this);
+            return null;
         } catch (Exception $e) {
             throw new QueueException('Failed to consume a job.', previous: $e);
         }
@@ -226,32 +232,73 @@ readonly class AmqpQueue extends AbstractQueue implements PurgeableQueueInterfac
         int $attempts = 0,
     ): string {
         try {
-            $delaySeconds = $this->getDelayInSeconds($this->getAvailableDateTime($delay));
-            $queueDelay = $attempts >= $this->maxAttempts ? false : $delaySeconds;
-            $priority = max(0, $this->maxAttempts - $attempts);
-
-            $this
-                ->getExchange($queueDelay)
-                ->publish(
-                    message: json_encode($payload),
-                    routingKey: $this->getQueueName($queueDelay),
-                    headers: [
-                        'content_type' => 'application/json',
-                        'delivery_mode' => 2,
-                        'headers' => [
-                            'jobId' => $jobId = uniqid(more_entropy: true),
-                            'attempts' => $attempts,
-                            'delay' => $delaySeconds,
-                        ],
-                        'priority' => $priority,
-                        'timestamp' => time(),
-                    ],
-                );
-
-            return $jobId;
+            return $this->publish(
+                message: json_encode($payload),
+                delaySeconds: $this->getDelayInSeconds($this->getAvailableDateTime($delay)),
+                attempts: $attempts,
+            );
         } catch (Exception $e) {
             throw new QueueException('Failed to push a job.', previous: $e);
         }
+    }
+
+    /**
+     * Publish message.
+     *
+     * @param string $message
+     * @param int $delaySeconds
+     * @param int $attempts
+     * @param string|null $jobId
+     *
+     * @return string Job id
+     * @throws Exception
+     */
+    private function publish(string $message, int $delaySeconds, int $attempts, ?string $jobId = null): string
+    {
+        $queueDelay = $attempts >= $this->maxAttempts ? false : $delaySeconds;
+        $priority = max(0, $this->maxAttempts - $attempts);
+
+        $this
+            ->getExchange($queueDelay)
+            ->publish(
+                message: $message,
+                routingKey: $this->getQueueName($queueDelay),
+                headers: [
+                    'content_type' => 'application/json',
+                    'delivery_mode' => 2,
+                    'headers' => [
+                        'jobId' => $jobId ??= uniqid(more_entropy: true),
+                        'attempts' => $attempts,
+                        'delay' => $delaySeconds,
+                    ],
+                    'priority' => $priority,
+                    'timestamp' => time(),
+                ],
+            );
+
+        return $jobId;
+    }
+
+    /**
+     * Recover a message redelivered by the broker.
+     *
+     * The previous delivery is counted as a failed attempt: the message is published again with incremented
+     * attempts (or to the dead queue if max attempts is reached), and the redelivered message is acknowledged.
+     *
+     * @param AMQPEnvelope $envelope
+     *
+     * @return void
+     * @throws Exception
+     */
+    private function recoverRedelivered(AMQPEnvelope $envelope): void
+    {
+        $this->publish(
+            message: $envelope->getBody(),
+            delaySeconds: 0,
+            attempts: ((int)($envelope->getHeader('attempts') ?: 0)) + 1,
+            jobId: $envelope->getHeader('jobId') ?: null,
+        );
+        $this->queue->ack($envelope->getDeliveryTag());
     }
 
     /**
