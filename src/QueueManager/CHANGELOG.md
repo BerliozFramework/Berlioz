@@ -14,10 +14,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Optional `maxAttempts` constructor parameter on `AwsSqsQueue`; if not given, `AwsSqsQueue::getMaxAttempts()` reads the `maxReceiveCount` of the queue redrive policy
 - `QueueInterface::getRetryTime()`, time after which a consumed job, neither deleted nor released, becomes available again (`null` for queues without such a delay: AMQP, Redis, null queue and queue manager); custom `QueueInterface` implementations must implement it
 - `RedisQueue::getMaxAttempts()`
+- `RedisQueue::getRetryTime()` and `RedisQueue::recoverProcessingJobs()`
+- `RedisJob::getRedisMessage()`
 
 ### Changed
 
 - `RedisQueue` stops retrying a job after `maxAttempts` (new constructor parameter, 5 by default like the other queues): the job is moved to the `<name>:dead` list instead of being released again
+
+### Fixed
+
+- `RedisQueue` no longer loses a job when the worker dies during its processing: consumed jobs are kept in a `<name>:processing` set and, if neither deleted nor released within `retryTime` (new constructor parameter, 30 seconds by default like the other queues), pushed back to the queue as a failed attempt (or moved to the `<name>:dead` list once `maxAttempts` is reached)
 
 ## [3.3.2] - 2026-10-25
 

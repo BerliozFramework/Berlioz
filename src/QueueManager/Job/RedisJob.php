@@ -24,6 +24,7 @@ class RedisJob extends Job
         int $attempts,
         PayloadInterface|array $payload,
         protected readonly RedisQueue $queue,
+        protected readonly ?string $redisMessage = null,
     ) {
         parent::__construct($id, $name, $attempts, $payload);
     }
@@ -34,6 +35,16 @@ class RedisJob extends Job
     public function getQueue(): RedisQueue
     {
         return $this->queue;
+    }
+
+    /**
+     * Get Redis message, as consumed from the queue.
+     *
+     * @return string|null
+     */
+    public function getRedisMessage(): ?string
+    {
+        return $this->redisMessage;
     }
 
     /**
