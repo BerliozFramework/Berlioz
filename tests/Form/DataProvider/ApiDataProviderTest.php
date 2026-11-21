@@ -139,11 +139,27 @@ class ApiDataProviderTest extends TestCase
         );
     }
 
-    public function testHandle_ignoredMethod(): void
+    public static function provideMethods(): array
+    {
+        return [
+            'DELETE' => ['DELETE', true],
+            'PATCH' => ['PATCH', true],
+            'POST' => ['POST', true],
+            'PUT' => ['PUT', true],
+            'GET' => ['GET', false],
+            'HEAD' => ['HEAD', false],
+            'OPTIONS' => ['OPTIONS', false],
+        ];
+    }
+
+    #[DataProvider('provideMethods')]
+    public function testHandle_methods(string $method, bool $handled): void
     {
         $this->createProvider($provider, strictJson: true);
 
-        $this->assertFalse($provider->handle($this->getRequest('{}', 'GET'), new Form('foo')));
+        $data = $provider->handle($this->getRequest('{"name": "foo"}', $method), new Form('foo'));
+
+        $this->assertSame($handled ? ['name' => 'foo'] : false, $data);
     }
 
     public function testFormHandle_strictJsonWithGroup(): void
