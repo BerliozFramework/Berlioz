@@ -48,7 +48,11 @@ class JsonParser implements ParserInterface
                 flags: JSON_THROW_ON_ERROR,
             );
         } catch (JsonException $exception) {
-            throw new MalformedBodyException('Cannot parse JSON contents', previous: $exception);
+            throw new MalformedBodyException(
+                'Cannot parse JSON contents',
+                previous: $exception,
+                httpMessage: $message,
+            );
         }
     }
 }

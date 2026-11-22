@@ -27,9 +27,12 @@ use Berlioz\Http\Core\Exception\Http\NotFoundHttpException;
 use Berlioz\Http\Core\Http\Handler\Error\ErrorHandler;
 use Berlioz\Http\Core\TestProject\FakeDefaultDirectories;
 use Berlioz\Http\Message\Exception\MalformedBodyException;
+use Berlioz\Http\Message\Request;
+use Berlioz\Http\Message\Response;
 use Berlioz\Http\Message\ServerRequest;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\Attributes\DataProvider;
+use Psr\Http\Message\MessageInterface;
 use RuntimeException;
 use Throwable;
 
@@ -100,7 +103,10 @@ class ErrorHandlerTest extends TestCase
         $app->getCore()->getConfig()->addConfig(
             new ArrayAdapter(['berlioz' => ['http' => ['errors' => ['400' => FakeErrorHandler::class]]]])
         );
-        $exception = new MalformedBodyException('Cannot parse JSON contents');
+        $exception = new MalformedBodyException(
+            'Cannot parse JSON contents',
+            httpMessage: new ServerRequest('POST', '/'),
+        );
 
         (new ErrorHandler($app))->handle(new ServerRequest('POST', '/'), $exception);
 
@@ -113,12 +119,34 @@ class ErrorHandlerTest extends TestCase
     public function testHandle_malformedBodyResponse(): void
     {
         $app = $this->getApp();
-        $exception = new MalformedBodyException('Cannot parse JSON contents');
+        $exception = new MalformedBodyException(
+            'Cannot parse JSON contents',
+            httpMessage: new ServerRequest('POST', '/'),
+        );
 
         $response = (new ErrorHandler($app))->handle(new ServerRequest('POST', '/'), $exception);
 
         $this->assertSame(400, $response->getStatusCode());
         $this->assertSame('', file_get_contents($this->errorLog));
+    }
+
+    public static function provideMalformedNonRequestBodies(): iterable
+    {
+        yield 'without message' => [null];
+        yield 'response' => [new Response('{bad', 200, ['Content-Type' => 'application/json'])];
+        yield 'client request' => [new Request('POST', 'https://example.com', body: '{bad')];
+    }
+
+    #[DataProvider('provideMalformedNonRequestBodies')]
+    public function testHandle_malformedNonRequestBodyIsServerError(?MessageInterface $httpMessage): void
+    {
+        $app = $this->getApp();
+        $exception = new MalformedBodyException('Cannot parse JSON contents', httpMessage: $httpMessage);
+
+        $response = (new ErrorHandler($app))->handle(new ServerRequest('GET', '/'), $exception);
+
+        $this->assertSame(500, $response->getStatusCode());
+        $this->assertSame(1, substr_count(file_get_contents($this->errorLog), (string)$exception));
     }
 
     public function testHandle_logsErrorHandlerFailures(): void

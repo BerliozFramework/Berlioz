@@ -440,11 +440,20 @@ abstract class Message implements MessageInterface, Stringable
 
         $parsedBody = null;
         if (isset(static::$bodyParser[$contentType])) {
-            $parsedBody = call_user_func([static::$bodyParser[$contentType], 'parseMessageBody'], $this);
+            try {
+                $parsedBody = call_user_func([static::$bodyParser[$contentType], 'parseMessageBody'], $this);
+            } catch (MalformedBodyException $exception) {
+                // Attach the message for custom parsers that do not set it
+                $exception->getHttpMessage() ?? $exception->setHttpMessage($this);
+                throw $exception;
+            }
         }
 
         if (null !== $parsedBody && !is_array($parsedBody) && !is_object($parsedBody)) {
-            throw new MalformedBodyException('Parsed body must be an array or an object or must be null.');
+            throw new MalformedBodyException(
+                'Parsed body must be an array or an object or must be null.',
+                httpMessage: $this,
+            );
         }
 
         $this->parsedBodyResolved = true;

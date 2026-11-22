@@ -69,7 +69,7 @@ class JsonParserTest extends TestCase
         JsonParser::parseMessageBody($response);
     }
 
-    public function testParseMessageBodyRejectsInvalidJson_previousException()
+    public function testParseMessageBodyRejectsInvalidJson_exceptionContext()
     {
         $response = new Response('{invalid', 200, ['Content-Type' => 'application/json']);
 
@@ -78,6 +78,7 @@ class JsonParserTest extends TestCase
             $this->fail('Expected exception not thrown');
         } catch (MalformedBodyException $exception) {
             $this->assertInstanceOf(JsonException::class, $exception->getPrevious());
+            $this->assertSame($response, $exception->getHttpMessage());
         }
     }
 }

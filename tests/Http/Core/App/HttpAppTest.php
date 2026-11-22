@@ -279,6 +279,22 @@ class HttpAppTest extends TestCase
         $this->assertSame(400, $response->getStatusCode());
     }
 
+    public function testHandle_malformedUpstreamBodyIsServerError(): void
+    {
+        $app = new HttpApp(new Core(new FakeDefaultDirectories(), false));
+        $previousErrorLog = ini_set('error_log', $errorLog = tempnam(sys_get_temp_dir(), 'berlioz-errors-'));
+
+        try {
+            $response = $app->handle(new ServerRequest('GET', '/controller1/upstream-body'));
+            $this->assertStringContainsString('Cannot parse JSON contents', file_get_contents($errorLog));
+        } finally {
+            ini_set('error_log', $previousErrorLog);
+            unlink($errorLog);
+        }
+
+        $this->assertSame(500, $response->getStatusCode());
+    }
+
     public static function provideRequestsWithoutRewriteDeprecation(): array
     {
         return [

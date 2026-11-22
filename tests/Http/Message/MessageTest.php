@@ -23,6 +23,7 @@ use Berlioz\Http\Message\Exception\MalformedBodyException;
 use Berlioz\Http\Message\Message;
 use Berlioz\Http\Message\Stream;
 use Berlioz\Http\Message\Stream\MemoryStream;
+use Berlioz\Http\Message\Tests\Parser\FakeMalformedParser;
 use Berlioz\Http\Message\Tests\Parser\FakeParser;
 use InvalidArgumentException;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -256,9 +257,28 @@ class MessageTest extends TestCase
         $message = $message->withBody($stream)
             ->withHeader('Content-Type', 'application/json');
 
-        $this->expectException(MalformedBodyException::class);
+        try {
+            $message->getParsedBody();
+            $this->fail('Expected exception not thrown');
+        } catch (MalformedBodyException $exception) {
+            $this->assertSame($message, $exception->getHttpMessage());
+        }
+    }
 
-        $message->getParsedBody();
+    public function testGetParsedBody_customParserMalformedBody()
+    {
+        $message = $this->newMessageObj();
+        $message::addBodyParser('application/x-fake-malformed', FakeMalformedParser::class);
+        $message = $message->withBody(new MemoryStream('foo'))
+            ->withHeader('Content-Type', 'application/x-fake-malformed');
+
+        try {
+            $message->getParsedBody();
+            $this->fail('Expected exception not thrown');
+        } catch (MalformedBodyException $exception) {
+            $this->assertSame('Fake malformed body', $exception->getMessage());
+            $this->assertSame($message, $exception->getHttpMessage());
+        }
     }
 
     public function testGetParsedBody_nullJsonBody()

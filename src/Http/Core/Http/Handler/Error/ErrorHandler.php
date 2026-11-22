@@ -39,8 +39,11 @@ class ErrorHandler implements ErrorHandlerInterface
      */
     public function handle(ServerRequestInterface $request, ?Throwable $throwable = null): ResponseInterface
     {
-        // An unusable request body is a client error
-        if ($throwable instanceof MalformedBodyException) {
+        // An unusable request body is a client error; other bodies (e.g. upstream responses) stay server errors
+        if (
+            $throwable instanceof MalformedBodyException
+            && $throwable->getHttpMessage() instanceof ServerRequestInterface
+        ) {
             $throwable = new BadRequestHttpException(previous: $throwable);
         }
 
