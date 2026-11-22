@@ -74,15 +74,15 @@ class CommandHandler
                 )
             );
 
-            /** @var CommandInterface $commandObj */
-            $commandObj = $this->core->getContainer()->get($command->getClass());
-
             // Ask help
             if (true === $this->console->getArgumentsManager()->defined('help', $argv)) {
                 $usage = new CommandUsage($command);
                 $usage->output($this->console);
                 return 0;
             }
+
+            /** @var CommandInterface $commandObj */
+            $commandObj = $this->core->getContainer()->get($command->getClass());
 
             $this->addArguments($command);
             $this->console->getArgumentsManager()->parse($argv);
