@@ -19,6 +19,7 @@ use Berlioz\Cli\Core\Console\Console;
 use Berlioz\Cli\Core\Tests\FakeDefaultDirectories;
 use Berlioz\Core\Core;
 use Berlioz\Core\Tests\RestoresErrorHandler;
+use Berlioz\ServiceContainer\Exception\ContainerException;
 use PHPUnit\Framework\TestCase;
 
 class CommandHandlerTest extends TestCase
@@ -87,6 +88,46 @@ class CommandHandlerTest extends TestCase
         $this->assertSame(0, $result);
         $this->assertStringContainsString('Usage:', $console->output->get('buffer')->get());
         $this->assertStringContainsString('  foo', $console->output->get('buffer')->get());
+    }
+
+    public function testHandle_helpCommandWithoutInstantiation()
+    {
+        FakeUnresolvableCommand::$instantiated = false;
+        $handler = new CommandHandler(
+            $console = new Console(),
+            $manager = new CommandManager(),
+            new Core(new FakeDefaultDirectories(), cache: false)
+        );
+        $console->output->defaultTo('buffer');
+        $console->output->add('error', $console->output->get('buffer'));
+        $manager->addCommand(new CommandDeclaration('foo', FakeUnresolvableCommand::class));
+        $result = $handler->handle(['exec', 'foo', '--help']);
+
+        $this->assertSame(0, $result);
+        $this->assertFalse(FakeUnresolvableCommand::$instantiated);
+        $this->assertStringContainsString('Usage:', $console->output->get('buffer')->get());
+        $this->assertStringNotContainsString('Exception', $console->output->get('buffer')->get());
+    }
+
+    public function testHandle_unresolvableCommand()
+    {
+        FakeUnresolvableCommand::$instantiated = false;
+        $handler = new CommandHandler(
+            $console = new Console(),
+            $manager = new CommandManager(),
+            new Core(new FakeDefaultDirectories(), cache: false)
+        );
+        $console->output->defaultTo('buffer');
+        $console->output->add('error', $console->output->get('buffer'));
+        $manager->addCommand(new CommandDeclaration('foo', FakeUnresolvableCommand::class));
+        $result = $handler->handle(['exec', 'foo']);
+
+        $this->assertSame(1, $result);
+        $this->assertTrue(FakeUnresolvableCommand::$instantiated);
+        $this->assertStringContainsString(
+            '[' . ContainerException::class . ']',
+            $console->output->get('buffer')->get()
+        );
     }
 
     public function testHandle_withPositionalArgument()

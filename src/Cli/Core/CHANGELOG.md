@@ -15,6 +15,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `berlioz` entry point calls `CliApp::terminate()` after the command, even when it fails
 
+### Fixed
+
+- `--help` displays the command usage without instantiating the command and its dependencies
+
 ## [3.3.2] - 2026-10-25
 
 _No changes in this release._
