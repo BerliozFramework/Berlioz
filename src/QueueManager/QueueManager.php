@@ -59,6 +59,61 @@ readonly class QueueManager implements QueueInterface, PurgeableQueueInterface, 
     }
 
     /**
+     * Get default queue.
+     *
+     * Queue used to push jobs when no queue name is given.
+     *
+     * @return QueueInterface
+     */
+    public function getDefaultQueue(): QueueInterface
+    {
+        return $this->queue;
+    }
+
+    /**
+     * Has queue?
+     *
+     * @param string $name
+     *
+     * @return bool
+     */
+    public function hasQueue(string $name): bool
+    {
+        return null !== $this->findQueue($name);
+    }
+
+    /**
+     * Get queue.
+     *
+     * @param string $name
+     *
+     * @return QueueInterface
+     * @throws QueueManagerException
+     */
+    public function getQueue(string $name): QueueInterface
+    {
+        return $this->findQueue($name) ?? throw QueueManagerException::queueNotFound($name);
+    }
+
+    /**
+     * Find queue by name.
+     *
+     * @param string $name
+     *
+     * @return QueueInterface|null
+     */
+    private function findQueue(string $name): ?QueueInterface
+    {
+        foreach ($this->getQueues() as $queue) {
+            if ($queue->getName() === $name) {
+                return $queue;
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * Filter.
      *
      * @param string ...$queue
@@ -207,13 +262,9 @@ readonly class QueueManager implements QueueInterface, PurgeableQueueInterface, 
             return $this->queue->push($jobDescriptor, $delay);
         }
 
-        foreach ($this->getQueues() as $queueObj) {
-            if ($queueObj->getName() === $queue) {
-                return $queueObj->push($jobDescriptor, $delay);
-            }
-        }
+        $queueObj = $this->findQueue($queue) ?? throw new QueueException('No queue found to push job');
 
-        throw new QueueException('No queue found to push job');
+        return $queueObj->push($jobDescriptor, $delay);
     }
 
     /**
@@ -229,13 +280,9 @@ readonly class QueueManager implements QueueInterface, PurgeableQueueInterface, 
             return $this->queue->pushRaw($payload, $delay);
         }
 
-        foreach ($this->getQueues() as $queueObj) {
-            if ($queueObj->getName() === $queue) {
-                return $queueObj->pushRaw($payload, $delay);
-            }
-        }
+        $queueObj = $this->findQueue($queue) ?? throw new QueueException('No queue found to push job');
 
-        throw new QueueException('No queue found to push job');
+        return $queueObj->pushRaw($payload, $delay);
     }
 
     /**

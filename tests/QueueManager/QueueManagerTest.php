@@ -90,6 +90,56 @@ class QueueManagerTest extends TestCase
         $this->queueManager->filter('NonExistentQueue');
     }
 
+    public function testGetDefaultQueue(): void
+    {
+        $this->assertSame($this->primaryQueueMock, $this->queueManager->getDefaultQueue());
+    }
+
+    public function testHasQueue(): void
+    {
+        $this->assertTrue($this->queueManager->hasQueue('PrimaryQueue'));
+        $this->assertTrue($this->queueManager->hasQueue('SecondaryQueue'));
+        $this->assertFalse($this->queueManager->hasQueue('NonExistentQueue'));
+        $this->assertFalse($this->queueManager->hasQueue('Secondary*'));
+    }
+
+    public function testGetQueue(): void
+    {
+        $this->assertSame($this->primaryQueueMock, $this->queueManager->getQueue('PrimaryQueue'));
+        $this->assertSame($this->secondaryQueueMock, $this->queueManager->getQueue('SecondaryQueue'));
+    }
+
+    public function testGetQueue_returnsQueueSettings(): void
+    {
+        $queue = $this->createMock(QueueInterface::class);
+        $queue->method('getName')->willReturn('Settings');
+        $queue->method('getMaxAttempts')->willReturn(3);
+        $queue->method('getRetryTime')->willReturn(60);
+
+        $queueManager = new QueueManager($this->primaryQueueMock, $queue);
+
+        $this->assertSame(3, $queueManager->getQueue('Settings')->getMaxAttempts());
+        $this->assertSame(60, $queueManager->getQueue('Settings')->getRetryTime());
+    }
+
+    public function testGetQueue_firstMatchWins(): void
+    {
+        $duplicateQueue = $this->createMock(QueueInterface::class);
+        $duplicateQueue->method('getName')->willReturn('SecondaryQueue');
+
+        $queueManager = new QueueManager($this->primaryQueueMock, $this->secondaryQueueMock, $duplicateQueue);
+
+        $this->assertSame($this->secondaryQueueMock, $queueManager->getQueue('SecondaryQueue'));
+    }
+
+    public function testGetQueueThrowsExceptionIfQueueNotFound(): void
+    {
+        $this->expectException(QueueManagerException::class);
+        $this->expectExceptionMessage('Queue `Secondary*` not found');
+
+        $this->queueManager->getQueue('Secondary*');
+    }
+
     public function testStats(): void
     {
         $this->primaryQueueMock->method('size')->willReturn(5);
