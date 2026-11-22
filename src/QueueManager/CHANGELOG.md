@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `RedisJob::getRedisMessage()`
 - `Worker::drain()` to process jobs until the queue is empty (optional time limit), without sleep, limits nor signal handlers
 - `Worker::processJob()` extracted from `Worker::run()` (execute, then delete or release on failure)
+- `QueueManager::getQueue()`, `QueueManager::hasQueue()` and `QueueManager::getDefaultQueue()` to get a queue (and its settings) by name
 
 ### Changed
 
