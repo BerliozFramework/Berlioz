@@ -21,10 +21,12 @@ use Throwable;
 class FakeErrorHandler implements ErrorHandlerInterface
 {
     public static bool $handled = false;
+    public static ?Throwable $throwable = null;
 
     public function handle(ServerRequestInterface $request, ?Throwable $throwable = null): ResponseInterface
     {
         static::$handled = true;
+        static::$throwable = $throwable;
 
         return new Response();
     }
