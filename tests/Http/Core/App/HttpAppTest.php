@@ -33,6 +33,7 @@ use Berlioz\Http\Core\TestProject\Http\Middleware\FooMiddleware;
 use Berlioz\Http\Core\TestProject\Http\Middleware\QuxMiddleware;
 use Berlioz\Http\Message\Response;
 use Berlioz\Http\Message\ServerRequest;
+use Berlioz\Http\Message\Stream;
 use Berlioz\Router\ForwardedPrefixResolver;
 use Berlioz\Router\Route;
 use Berlioz\Router\Router;
@@ -243,6 +244,55 @@ class HttpAppTest extends TestCase
         $this->assertEquals('ControllerTwo::methodOne', (string)$response->getBody());
         $this->assertEmpty($serverRequest->getAttributes());
         $this->assertEquals(['attribute1' => 'foo'], $app->getRequest()->getAttributes());
+    }
+
+    public static function provideMalformedJsonBodies(): array
+    {
+        return [
+            'invalid JSON' => ['{bad'],
+            'scalar root' => ['"text"'],
+        ];
+    }
+
+    #[DataProvider('provideMalformedJsonBodies')]
+    public function testHandle_malformedJsonBodyIsBadRequest(string $body): void
+    {
+        $app = new HttpApp(new Core(new FakeDefaultDirectories(), false));
+        $stream = new Stream();
+        $stream->write($body);
+        $request = new ServerRequest(
+            'POST',
+            '/controller1/parsed-body',
+            ['Content-Type' => 'application/json'],
+            body: $stream,
+        );
+        $previousErrorLog = ini_set('error_log', $errorLog = tempnam(sys_get_temp_dir(), 'berlioz-errors-'));
+
+        try {
+            $response = $app->handle($request);
+            $this->assertSame('', file_get_contents($errorLog));
+        } finally {
+            ini_set('error_log', $previousErrorLog);
+            unlink($errorLog);
+        }
+
+        $this->assertSame(400, $response->getStatusCode());
+    }
+
+    public function testHandle_malformedUpstreamBodyIsServerError(): void
+    {
+        $app = new HttpApp(new Core(new FakeDefaultDirectories(), false));
+        $previousErrorLog = ini_set('error_log', $errorLog = tempnam(sys_get_temp_dir(), 'berlioz-errors-'));
+
+        try {
+            $response = $app->handle(new ServerRequest('GET', '/controller1/upstream-body'));
+            $this->assertStringContainsString('Cannot parse JSON contents', file_get_contents($errorLog));
+        } finally {
+            ini_set('error_log', $previousErrorLog);
+            unlink($errorLog);
+        }
+
+        $this->assertSame(500, $response->getStatusCode());
     }
 
     public static function provideRequestsWithoutRewriteDeprecation(): array

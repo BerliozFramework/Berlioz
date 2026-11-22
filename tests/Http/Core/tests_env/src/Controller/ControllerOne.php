@@ -14,7 +14,9 @@ namespace Berlioz\Http\Core\TestProject\Controller;
 
 use Berlioz\Http\Core\Attribute\Route;
 use Berlioz\Http\Core\Controller\AbstractController;
+use Berlioz\Http\Message\Response;
 use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\ServerRequestInterface;
 
 class ControllerOne extends AbstractController
 {
@@ -28,5 +30,19 @@ class ControllerOne extends AbstractController
     public function methodTwo(): ResponseInterface
     {
         return $this->response();
+    }
+
+    #[Route('/controller1/parsed-body', method: 'POST')]
+    public function parsedBody(ServerRequestInterface $request): mixed
+    {
+        return $request->getParsedBody();
+    }
+
+    #[Route('/controller1/upstream-body')]
+    public function upstreamBody(): mixed
+    {
+        $upstream = new Response('{"items":[', 200, ['Content-Type' => 'application/json']);
+
+        return ['data' => $upstream->getParsedBody()];
     }
 }

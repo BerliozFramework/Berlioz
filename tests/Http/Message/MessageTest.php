@@ -19,9 +19,11 @@
 
 namespace Berlioz\Http\Message\Tests;
 
+use Berlioz\Http\Message\Exception\MalformedBodyException;
 use Berlioz\Http\Message\Message;
 use Berlioz\Http\Message\Stream;
 use Berlioz\Http\Message\Stream\MemoryStream;
+use Berlioz\Http\Message\Tests\Parser\FakeMalformedParser;
 use Berlioz\Http\Message\Tests\Parser\FakeParser;
 use InvalidArgumentException;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -231,6 +233,60 @@ class MessageTest extends TestCase
     {
         $message = $this->newMessageObj();
         $message = $message->withBody(new Stream())
+            ->withHeader('Content-Type', 'application/json');
+
+        $this->assertNull($message->getParsedBody());
+    }
+
+    public static function provideMalformedJsonBodies(): array
+    {
+        return [
+            'invalid JSON' => ['{bad'],
+            'string root' => ['"text"'],
+            'integer root' => ['123'],
+            'boolean root' => ['true'],
+        ];
+    }
+
+    #[DataProvider('provideMalformedJsonBodies')]
+    public function testGetParsedBody_malformedJsonBody(string $body)
+    {
+        $message = $this->newMessageObj();
+        $stream = new Stream();
+        $stream->write($body);
+        $message = $message->withBody($stream)
+            ->withHeader('Content-Type', 'application/json');
+
+        try {
+            $message->getParsedBody();
+            $this->fail('Expected exception not thrown');
+        } catch (MalformedBodyException $exception) {
+            $this->assertSame($message, $exception->getHttpMessage());
+        }
+    }
+
+    public function testGetParsedBody_customParserMalformedBody()
+    {
+        $message = $this->newMessageObj();
+        $message::addBodyParser('application/x-fake-malformed', FakeMalformedParser::class);
+        $message = $message->withBody(new MemoryStream('foo'))
+            ->withHeader('Content-Type', 'application/x-fake-malformed');
+
+        try {
+            $message->getParsedBody();
+            $this->fail('Expected exception not thrown');
+        } catch (MalformedBodyException $exception) {
+            $this->assertSame('Fake malformed body', $exception->getMessage());
+            $this->assertSame($message, $exception->getHttpMessage());
+        }
+    }
+
+    public function testGetParsedBody_nullJsonBody()
+    {
+        $message = $this->newMessageObj();
+        $stream = new Stream();
+        $stream->write('null');
+        $message = $message->withBody($stream)
             ->withHeader('Content-Type', 'application/json');
 
         $this->assertNull($message->getParsedBody());
