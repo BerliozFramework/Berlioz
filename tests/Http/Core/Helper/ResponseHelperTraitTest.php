@@ -12,8 +12,11 @@
 
 namespace Berlioz\Http\Core\Tests\Helper;
 
+use Berlioz\Http\Core\Exception\Http\InternalServerErrorHttpException;
 use Berlioz\Http\Core\Helper\ResponseHelperTrait;
 use Berlioz\Http\Message\Response;
+use JsonException;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 class ResponseHelperTraitTest extends TestCase
@@ -119,6 +122,38 @@ class ResponseHelperTraitTest extends TestCase
         $this->assertEquals(204, $response->getStatusCode());
         $this->assertEquals(['application/json'], $response->getHeader('Content-Type'));
         $this->assertEmpty((string)$response->getBody());
+    }
+
+    public static function provideInvalidJsonBodies(): array
+    {
+        return [
+            'invalid UTF-8' => [['name' => "\xB1\x31"]],
+            'INF' => [['value' => INF]],
+            'NAN' => [['value' => NAN]],
+        ];
+    }
+
+    #[DataProvider('provideInvalidJsonBodies')]
+    public function testJsonResponse_encodingFailure(mixed $body)
+    {
+        $helper = $this->getHelper();
+
+        try {
+            $helper->jsonResponse($body);
+            $this->fail('Expected InternalServerErrorHttpException was not thrown');
+        } catch (InternalServerErrorHttpException $exception) {
+            $this->assertEquals(500, $exception->getCode());
+            $this->assertInstanceOf(JsonException::class, $exception->getPrevious());
+        }
+    }
+
+    public function testJsonResponse_partialOutputOnError()
+    {
+        $helper = $this->getHelper();
+        $response = $helper->jsonResponse(['name' => "\xB1\x31"], JSON_PARTIAL_OUTPUT_ON_ERROR);
+
+        $this->assertEquals(200, $response->getStatusCode());
+        $this->assertEquals('{"name":null}', (string)$response->getBody());
     }
 
     public function testRedirect_withStatusCode()
