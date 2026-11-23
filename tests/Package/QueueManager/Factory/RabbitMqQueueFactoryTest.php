@@ -14,11 +14,13 @@ declare(strict_types=1);
 
 namespace Berlioz\Package\QueueManager\Tests\Factory;
 
-use AMQPConnection;
+use Berlioz\Core\Exception\ConfigException;
 use Berlioz\Package\QueueManager\Factory\RabbitMqQueueFactory;
 use Berlioz\QueueManager\Queue\AmqpQueue;
+use Berlioz\QueueManager\Queue\RabbitMqManagementApi;
 use Berlioz\QueueManager\Queue\RabbitMqQueue;
 use Berlioz\QueueManager\RateLimiter\MultiRateLimiter;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\RequiresPhpExtension;
 use PHPUnit\Framework\TestCase;
 use ReflectionMethod;
@@ -58,10 +60,7 @@ class RabbitMqQueueFactoryTest extends TestCase
 
     private static function getManagementOptions(array $config): array
     {
-        $connection = new AMQPConnection(AmqpQueueFactoryTest::getConnectionParameters($config));
-
-        return (new ReflectionMethod(RabbitMqQueueFactory::class, 'getManagementOptions'))
-            ->invoke(null, $connection, $config);
+        return (new ReflectionMethod(RabbitMqQueueFactory::class, 'getManagementOptions'))->invoke(null, $config);
     }
 
     public function testGetQueueClass(): void
@@ -69,65 +68,112 @@ class RabbitMqQueueFactoryTest extends TestCase
         $this->assertSame(self::QUEUE_CLASS, RabbitMqQueueFactory::getQueueClass());
     }
 
-    #[RequiresPhpExtension('amqp')]
-    public function testGetManagementOptions_fallbackOnIniSettings(): void
+    public function testGetManagementOptions_withoutManagement(): void
     {
-        ini_set('amqp.login', 'ini-user');
-        ini_set('amqp.password', 'ini-password');
-        ini_set('amqp.vhost', 'ini-vhost');
-
-        $options = self::getManagementOptions([
-            'amqp' => ['host' => 'rabbitmq.invalid'],
-            'management' => ['base_url' => 'http://rabbitmq.invalid:15672'],
-        ]);
-
         $this->assertSame(
-            [
-                'base_url' => 'http://rabbitmq.invalid:15672',
-                'username' => 'ini-user',
-                'password' => 'ini-password',
-                'vhost' => 'ini-vhost',
-            ],
-            $options,
+            ['base_url' => null, 'username' => null, 'password' => null, 'context' => null],
+            self::getManagementOptions(['amqp' => ['dsn' => 'amqp://user:pass@rabbitmq.invalid/my-vhost']]),
         );
     }
 
-    #[RequiresPhpExtension('amqp')]
-    public function testGetManagementOptions_fallbackOnConnection(): void
-    {
-        $options = self::getManagementOptions([
-            'amqp' => ['dsn' => 'amqp://user:pass@rabbitmq.invalid/my-vhost'],
-        ]);
-
-        $this->assertSame(
-            ['base_url' => null, 'username' => 'user', 'password' => 'pass', 'vhost' => 'my-vhost'],
-            $options,
-        );
-    }
-
-    #[RequiresPhpExtension('amqp')]
     public function testGetManagementOptions_explicitCredentials(): void
     {
-        ini_set('amqp.vhost', 'ini-vhost');
-
         $options = self::getManagementOptions([
             'amqp' => ['dsn' => 'amqp://user:pass@rabbitmq.invalid'],
             'management' => [
-                'base_url' => 'http://rabbitmq.invalid:15672',
-                'username' => 'admin',
+                'base_url' => 'https://rabbitmq.invalid:15671',
+                'username' => 'monitoring',
                 'password' => 'secret',
+                'context' => ['ssl' => ['cafile' => '/path/to/ca.pem']],
             ],
         ]);
 
         $this->assertSame(
             [
-                'base_url' => 'http://rabbitmq.invalid:15672',
-                'username' => 'admin',
+                'base_url' => 'https://rabbitmq.invalid:15671',
+                'username' => 'monitoring',
                 'password' => 'secret',
-                'vhost' => '/',
+                'context' => ['ssl' => ['cafile' => '/path/to/ca.pem']],
             ],
             $options,
         );
+    }
+
+    public function testGetManagementOptions_httpAllowed(): void
+    {
+        $options = self::getManagementOptions([
+            'management' => [
+                'base_url' => 'http://rabbitmq.namespace.svc:15672',
+                'username' => 'monitoring',
+                'password' => 'secret',
+            ],
+        ]);
+
+        $this->assertSame('http://rabbitmq.namespace.svc:15672', $options['base_url']);
+    }
+
+    public static function provideMissingCredentials(): array
+    {
+        return [
+            'none' => [[]],
+            'username only' => [['username' => 'monitoring']],
+            'password only' => [['password' => 'secret']],
+            'empty username' => [['username' => '', 'password' => 'secret']],
+        ];
+    }
+
+    #[DataProvider('provideMissingCredentials')]
+    public function testGetManagementOptions_neverInheritsBrokerCredentials(array $credentials): void
+    {
+        ini_set('amqp.login', 'ini-user');
+        ini_set('amqp.password', 'ini-password');
+
+        $this->expectException(ConfigException::class);
+        $this->expectExceptionMessage('broker credentials are never reused');
+
+        self::getManagementOptions([
+            'amqp' => ['dsn' => 'amqp://user:pass@rabbitmq.invalid/my-vhost'],
+            'management' => ['base_url' => 'https://rabbitmq.invalid:15671'] + $credentials,
+        ]);
+    }
+
+    public static function provideInvalidBaseUrls(): array
+    {
+        return [
+            'file wrapper' => ['file:///etc/passwd'],
+            'php wrapper' => ['php://memory'],
+            'ftp' => ['ftp://rabbitmq.invalid'],
+            'no scheme' => ['rabbitmq.invalid:15672'],
+            'no host' => ['https:///api'],
+            'userinfo' => ['https://user:pass@rabbitmq.invalid'],
+            'query' => ['https://rabbitmq.invalid/?foo=bar'],
+            'fragment' => ['https://rabbitmq.invalid/#foo'],
+        ];
+    }
+
+    #[DataProvider('provideInvalidBaseUrls')]
+    public function testGetManagementOptions_invalidBaseUrl(string $baseUrl): void
+    {
+        $this->expectException(ConfigException::class);
+        $this->expectExceptionMessage('RabbitMQ invalid management API configuration');
+
+        self::getManagementOptions([
+            'management' => ['base_url' => $baseUrl, 'username' => 'monitoring', 'password' => 'secret'],
+        ]);
+    }
+
+    public function testGetManagementOptions_invalidContext(): void
+    {
+        $this->expectException(ConfigException::class);
+
+        self::getManagementOptions([
+            'management' => [
+                'base_url' => 'https://rabbitmq.invalid',
+                'username' => 'monitoring',
+                'password' => 'secret',
+                'context' => 'invalid',
+            ],
+        ]);
     }
 
     #[RequiresPhpExtension('amqp')]
@@ -135,8 +181,28 @@ class RabbitMqQueueFactoryTest extends TestCase
     {
         AmqpQueueFactoryTest::assertFailsClosed(RabbitMqQueueFactory::class, fn(int $port) => [
             'amqp' => ['dsn' => sprintf('amqps://guest:guest@127.0.0.1:%d/%%2F', $port)],
-            'management' => ['base_url' => 'http://127.0.0.1:15672'],
+            'management' => ['base_url' => 'https://127.0.0.1:15671', 'username' => 'admin', 'password' => 'secret'],
             'name' => 'tls-queue',
+        ]);
+    }
+
+    #[RequiresPhpExtension('amqp')]
+    public function testCreateFromConfig_missingManagementCredentialsFailsClosed(): void
+    {
+        AmqpQueueFactoryTest::assertFailsClosed(RabbitMqQueueFactory::class, fn(int $port) => [
+            'amqp' => ['dsn' => sprintf('amqp://guest:guest@127.0.0.1:%d/%%2F', $port)],
+            'management' => ['base_url' => 'http://127.0.0.1:15672'],
+            'name' => 'management-queue',
+        ]);
+    }
+
+    #[RequiresPhpExtension('amqp')]
+    public function testCreateFromConfig_invalidManagementBaseUrlFailsClosed(): void
+    {
+        AmqpQueueFactoryTest::assertFailsClosed(RabbitMqQueueFactory::class, fn(int $port) => [
+            'amqp' => ['dsn' => sprintf('amqp://guest:guest@127.0.0.1:%d/%%2F', $port)],
+            'management' => ['base_url' => 'file:///etc/passwd', 'username' => 'admin', 'password' => 'secret'],
+            'name' => 'management-queue',
         ]);
     }
 
@@ -148,7 +214,7 @@ class RabbitMqQueueFactoryTest extends TestCase
         $queues = iterator_to_array(RabbitMqQueueFactory::createFromConfig([
             'amqp' => ['dsn' => AmqpQueueFactoryTest::DSN],
             'management' => [
-                'base_url' => 'http://127.0.0.1:15672',
+                'base_url' => 'http://127.0.0.1:15672/',
                 'username' => 'admin',
                 'password' => 'secret',
             ],
@@ -164,9 +230,11 @@ class RabbitMqQueueFactoryTest extends TestCase
         $this->assertSame('factory-rabbitmq1', $queues[0]->getName());
         $this->assertInstanceOf(MultiRateLimiter::class, $queues[0]->getRateLimiter());
         $this->assertSame(2, self::getProperty($queues[0], 'maxAttempts'));
-        $this->assertSame('http://127.0.0.1:15672', self::getProperty($queues[0], 'managementApiBaseUrl'));
-        $this->assertSame('admin', self::getProperty($queues[0], 'managementApiUsername'));
-        $this->assertSame('secret', self::getProperty($queues[0], 'managementApiPassword'));
+        $this->assertInstanceOf(RabbitMqManagementApi::class, self::getProperty($queues[0], 'managementApi'));
+        $this->assertSame(
+            'http://127.0.0.1:15672',
+            self::getProperty($queues[0], 'managementApi')->getBaseUrl(),
+        );
         $this->assertSame('/', self::getProperty($queues[0], 'vhost'));
 
         $this->assertSame('factory-rabbitmq2', $queues[1]->getName());
@@ -174,20 +242,17 @@ class RabbitMqQueueFactoryTest extends TestCase
     }
 
     #[RequiresPhpExtension('amqp')]
-    public function testCreateFromConfig_omittedCredentials(): void
+    public function testCreateFromConfig_withoutManagement(): void
     {
         AmqpQueueFactoryTest::requireBroker($this);
-        ini_set('amqp.login', 'guest');
-        ini_set('amqp.password', 'guest');
 
         $queues = iterator_to_array(RabbitMqQueueFactory::createFromConfig([
-            'amqp' => ['host' => '127.0.0.1', 'port' => 5672],
-            'management' => ['base_url' => 'http://127.0.0.1:15672'],
-            'name' => 'factory-rabbitmq-fallback',
+            'amqp' => ['dsn' => AmqpQueueFactoryTest::DSN],
+            'name' => 'factory-rabbitmq-no-management',
         ]));
 
-        $this->assertSame('guest', self::getProperty($queues[0], 'managementApiUsername'));
-        $this->assertSame('guest', self::getProperty($queues[0], 'managementApiPassword'));
-        $this->assertSame('/', self::getProperty($queues[0], 'vhost'));
+        $this->assertNull(self::getProperty($queues[0], 'managementApi'));
+        $this->assertNull($queues[0]->waitTime());
+        $this->assertNull($queues[0]->delayed());
     }
 }

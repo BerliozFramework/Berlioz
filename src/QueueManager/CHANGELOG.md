@@ -19,11 +19,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `Worker::drain()` to process jobs until the queue is empty (optional time limit), without sleep, limits nor signal handlers
 - `Worker::processJob()` extracted from `Worker::run()` (execute, then delete or release on failure)
 - `QueueManager::getQueue()`, `QueueManager::hasQueue()` and `QueueManager::getDefaultQueue()` to get a queue (and its settings) by name
+- `RabbitMqQueue` constructor parameter `managementApiContext` (stream context or stream context options, e.g. `ssl.cafile`) for management API requests
 
 ### Changed
 
 - `RedisQueue` stops retrying a job after `maxAttempts` (new constructor parameter, 5 by default like the other queues): the job is moved to the `<name>:dead` list instead of being released again
 - `Worker` installs its signal handlers when `run()` starts instead of in the constructor
+- `RabbitMqQueue` throws a `QueueException` from its constructor, before connecting, if a management API base URL is given without explicit username and password, or if it is not a valid `http`/`https` URL (other stream wrappers, credentials, query or fragment are rejected)
+
+### Security
+
+- `RabbitMqQueue` no longer follows redirections of the management API, which could send the credentials to another origin, and ignores non-`200` responses
 
 ### Fixed
 

@@ -15,8 +15,12 @@ declare(strict_types=1);
 namespace Berlioz\Package\QueueManager\Factory;
 
 use AMQPConnection;
+use Berlioz\Core\Exception\ConfigException;
+use Berlioz\QueueManager\Exception\QueueException;
 use Berlioz\QueueManager\Queue\QueueInterface;
+use Berlioz\QueueManager\Queue\RabbitMqManagementApi;
 use Berlioz\QueueManager\Queue\RabbitMqQueue;
+use Generator;
 
 class RabbitMqQueueFactory extends AmqpQueueFactory
 {
@@ -33,9 +37,20 @@ class RabbitMqQueueFactory extends AmqpQueueFactory
     /**
      * @inheritDoc
      */
+    public static function createFromConfig(array $config): Generator
+    {
+        // Validated before connecting to the broker
+        static::getManagementOptions($config);
+
+        yield from parent::createFromConfig($config);
+    }
+
+    /**
+     * @inheritDoc
+     */
     protected static function createQueue(AMQPConnection $connection, array $queue, array $config): QueueInterface
     {
-        $management = static::getManagementOptions($connection, $config);
+        $management = static::getManagementOptions($config);
 
         return new RabbitMqQueue(
             connection: $connection,
@@ -45,30 +60,54 @@ class RabbitMqQueueFactory extends AmqpQueueFactory
             managementApiBaseUrl: $management['base_url'],
             managementApiUsername: $management['username'],
             managementApiPassword: $management['password'],
-            vhost: $management['vhost'],
+            vhost: $connection->getVhost(),
+            managementApiContext: $management['context'],
         );
     }
 
     /**
      * Get management API options.
      *
-     * Credentials and vhost fall back to the effective connection ones
-     * (explicit options, DSN or "amqp.*" INI settings).
+     * Credentials are never inherited from the broker connection: if a base URL is given,
+     * explicit "username" and "password" options are required.
      *
-     * @param AMQPConnection $connection
      * @param array $config
      *
-     * @return array{base_url: string|null, username: string, password: string, vhost: string}
+     * @return array{base_url: string|null, username: string|null, password: string|null, context: mixed}
+     * @throws ConfigException
      */
-    protected static function getManagementOptions(AMQPConnection $connection, array $config): array
+    protected static function getManagementOptions(array $config): array
     {
         $management = (array)($config['management'] ?? []);
-
-        return [
+        $options = [
             'base_url' => isset($management['base_url']) ? (string)$management['base_url'] : null,
-            'username' => (string)($management['username'] ?? $connection->getLogin()),
-            'password' => (string)($management['password'] ?? $connection->getPassword()),
-            'vhost' => $connection->getVhost(),
+            'username' => isset($management['username']) ? (string)$management['username'] : null,
+            'password' => isset($management['password']) ? (string)$management['password'] : null,
+            'context' => $management['context'] ?? null,
         ];
+
+        if (null === $options['base_url']) {
+            return $options;
+        }
+
+        if (null === $options['username'] || '' === $options['username'] || null === $options['password']) {
+            throw new ConfigException(
+                'RabbitMQ management API requires explicit "management.username" and "management.password" ' .
+                'options, broker credentials are never reused'
+            );
+        }
+
+        try {
+            new RabbitMqManagementApi(
+                baseUrl: $options['base_url'],
+                username: $options['username'],
+                password: $options['password'],
+                context: $options['context'],
+            );
+        } catch (QueueException $exception) {
+            throw new ConfigException(sprintf('RabbitMQ %s', lcfirst($exception->getMessage())), previous: $exception);
+        }
+
+        return $options;
     }
 }

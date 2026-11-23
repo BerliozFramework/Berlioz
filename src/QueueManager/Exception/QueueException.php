@@ -38,4 +38,16 @@ class QueueException extends QueueManagerException
     {
         return new self(sprintf('Expected job type `%s`, actual `%s`', $expected, $actual));
     }
+
+    /**
+     * Invalid management API configuration.
+     *
+     * @param string $reason
+     *
+     * @return static
+     */
+    public static function invalidManagementApi(string $reason): static
+    {
+        return new self(sprintf('Invalid management API configuration: %s', $reason));
+    }
 }
