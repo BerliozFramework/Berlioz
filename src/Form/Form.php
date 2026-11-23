@@ -154,6 +154,8 @@ class Form extends Group
      * and deferred callbacks are not called. Then deferred collection callbacks are called,
      * and planned writes are committed.
      *
+     * Validation is not checked: call {@see Form::isValid()} before, an invalid submission is applied too.
+     *
      * @throws FormException If form is not submitted or submission already applied
      */
     public function apply(): void

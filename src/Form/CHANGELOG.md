@@ -36,7 +36,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `ScalarConstraint`, and no longer hydrate them into the mapped object (previously a `TypeError` on typed setters or
   properties). `File` and `Choice` are not affected
 - Hydration runs every conversion before the first write: a failing transformer no longer leaves the mapped object
-  partially updated
+  partially updated. Reads done while planning (sub-objects, collection items) see the mapped object as it was before
+  any setter ran, so a setter replacing a sub-object no longer affects the hydration of that sub-object
+- `Form::handle()` has a second parameter `bool $apply = true`: subclasses overriding `handle()` must add it
+- `AbstractHydrator` implements `hydrate()` (plan, then commit) and declares the abstract `plan()` method: custom
+  hydrators extending it must implement `plan()` instead of `hydrate()`
+- `AbstractHydrator::getSubMapped()` has a fourth parameter `?HydrationQueue $queue = null` and
+  `AbstractHydrator::locateHydrator()` returns `AbstractHydrator`: overriding subclasses must match
 
 
 ## [3.3.2] - 2026-10-25
