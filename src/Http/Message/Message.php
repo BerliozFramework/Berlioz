@@ -19,6 +19,7 @@ use Berlioz\Http\Message\Parser\FormDataParser;
 use Berlioz\Http\Message\Parser\FormUrlEncodedParser;
 use Berlioz\Http\Message\Parser\JsonParser;
 use Berlioz\Http\Message\Parser\ParserInterface;
+use Berlioz\Http\Message\Validator\HttpFieldGrammar;
 use InvalidArgumentException;
 use Psr\Http\Message\MessageInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -288,9 +289,9 @@ abstract class Message implements MessageInterface, Stringable
      */
     private function assertHeaderName(string $name): void
     {
-        // RFC 7230 token, with an optional leading ":" to allow HTTP/2 pseudo-headers
-        // (":method", ":authority", ":scheme", ":path", ":status") e.g. when replaying HAR captures.
-        if (1 !== preg_match('/^:?[!#$%&\'*+\-.^_`|~0-9A-Za-z]+$/', $name)) {
+        // Pseudo-headers (":method", ":authority", ":scheme", ":path", ":status") are allowed,
+        // e.g. when replaying HAR captures; they are rejected at HTTP/1 emission.
+        if (!HttpFieldGrammar::isFieldName($name) && !HttpFieldGrammar::isPseudoFieldName($name)) {
             throw new InvalidArgumentException(sprintf('"%s" is not a valid header name', $name));
         }
     }

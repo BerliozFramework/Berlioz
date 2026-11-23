@@ -477,4 +477,14 @@ class MessageTest extends TestCase
 
         $this->assertSame(['GET'], $message->getHeader(':method'));
     }
+
+    public function testWithHeaderRejectsNameWithTrailingNewline()
+    {
+        $message = $this->newMessageObj();
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('not a valid header name');
+
+        $message->withHeader(":method\n", 'GET');
+    }
 }
