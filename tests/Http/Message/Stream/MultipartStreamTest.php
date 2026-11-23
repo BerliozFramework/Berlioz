@@ -147,6 +147,9 @@ class MultipartStreamTest extends TestCase
             'LF' => ["foo\nbar"],
             'CR' => ["foo\rbar"],
             'backslash' => ['foo\\bar'],
+            'trailing backslash' => ['file\\'],
+            'double trailing backslash' => ['file\\\\'],
+            'escaped quote injection' => ['file\\"; filename="evil.php'],
             'punctuation' => ['foo;bar=baz, qux[]\'(%)'],
             'unicode' => ['éàü 漢字 🎉'],
             'tab' => ["foo\tbar"],
@@ -165,14 +168,9 @@ class MultipartStreamTest extends TestCase
 
         $this->assertCount(2, $parts);
         $this->assertSame(['content-type', 'content-disposition', 'content-length'], array_keys($parts[0]['headers']));
-        $parameters = $this->parseDispositionParameters($parts[0]['headers']['content-disposition']);
-        $this->assertSame(['name' => $this->whatwgEncode($fieldName)], $parameters);
-        $this->assertSame($fieldName, $this->whatwgDecode($parameters['name']));
+        $this->assertDispositionRoundTrip($parts[0]['headers']['content-disposition'], ['name' => $fieldName]);
         $this->assertSame('value', $parts[0]['body']);
-        $this->assertSame(
-            ['name' => 'next'],
-            $this->parseDispositionParameters($parts[1]['headers']['content-disposition']),
-        );
+        $this->assertDispositionRoundTrip($parts[1]['headers']['content-disposition'], ['name' => 'next']);
         $this->assertSame('other', $parts[1]['body']);
     }
 
@@ -185,19 +183,35 @@ class MultipartStreamTest extends TestCase
         $parts = $this->parseMultipart((string)$multipart, $multipart->getBoundary());
 
         $this->assertCount(1, $parts);
-        $parameters = $this->parseDispositionParameters($parts[0]['headers']['content-disposition']);
-        $this->assertSame(['name' => 'file', 'filename' => $this->whatwgEncode(basename($filename))], $parameters);
-        $this->assertSame(basename($filename), $this->whatwgDecode($parameters['filename']));
+        $this->assertDispositionRoundTrip(
+            $parts[0]['headers']['content-disposition'],
+            ['name' => 'file', 'filename' => basename($filename)],
+        );
         $this->assertSame('value', $parts[0]['body']);
+    }
+
+    #[DataProvider('provideFieldNames')]
+    public function testAddStream_fieldNameWithFilenameRoundTrip(string $fieldName): void
+    {
+        $multipart = new MultipartStream();
+        $multipart->addStream($fieldName, new MemoryStream('value'), ['Content-Type' => 'text/plain'], 'report.pdf');
+
+        $parts = $this->parseMultipart((string)$multipart, $multipart->getBoundary());
+
+        $this->assertCount(1, $parts);
+        $this->assertDispositionRoundTrip(
+            $parts[0]['headers']['content-disposition'],
+            ['name' => $fieldName, 'filename' => 'report.pdf'],
+        );
     }
 
     public function testAddElement_fieldNameEncoding(): void
     {
         $multipart = new MultipartStream('boundary');
-        $multipart->addElement("a\"b\r\nc", 'value', ['Content-Type' => 'text/plain']);
+        $multipart->addElement("a\"b\r\nc\\", 'value', ['Content-Type' => 'text/plain']);
 
         $this->assertStringContainsString(
-            'content-disposition: form-data; name="a%22b%0D%0Ac"' . MultipartStream::EOL,
+            'content-disposition: form-data; name="a%22b%0D%0Ac%5C"' . MultipartStream::EOL,
             $multipart->getContents(),
         );
     }
@@ -297,7 +311,27 @@ class MultipartStreamTest extends TestCase
     }
 
     /**
-     * Parse Content-Disposition parameters (quoted-string values without escapes).
+     * Assert that both receiver families read the same parameters, and that they decode to the original values.
+     *
+     * @param array<string, string> $expected Original (decoded) parameter values
+     */
+    private function assertDispositionRoundTrip(string $header, array $expected): void
+    {
+        $encoded = array_map($this->encodeParameter(...), $expected);
+
+        $receivers = [
+            'WHATWG' => $this->parseDispositionParameters($header),
+            'quoted-pair' => $this->parseQuotedPairDispositionParameters($header),
+        ];
+
+        foreach ($receivers as $read) {
+            $this->assertSame($encoded, $read);
+            $this->assertSame($expected, array_map($this->decodeParameter(...), $read));
+        }
+    }
+
+    /**
+     * Parse Content-Disposition parameters like a WHATWG receiver (quoted-string values without escapes).
      *
      * @return array<string, string>
      */
@@ -306,6 +340,32 @@ class MultipartStreamTest extends TestCase
         $this->assertMatchesRegularExpression('/\Aform-data(; [a-z]+="[^"\r\n\0]*")*\z/', $value);
         preg_match_all('/; ([a-z]+)="([^"]*)"/', $value, $matches, PREG_SET_ORDER);
 
+        return $this->collectParameters($matches);
+    }
+
+    /**
+     * Parse Content-Disposition parameters like a receiver applying quoted-pair unescaping (RFC 9110, e.g. PHP).
+     *
+     * @return array<string, string>
+     */
+    private function parseQuotedPairDispositionParameters(string $value): array
+    {
+        $quotedString = '"((?:[^"\\\\\r\n\0]|\\\\[^\r\n\0])*)"';
+
+        $this->assertMatchesRegularExpression('/\Aform-data(?:; [a-z]+=' . $quotedString . ')*\z/', $value);
+        preg_match_all('/; ([a-z]+)=' . $quotedString . '/', $value, $matches, PREG_SET_ORDER);
+
+        return $this->collectParameters(array_map(
+            fn(array $match): array => [$match[0], $match[1], preg_replace('/\\\\(.)/s', '$1', $match[2])],
+            $matches,
+        ));
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function collectParameters(array $matches): array
+    {
         $parameters = [];
         foreach ($matches as [, $name, $paramValue]) {
             $this->assertArrayNotHasKey($name, $parameters);
@@ -315,14 +375,14 @@ class MultipartStreamTest extends TestCase
         return $parameters;
     }
 
-    private function whatwgEncode(string $value): string
+    private function encodeParameter(string $value): string
     {
-        return str_replace(["\r", "\n", '"'], ['%0D', '%0A', '%22'], $value);
+        return str_replace(["\r", "\n", '"', '\\'], ['%0D', '%0A', '%22', '%5C'], $value);
     }
 
-    private function whatwgDecode(string $value): string
+    private function decodeParameter(string $value): string
     {
-        return str_replace(['%0D', '%0A', '%22'], ["\r", "\n", '"'], $value);
+        return str_replace(['%0D', '%0A', '%22', '%5C'], ["\r", "\n", '"', '\\'], $value);
     }
 
     public static function provideBoundaries(): array

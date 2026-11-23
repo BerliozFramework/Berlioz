@@ -307,6 +307,9 @@ class MultipartStream implements StreamInterface
     /**
      * Encode a Content-Disposition parameter value (multipart/form-data, WHATWG HTML).
      *
+     * Backslash is also percent-encoded, so receivers applying quoted-pair unescaping
+     * (e.g. PHP) cannot read it as an escape character.
+     *
      * @param string $value
      *
      * @return string
@@ -318,7 +321,7 @@ class MultipartStream implements StreamInterface
             throw new InvalidArgumentException('Multipart field name and filename must not contain NUL characters');
         }
 
-        return str_replace(["\r", "\n", '"'], ['%0D', '%0A', '%22'], $value);
+        return str_replace(["\r", "\n", '"', '\\'], ['%0D', '%0A', '%22', '%5C'], $value);
     }
 
     /**
