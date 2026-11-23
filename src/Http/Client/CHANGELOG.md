@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `Client::query()` shortcut for the HTTP `QUERY` method (RFC 10008)
 - `HttpContext::$credentials_origins` to approve additional origins receiving origin transport credentials on
   redirects (`https://auth.example.com`, or `https://*.example.com` for one subdomain level)
+- `OriginCredentialsAwareInterface` for adapters holding their own origin credentials, implemented by `CurlAdapter`
+  and `AutoAdapter`
 
 ### Changed
 
@@ -23,12 +25,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Origin transport credentials (client certificate, key and passphrases of `HttpContext`, credential options of
   `CurlAdapter` such as `CURLOPT_USERPWD`, `CURLOPT_XOAUTH2_BEARER` or `CURLOPT_COOKIE`) are no longer sent when
   a redirection leaves the initial origin or the approved ones; proxy settings are kept
-- `HttpContext::hasOriginCredentials()` is `false` on those redirections: custom `AdapterInterface` implementations
-  holding their own origin credentials must not send them in that case (only `CurlAdapter` and the `HttpContext` TLS
-  client options are handled by the package)
-- Without a configured `HttpContext`, those redirections use a default context: its TLS verification and proxy
-  tunnel settings override raw `CurlAdapter` options (`CURLOPT_SSL_VERIFYPEER`, `CURLOPT_SSL_VERIFYHOST`,
-  `CURLOPT_HTTPPROXYTUNNEL`) on those hops only; configure them with `HttpContext` to keep them on every hop
+- Custom adapters holding their own origin credentials must implement `OriginCredentialsAwareInterface`: the client
+  uses their `withoutOriginCredentials()` copy on those redirections, other adapters only receive the `HttpContext`
+  without TLS client options
 
 ## [3.3.2] - 2026-10-25
 

@@ -56,7 +56,7 @@ class CurlAdapterTest extends TestCase
         );
     }
 
-    public function testOptions_originCredentials()
+    public function testWithoutOriginCredentials()
     {
         $credentials = [
             CURLOPT_HTTPAUTH => CURLAUTH_BASIC,
@@ -76,6 +76,8 @@ class CurlAdapterTest extends TestCase
             CURLOPT_TIMEOUT => 20,
             CURLOPT_PROXY => 'proxy:3128',
             CURLOPT_PROXYUSERPWD => 'proxy-user:proxy-password',
+            CURLOPT_SSL_VERIFYPEER => false,
+            CURLOPT_SSL_VERIFYHOST => 0,
         ];
         $adapter = new class($credentials + $transport) extends CurlAdapter {
             public function prepareCurlOptions(
@@ -87,70 +89,18 @@ class CurlAdapterTest extends TestCase
             }
         };
         $request = new ServerRequest(method: Request::HTTP_METHOD_GET, uri: 'https://getberlioz.com/');
-        $context = new HttpContext(
-            ssl_local_cert: '/context.pem',
-            ssl_local_pk: '/context.key',
-            ssl_local_passphrase: 'context-secret',
-        );
+        $without = $adapter->withoutOriginCredentials();
 
-        // Allowed origin
-        $preparedOptions = $adapter->prepareCurlOptions($request, context: $context);
-        $this->assertSame('/context.pem', $preparedOptions[CURLOPT_SSLCERT]);
-        $this->assertSame('/context.key', $preparedOptions[CURLOPT_SSLKEY]);
-        $this->assertSame('context-secret', $preparedOptions[CURLOPT_KEYPASSWD]);
-        $this->assertSame('user:password', $preparedOptions[CURLOPT_USERPWD]);
-        $this->assertSame('session=secret', $preparedOptions[CURLOPT_COOKIE]);
+        $this->assertNotSame($adapter, $without);
+        $this->assertInstanceOf($adapter::class, $without);
 
-        // Without context
+        // Origin credentials are removed, transport options (including proxy credentials) are kept
+        $preparedOptions = $without->prepareCurlOptions($request);
+        $this->assertSame([CURLOPT_HTTPAUTH => CURLAUTH_BASIC], array_intersect_key($preparedOptions, $credentials));
+        $this->assertEquals($transport, array_intersect_key($preparedOptions, $transport));
+
+        // Original adapter is untouched
         $preparedOptions = $adapter->prepareCurlOptions($request);
         $this->assertEquals($credentials, array_intersect_key($preparedOptions, $credentials));
-
-        // Downgraded origin
-        $downgradedContexts = [$context->withoutOriginCredentials(), (new HttpContext())->withoutOriginCredentials()];
-        foreach ($downgradedContexts as $downgraded) {
-            $preparedOptions = $adapter->prepareCurlOptions($request, context: $downgraded);
-
-            $this->assertSame(
-                [CURLOPT_HTTPAUTH => CURLAUTH_BASIC],
-                array_intersect_key($preparedOptions, $credentials),
-            );
-            $this->assertEquals($transport, array_intersect_key($preparedOptions, $transport));
-        }
-    }
-
-    public function testOptions_downgradedWithoutConfiguredContext()
-    {
-        $raw = [
-            CURLOPT_SSL_VERIFYPEER => false,
-            CURLOPT_SSL_VERIFYHOST => 0,
-            CURLOPT_HTTPPROXYTUNNEL => true,
-        ];
-        $adapter = new class($raw) extends CurlAdapter {
-            public function prepareCurlOptions(
-                RequestInterface $request,
-                array $options = [],
-                ?HttpContext $context = null,
-            ): array {
-                return parent::prepareCurlOptions($request, $options, $context);
-            }
-        };
-        $request = new ServerRequest(method: Request::HTTP_METHOD_GET, uri: 'https://getberlioz.com/');
-
-        // Without configured context, raw options apply
-        $this->assertEquals($raw, array_intersect_key($adapter->prepareCurlOptions($request), $raw));
-
-        // A redirected hop without origin credentials gets a default context, failing closed:
-        // its transport options override the raw ones on that hop only
-        $this->assertEquals(
-            [
-                CURLOPT_SSL_VERIFYPEER => true,
-                CURLOPT_SSL_VERIFYHOST => 2,
-                CURLOPT_HTTPPROXYTUNNEL => false,
-            ],
-            array_intersect_key(
-                $adapter->prepareCurlOptions($request, context: (new HttpContext())->withoutOriginCredentials()),
-                $raw,
-            ),
-        );
     }
 }

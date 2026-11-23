@@ -19,6 +19,7 @@ use Berlioz\Http\Client\CredentialsOrigin;
 use Berlioz\Http\Client\Exception\InvalidOriginException;
 use Berlioz\Http\Client\HttpContext;
 use Berlioz\Http\Client\Tests\Adapter\FakeAdapter;
+use Berlioz\Http\Client\Tests\Adapter\FakeOriginCredentialsAdapter;
 use Berlioz\Http\Message\Request;
 use Berlioz\Http\Message\Response;
 use Berlioz\Http\Message\Uri;
@@ -44,33 +45,35 @@ class ClientRedirectCredentialsTest extends TestCase
     ];
 
     /**
-     * Send a request following the given redirections and collect the context given to the adapter on each hop.
+     * Send a request following the given redirections and collect, on each hop, the context given to the adapter
+     * and whether the adapter used still holds its origin credentials.
      *
      * @param string $start
      * @param string[] $locations
      * @param array|null $context
      * @param Client|null $client
      *
-     * @return array<HttpContext|null>
+     * @return array<array{0: HttpContext|null, 1: bool}>
      */
-    private function sendAndCollectContexts(
+    private function sendAndCollectHops(
         string $start,
         array $locations,
         ?array $context = self::CONTEXT,
         ?Client &$client = null,
     ): array {
-        $contexts = [];
-        $adapter = new FakeAdapter(
+        $hops = [];
+        $adapter = new FakeOriginCredentialsAdapter(
             static function (
                 RequestInterface $request,
                 ?HttpContext $context,
+                FakeOriginCredentialsAdapter $adapter,
             ) use (
-                &$contexts,
+                &$hops,
                 $locations,
             ): ResponseInterface {
-                $contexts[] = $context;
+                $hops[] = [$context, $adapter->originCredentials];
 
-                if (null !== ($location = $locations[count($contexts) - 1] ?? null)) {
+                if (null !== ($location = $locations[count($hops) - 1] ?? null)) {
                     return (new Response(statusCode: 302))->withHeader('Location', $location);
                 }
 
@@ -80,25 +83,35 @@ class ClientRedirectCredentialsTest extends TestCase
         $client = new Client(null === $context ? [] : ['context' => $context], $adapter);
         $client->sendRequest(new Request('GET', $start));
 
-        self::assertCount(count($locations) + 1, $contexts);
+        self::assertCount(count($locations) + 1, $hops);
 
-        return $contexts;
+        return $hops;
     }
 
-    private static function assertOriginCredentials(?HttpContext $context): void
+    /**
+     * @param array{0: HttpContext|null, 1: bool} $hop
+     */
+    private static function assertOriginCredentials(array $hop): void
     {
+        [$context, $adapterCredentials] = $hop;
+
+        self::assertTrue($adapterCredentials);
         self::assertNotNull($context);
-        self::assertTrue($context->hasOriginCredentials());
         self::assertSame('/client.pem', $context->ssl_local_cert);
         self::assertSame('/client.key', $context->ssl_local_pk);
         self::assertSame('cert-secret', $context->ssl_local_cert_passphrase);
         self::assertSame('key-secret', $context->ssl_local_passphrase);
     }
 
-    private static function assertNoOriginCredentials(?HttpContext $context): void
+    /**
+     * @param array{0: HttpContext|null, 1: bool} $hop
+     */
+    private static function assertNoOriginCredentials(array $hop): void
     {
+        [$context, $adapterCredentials] = $hop;
+
+        self::assertFalse($adapterCredentials);
         self::assertNotNull($context);
-        self::assertFalse($context->hasOriginCredentials());
         self::assertNull($context->ssl_local_cert);
         self::assertNull($context->ssl_local_pk);
         self::assertNull($context->ssl_local_cert_passphrase);
@@ -107,33 +120,33 @@ class ClientRedirectCredentialsTest extends TestCase
 
     public function testRedirect_sameOriginKeepsCredentials(): void
     {
-        $contexts = $this->sendAndCollectContexts(
+        $hops = $this->sendAndCollectHops(
             'https://api.example.test/start',
             ['https://API.example.test:443/next', '/last'],
         );
 
-        array_map(self::assertOriginCredentials(...), $contexts);
+        array_map(self::assertOriginCredentials(...), $hops);
     }
 
     public function testRedirect_crossOriginDropsCredentials(): void
     {
-        $contexts = $this->sendAndCollectContexts(
+        $hops = $this->sendAndCollectHops(
             'https://api.example.test/start',
             ['https://evil.example.test/collect'],
             client: $client,
         );
 
-        self::assertOriginCredentials($contexts[0]);
-        self::assertNoOriginCredentials($contexts[1]);
+        self::assertOriginCredentials($hops[0]);
+        self::assertNoOriginCredentials($hops[1]);
 
         // Transport settings are kept
-        self::assertSame(self::CONTEXT['proxy'], $contexts[1]->proxy);
-        self::assertFalse($contexts[1]->ssl_verify_peer);
-        self::assertSame('/ca.pem', $contexts[1]->ssl_cafile);
+        self::assertSame(self::CONTEXT['proxy'], $hops[1][0]->proxy);
+        self::assertFalse($hops[1][0]->ssl_verify_peer);
+        self::assertSame('/ca.pem', $hops[1][0]->ssl_cafile);
 
-        // Client configuration is untouched
+        // Client configuration and adapter are untouched
         self::assertSame('/client.pem', $client->getOptions()->context->ssl_local_cert);
-        self::assertTrue($client->getOptions()->context->hasOriginCredentials());
+        self::assertTrue($client->getAdapter()->originCredentials);
     }
 
     public static function provideCrossOriginTargets(): iterable
@@ -150,27 +163,27 @@ class ClientRedirectCredentialsTest extends TestCase
     #[DataProvider('provideCrossOriginTargets')]
     public function testRedirect_crossOriginTargets(string $location): void
     {
-        $contexts = $this->sendAndCollectContexts('https://api.example.test/start', [$location]);
+        $hops = $this->sendAndCollectHops('https://api.example.test/start', [$location]);
 
-        self::assertOriginCredentials($contexts[0]);
-        self::assertNoOriginCredentials($contexts[1]);
+        self::assertOriginCredentials($hops[0]);
+        self::assertNoOriginCredentials($hops[1]);
     }
 
     public function testRedirect_downgradeIsSticky(): void
     {
-        $contexts = $this->sendAndCollectContexts(
+        $hops = $this->sendAndCollectHops(
             'https://api.example.test/start',
             ['https://cdn.example.test/', 'https://api.example.test/back'],
         );
 
-        self::assertOriginCredentials($contexts[0]);
-        self::assertNoOriginCredentials($contexts[1]);
-        self::assertNoOriginCredentials($contexts[2]);
+        self::assertOriginCredentials($hops[0]);
+        self::assertNoOriginCredentials($hops[1]);
+        self::assertNoOriginCredentials($hops[2]);
     }
 
     public function testRedirect_approvedOrigins(): void
     {
-        $contexts = $this->sendAndCollectContexts(
+        $hops = $this->sendAndCollectHops(
             'https://api.example.test/start',
             [
                 'https://auth.example.test:443/token',
@@ -185,33 +198,52 @@ class ClientRedirectCredentialsTest extends TestCase
             ],
         );
 
-        self::assertOriginCredentials($contexts[0]);
-        self::assertOriginCredentials($contexts[1]);
-        self::assertOriginCredentials($contexts[2]);
-        self::assertOriginCredentials($contexts[3]);
-        self::assertNoOriginCredentials($contexts[4]);
-        self::assertNoOriginCredentials($contexts[5]);
+        self::assertOriginCredentials($hops[0]);
+        self::assertOriginCredentials($hops[1]);
+        self::assertOriginCredentials($hops[2]);
+        self::assertOriginCredentials($hops[3]);
+        self::assertNoOriginCredentials($hops[4]);
+        self::assertNoOriginCredentials($hops[5]);
     }
 
     public function testRedirect_withoutContext(): void
     {
-        $contexts = $this->sendAndCollectContexts(
+        $hops = $this->sendAndCollectHops(
             'https://api.example.test/start',
             ['https://api.example.test/next', 'https://evil.example.test/'],
             null,
         );
 
-        self::assertNull($contexts[0]);
-        self::assertNull($contexts[1]);
-        self::assertNoOriginCredentials($contexts[2]);
-        self::assertEquals((new HttpContext())->withoutOriginCredentials(), $contexts[2]);
+        // No context is created: raw adapter transport options keep applying on every hop
+        self::assertSame([[null, true], [null, true], [null, false]], $hops);
+    }
+
+    public function testRedirect_adapterWithoutOriginCredentialsSupport(): void
+    {
+        $contexts = [];
+        $adapter = new FakeAdapter(
+            static function (RequestInterface $request, ?HttpContext $context) use (&$contexts): ResponseInterface {
+                $contexts[] = $context;
+
+                return count($contexts) === 1
+                    ? (new Response(statusCode: 302))->withHeader('Location', 'https://evil.example.test/')
+                    : new Response(statusCode: 200);
+            },
+        );
+        $client = new Client(['context' => self::CONTEXT], $adapter);
+        $client->sendRequest(new Request('GET', 'https://api.example.test/start'));
+
+        self::assertCount(2, $contexts);
+        self::assertSame('/client.pem', $contexts[0]->ssl_local_cert);
+        self::assertNull($contexts[1]->ssl_local_cert);
+        self::assertNull($contexts[1]->ssl_local_pk);
     }
 
     public function testRedirect_invalidApprovedOrigin(): void
     {
         $this->expectException(InvalidOriginException::class);
 
-        $this->sendAndCollectContexts(
+        $this->sendAndCollectHops(
             'https://api.example.test/start',
             [],
             ['credentials_origins' => ['https://*.test']],

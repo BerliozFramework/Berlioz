@@ -16,6 +16,7 @@ namespace Berlioz\Http\Client;
 
 use Berlioz\Http\Client\Adapter\AdapterInterface;
 use Berlioz\Http\Client\Adapter\AutoAdapter;
+use Berlioz\Http\Client\Adapter\OriginCredentialsAwareInterface;
 use Berlioz\Http\Client\Components\DefaultHeadersTrait;
 use Berlioz\Http\Client\Components\HeaderParserTrait;
 use Berlioz\Http\Client\Components\LogTrait;
@@ -343,6 +344,9 @@ class Client implements ClientInterface, LoggerAwareInterface
             $request = $this->prepareRequest($request, $options->cookies === false ? false : $cookies, $options);
             $credentialsSource ??= $request->getUri();
             $adapter = $this->getAdapter($options->adapter);
+            if (!$originCredentials && $adapter instanceof OriginCredentialsAwareInterface) {
+                $adapter = $adapter->withoutOriginCredentials();
+            }
 
             try {
                 for ($iRetry = 0; $iRetry < max($options->retry ?: 1, 1); $iRetry++) {
@@ -416,7 +420,7 @@ class Client implements ClientInterface, LoggerAwareInterface
                 && !$this->isCredentialOrigin($credentialsSource, $redirectUri, $credentialsOrigins)
             ) {
                 $originCredentials = false;
-                $context = ($options->context ?? new HttpContext())->withoutOriginCredentials();
+                $context = $options->context?->withoutOriginCredentials();
             }
 
             // Recompute redirect metadata rather than reapplying caller-supplied values.

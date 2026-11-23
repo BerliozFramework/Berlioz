@@ -35,7 +35,7 @@ defined('CURLOPT_KEYPASSWD') || define('CURLOPT_KEYPASSWD', 10026);
 /**
  * Class CurlAdapter.
  */
-class CurlAdapter extends AbstractAdapter
+class CurlAdapter extends AbstractAdapter implements OriginCredentialsAwareInterface
 {
     use HeaderParserTrait;
 
@@ -105,7 +105,18 @@ class CurlAdapter extends AbstractAdapter
     }
 
     /**
-     * Get CURL options carrying origin credentials, removed when a request leaves the approved origins.
+     * @inheritDoc
+     */
+    public function withoutOriginCredentials(): static
+    {
+        $clone = clone $this;
+        $clone->options = array_diff_key($this->options, array_flip($this->getOriginCredentialsOptions()));
+
+        return $clone;
+    }
+
+    /**
+     * Get CURL options carrying origin credentials, removed by {@see CurlAdapter::withoutOriginCredentials()}.
      *
      * Proxy credentials are not part of them: they are sent to the proxy, not to the origin.
      *
@@ -255,10 +266,6 @@ class CurlAdapter extends AbstractAdapter
         ?HttpContext $context = null,
     ): array {
         $options = array_replace($this->options, $options);
-
-        if (false === $context?->hasOriginCredentials()) {
-            $options = array_diff_key($options, array_flip($this->getOriginCredentialsOptions()));
-        }
 
         // HTTP Version
         $options[CURLOPT_HTTP_VERSION] = match ($request->getProtocolVersion()) {
