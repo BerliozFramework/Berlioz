@@ -70,6 +70,7 @@ class CurlAdapterTest extends TestCase
             CURLOPT_NETRC => 1,
             CURLOPT_COOKIE => 'session=secret',
             CURLOPT_COOKIEFILE => '/cookies.txt',
+            CURLOPT_COOKIELIST => 'Set-Cookie: session=secret',
         ];
         $transport = [
             CURLOPT_TIMEOUT => 20,
@@ -115,5 +116,41 @@ class CurlAdapterTest extends TestCase
             );
             $this->assertEquals($transport, array_intersect_key($preparedOptions, $transport));
         }
+    }
+
+    public function testOptions_downgradedWithoutConfiguredContext()
+    {
+        $raw = [
+            CURLOPT_SSL_VERIFYPEER => false,
+            CURLOPT_SSL_VERIFYHOST => 0,
+            CURLOPT_HTTPPROXYTUNNEL => true,
+        ];
+        $adapter = new class($raw) extends CurlAdapter {
+            public function prepareCurlOptions(
+                RequestInterface $request,
+                array $options = [],
+                ?HttpContext $context = null,
+            ): array {
+                return parent::prepareCurlOptions($request, $options, $context);
+            }
+        };
+        $request = new ServerRequest(method: Request::HTTP_METHOD_GET, uri: 'https://getberlioz.com/');
+
+        // Without configured context, raw options apply
+        $this->assertEquals($raw, array_intersect_key($adapter->prepareCurlOptions($request), $raw));
+
+        // A redirected hop without origin credentials gets a default context, failing closed:
+        // its transport options override the raw ones on that hop only
+        $this->assertEquals(
+            [
+                CURLOPT_SSL_VERIFYPEER => true,
+                CURLOPT_SSL_VERIFYHOST => 2,
+                CURLOPT_HTTPPROXYTUNNEL => false,
+            ],
+            array_intersect_key(
+                $adapter->prepareCurlOptions($request, context: (new HttpContext())->withoutOriginCredentials()),
+                $raw,
+            ),
+        );
     }
 }

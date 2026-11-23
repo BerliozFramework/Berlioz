@@ -133,6 +133,7 @@ class CurlAdapter extends AbstractAdapter
             'CURLOPT_NETRC_FILE',
             'CURLOPT_COOKIE',
             'CURLOPT_COOKIEFILE',
+            'CURLOPT_COOKIELIST',
         ];
 
         return array_values(array_unique(array_map(
@@ -255,7 +256,7 @@ class CurlAdapter extends AbstractAdapter
     ): array {
         $options = array_replace($this->options, $options);
 
-        if (false === $context?->origin_credentials) {
+        if (false === $context?->hasOriginCredentials()) {
             $options = array_diff_key($options, array_flip($this->getOriginCredentialsOptions()));
         }
 

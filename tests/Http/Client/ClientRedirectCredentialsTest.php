@@ -88,7 +88,7 @@ class ClientRedirectCredentialsTest extends TestCase
     private static function assertOriginCredentials(?HttpContext $context): void
     {
         self::assertNotNull($context);
-        self::assertTrue($context->origin_credentials);
+        self::assertTrue($context->hasOriginCredentials());
         self::assertSame('/client.pem', $context->ssl_local_cert);
         self::assertSame('/client.key', $context->ssl_local_pk);
         self::assertSame('cert-secret', $context->ssl_local_cert_passphrase);
@@ -98,7 +98,7 @@ class ClientRedirectCredentialsTest extends TestCase
     private static function assertNoOriginCredentials(?HttpContext $context): void
     {
         self::assertNotNull($context);
-        self::assertFalse($context->origin_credentials);
+        self::assertFalse($context->hasOriginCredentials());
         self::assertNull($context->ssl_local_cert);
         self::assertNull($context->ssl_local_pk);
         self::assertNull($context->ssl_local_cert_passphrase);
@@ -133,7 +133,7 @@ class ClientRedirectCredentialsTest extends TestCase
 
         // Client configuration is untouched
         self::assertSame('/client.pem', $client->getOptions()->context->ssl_local_cert);
-        self::assertTrue($client->getOptions()->context->origin_credentials);
+        self::assertTrue($client->getOptions()->context->hasOriginCredentials());
     }
 
     public static function provideCrossOriginTargets(): iterable

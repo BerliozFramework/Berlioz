@@ -14,8 +14,12 @@ declare(strict_types=1);
 
 namespace Berlioz\Http\Client;
 
+use InvalidArgumentException;
+
 class HttpContext
 {
+    private bool $originCredentials = true;
+
     public function __construct(
         public string|false $proxy = false,
         public bool $ssl_verify_peer = true,
@@ -35,9 +39,20 @@ class HttpContext
          * @var string[]|null
          */
         public ?array $credentials_origins = null,
-        // FALSE when the request targets an origin not allowed to receive origin credentials
-        public bool $origin_credentials = true,
     ) {
+    }
+
+    /**
+     * Is the request allowed to carry origin credentials?
+     *
+     * FALSE when the client follows a redirect outside the initial origin and the approved ones.
+     * Adapters holding their own origin credentials (authentication, client certificate, cookies) must not send them.
+     *
+     * @return bool
+     */
+    public function hasOriginCredentials(): bool
+    {
+        return $this->originCredentials;
     }
 
     /**
@@ -52,7 +67,7 @@ class HttpContext
         $clone->ssl_local_pk = null;
         $clone->ssl_local_cert_passphrase = null;
         $clone->ssl_local_passphrase = null;
-        $clone->origin_credentials = false;
+        $clone->originCredentials = false;
 
         return $clone;
     }
@@ -73,6 +88,12 @@ class HttpContext
             $new = null !== $initial ? clone $initial : new self();
 
             foreach ($context as $key => $value) {
+                if (in_array($key, ['originCredentials', 'origin_credentials'], true)) {
+                    throw new InvalidArgumentException(
+                        sprintf('"%s" is an internal state of the HTTP context, not an option', $key)
+                    );
+                }
+
                 $new->$key = $value;
             }
 

@@ -13,6 +13,8 @@
 namespace Berlioz\Http\Client\Tests;
 
 use Berlioz\Http\Client\HttpContext;
+use InvalidArgumentException;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 class HttpContextTest extends TestCase
@@ -68,7 +70,7 @@ class HttpContextTest extends TestCase
         $this->assertNull($without->ssl_local_pk);
         $this->assertNull($without->ssl_local_cert_passphrase);
         $this->assertNull($without->ssl_local_passphrase);
-        $this->assertFalse($without->origin_credentials);
+        $this->assertFalse($without->hasOriginCredentials());
         $this->assertSame('http://user:pass@proxy:3128', $without->proxy);
         $this->assertFalse($without->ssl_verify_peer);
         $this->assertFalse($without->ssl_verify_host);
@@ -78,6 +80,20 @@ class HttpContextTest extends TestCase
 
         // Original is untouched
         $this->assertSame('/client.pem', $context->ssl_local_cert);
-        $this->assertTrue($context->origin_credentials);
+        $this->assertTrue($context->hasOriginCredentials());
+    }
+
+    public static function provideInternalStateKeys(): iterable
+    {
+        yield 'snake case' => ['origin_credentials'];
+        yield 'property name' => ['originCredentials'];
+    }
+
+    #[DataProvider('provideInternalStateKeys')]
+    public function testMake_internalStateIsNotAnOption(string $key)
+    {
+        $this->expectException(InvalidArgumentException::class);
+
+        HttpContext::make([$key => false]);
     }
 }
