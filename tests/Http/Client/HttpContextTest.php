@@ -45,4 +45,39 @@ class HttpContextTest extends TestCase
         $this->assertEquals($options, $options2);
         $this->assertNotSame($options, $options2);
     }
+
+    public function testWithoutOriginCredentials()
+    {
+        $context = new HttpContext(
+            proxy: 'http://user:pass@proxy:3128',
+            ssl_verify_peer: false,
+            ssl_verify_host: false,
+            ssl_ciphers: 'HIGH',
+            ssl_cafile: '/ca.pem',
+            ssl_capath: '/ca',
+            ssl_local_cert: '/client.pem',
+            ssl_local_pk: '/client.key',
+            ssl_local_cert_passphrase: 'cert-secret',
+            ssl_local_passphrase: 'key-secret',
+            credentials_origins: ['https://*.example.com'],
+        );
+        $without = $context->withoutOriginCredentials();
+
+        $this->assertNotSame($context, $without);
+        $this->assertNull($without->ssl_local_cert);
+        $this->assertNull($without->ssl_local_pk);
+        $this->assertNull($without->ssl_local_cert_passphrase);
+        $this->assertNull($without->ssl_local_passphrase);
+        $this->assertFalse($without->origin_credentials);
+        $this->assertSame('http://user:pass@proxy:3128', $without->proxy);
+        $this->assertFalse($without->ssl_verify_peer);
+        $this->assertFalse($without->ssl_verify_host);
+        $this->assertSame('HIGH', $without->ssl_ciphers);
+        $this->assertSame('/ca.pem', $without->ssl_cafile);
+        $this->assertSame('/ca', $without->ssl_capath);
+
+        // Original is untouched
+        $this->assertSame('/client.pem', $context->ssl_local_cert);
+        $this->assertTrue($context->origin_credentials);
+    }
 }

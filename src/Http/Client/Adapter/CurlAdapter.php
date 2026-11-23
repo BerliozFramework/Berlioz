@@ -105,6 +105,43 @@ class CurlAdapter extends AbstractAdapter
     }
 
     /**
+     * Get CURL options carrying origin credentials, removed when a request leaves the approved origins.
+     *
+     * Proxy credentials are not part of them: they are sent to the proxy, not to the origin.
+     *
+     * @return int[]
+     */
+    protected function getOriginCredentialsOptions(): array
+    {
+        $names = [
+            'CURLOPT_USERPWD',
+            'CURLOPT_USERNAME',
+            'CURLOPT_PASSWORD',
+            'CURLOPT_LOGIN_OPTIONS',
+            'CURLOPT_SASL_AUTHZID',
+            'CURLOPT_XOAUTH2_BEARER',
+            'CURLOPT_TLSAUTH_USERNAME',
+            'CURLOPT_TLSAUTH_PASSWORD',
+            'CURLOPT_SSLCERT',
+            'CURLOPT_SSLCERT_BLOB',
+            'CURLOPT_SSLCERTPASSWD',
+            'CURLOPT_SSLKEY',
+            'CURLOPT_SSLKEY_BLOB',
+            'CURLOPT_SSLKEYPASSWD',
+            'CURLOPT_KEYPASSWD',
+            'CURLOPT_NETRC',
+            'CURLOPT_NETRC_FILE',
+            'CURLOPT_COOKIE',
+            'CURLOPT_COOKIEFILE',
+        ];
+
+        return array_values(array_unique(array_map(
+            constant(...),
+            array_filter($names, defined(...)),
+        )));
+    }
+
+    /**
      * @inheritDoc
      */
     public function sendRequest(RequestInterface $request, ?HttpContext $context = null): ResponseInterface
@@ -217,6 +254,10 @@ class CurlAdapter extends AbstractAdapter
         ?HttpContext $context = null,
     ): array {
         $options = array_replace($this->options, $options);
+
+        if (false === $context?->origin_credentials) {
+            $options = array_diff_key($options, array_flip($this->getOriginCredentialsOptions()));
+        }
 
         // HTTP Version
         $options[CURLOPT_HTTP_VERSION] = match ($request->getProtocolVersion()) {

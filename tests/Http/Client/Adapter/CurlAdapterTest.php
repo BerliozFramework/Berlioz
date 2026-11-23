@@ -55,4 +55,65 @@ class CurlAdapterTest extends TestCase
             array_intersect_key($preparedOptions, $expected),
         );
     }
+
+    public function testOptions_originCredentials()
+    {
+        $credentials = [
+            CURLOPT_HTTPAUTH => CURLAUTH_BASIC,
+            CURLOPT_USERPWD => 'user:password',
+            CURLOPT_USERNAME => 'user',
+            CURLOPT_PASSWORD => 'password',
+            CURLOPT_XOAUTH2_BEARER => 'token',
+            CURLOPT_SSLCERT => '/client.pem',
+            CURLOPT_SSLKEY => '/client.key',
+            CURLOPT_KEYPASSWD => 'key-secret',
+            CURLOPT_NETRC => 1,
+            CURLOPT_COOKIE => 'session=secret',
+            CURLOPT_COOKIEFILE => '/cookies.txt',
+        ];
+        $transport = [
+            CURLOPT_TIMEOUT => 20,
+            CURLOPT_PROXY => 'proxy:3128',
+            CURLOPT_PROXYUSERPWD => 'proxy-user:proxy-password',
+        ];
+        $adapter = new class($credentials + $transport) extends CurlAdapter {
+            public function prepareCurlOptions(
+                RequestInterface $request,
+                array $options = [],
+                ?HttpContext $context = null,
+            ): array {
+                return parent::prepareCurlOptions($request, $options, $context);
+            }
+        };
+        $request = new ServerRequest(method: Request::HTTP_METHOD_GET, uri: 'https://getberlioz.com/');
+        $context = new HttpContext(
+            ssl_local_cert: '/context.pem',
+            ssl_local_pk: '/context.key',
+            ssl_local_passphrase: 'context-secret',
+        );
+
+        // Allowed origin
+        $preparedOptions = $adapter->prepareCurlOptions($request, context: $context);
+        $this->assertSame('/context.pem', $preparedOptions[CURLOPT_SSLCERT]);
+        $this->assertSame('/context.key', $preparedOptions[CURLOPT_SSLKEY]);
+        $this->assertSame('context-secret', $preparedOptions[CURLOPT_KEYPASSWD]);
+        $this->assertSame('user:password', $preparedOptions[CURLOPT_USERPWD]);
+        $this->assertSame('session=secret', $preparedOptions[CURLOPT_COOKIE]);
+
+        // Without context
+        $preparedOptions = $adapter->prepareCurlOptions($request);
+        $this->assertEquals($credentials, array_intersect_key($preparedOptions, $credentials));
+
+        // Downgraded origin
+        $downgradedContexts = [$context->withoutOriginCredentials(), (new HttpContext())->withoutOriginCredentials()];
+        foreach ($downgradedContexts as $downgraded) {
+            $preparedOptions = $adapter->prepareCurlOptions($request, context: $downgraded);
+
+            $this->assertSame(
+                [CURLOPT_HTTPAUTH => CURLAUTH_BASIC],
+                array_intersect_key($preparedOptions, $credentials),
+            );
+            $this->assertEquals($transport, array_intersect_key($preparedOptions, $transport));
+        }
+    }
 }
