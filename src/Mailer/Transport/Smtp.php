@@ -571,8 +571,8 @@ class Smtp extends AbstractTransport implements TransportInterface, LoggerAwareI
         // Log
         $this->log(LogLevel::DEBUG, sprintf('DATA command response: %s', $response));
 
-        // Headers
-        $this->write($this->getHeaders($mail));
+        // Headers, Bcc recipients must stay in envelope only
+        $this->write($this->getHeaders($mail, ['Bcc']));
 
         // Body
         $this->write($this->getContents($mail));
