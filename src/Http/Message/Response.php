@@ -14,7 +14,6 @@ declare(strict_types=1);
 
 namespace Berlioz\Http\Message;
 
-use Berlioz\Http\Message\Validator\HttpFieldGrammar;
 use InvalidArgumentException;
 use Psr\Http\Message\ResponseInterface;
 
@@ -214,31 +213,13 @@ class Response extends Message implements ResponseInterface
         array $headers = [],
         protected ?string $reasonPhrase = null
     ) {
-        $this->assertStatusCode($statusCode);
         $this->assertReasonPhrase($reasonPhrase);
 
         parent::__construct($body, $headers);
     }
 
     /**
-     * Assert that a status code is in the 100-599 range (RFC 9110).
-     *
-     * @param int $statusCode
-     *
-     * @return void
-     * @throws InvalidArgumentException for an invalid status code.
-     */
-    private function assertStatusCode(int $statusCode): void
-    {
-        if ($statusCode < 100 || $statusCode > 599) {
-            throw new InvalidArgumentException(
-                sprintf('Status code must be between 100 and 599, %d given', $statusCode)
-            );
-        }
-    }
-
-    /**
-     * Assert that a reason phrase does not contain control characters (except HTAB).
+     * Assert that a reason phrase does not contain CR, LF or NUL characters.
      *
      * A reason phrase is emitted verbatim into the HTTP status line, so control
      * characters would allow status-line / header injection.
@@ -250,8 +231,8 @@ class Response extends Message implements ResponseInterface
      */
     private function assertReasonPhrase(?string $reasonPhrase): void
     {
-        if (null !== $reasonPhrase && !HttpFieldGrammar::isReasonPhrase($reasonPhrase)) {
-            throw new InvalidArgumentException('Reason phrase must not contain control characters');
+        if (null !== $reasonPhrase && 1 === preg_match('/[\r\n\0]/', $reasonPhrase)) {
+            throw new InvalidArgumentException('Reason phrase must not contain CR, LF or NUL characters');
         }
     }
 
@@ -292,7 +273,6 @@ class Response extends Message implements ResponseInterface
      */
     public function withStatus($code, $reasonPhrase = ''): static
     {
-        $this->assertStatusCode($code);
         $this->assertReasonPhrase($reasonPhrase);
 
         $clone = clone $this;

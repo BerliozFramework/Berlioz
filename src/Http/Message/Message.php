@@ -298,7 +298,10 @@ abstract class Message implements MessageInterface, Stringable
     }
 
     /**
-     * Assert that a header value is valid (RFC 9110 field value, no control characters except HTAB).
+     * Assert that a header value does not contain CR, LF or NUL characters.
+     *
+     * Other control characters are accepted, so that received messages remain readable;
+     * they are rejected at HTTP/1 emission.
      *
      * @param string $value
      *
@@ -307,8 +310,8 @@ abstract class Message implements MessageInterface, Stringable
      */
     private function assertHeaderValue(string $value): void
     {
-        if (!HttpFieldGrammar::isFieldValue($value)) {
-            throw new InvalidArgumentException('Header value must not contain control characters');
+        if (1 === preg_match('/[\r\n\0]/', $value)) {
+            throw new InvalidArgumentException('Header value must not contain CR, LF or NUL characters');
         }
     }
 

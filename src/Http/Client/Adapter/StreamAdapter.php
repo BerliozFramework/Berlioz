@@ -15,7 +15,6 @@ declare(strict_types=1);
 namespace Berlioz\Http\Client\Adapter;
 
 use Berlioz\Http\Client\Components\HeaderParserTrait;
-use Berlioz\Http\Client\Exception\HttpException;
 use Berlioz\Http\Client\Exception\NetworkException;
 use Berlioz\Http\Client\History\Timings;
 use Berlioz\Http\Client\HttpContext;
@@ -23,7 +22,6 @@ use Berlioz\Http\Message\Request;
 use Berlioz\Http\Message\Response;
 use Berlioz\Http\Message\Uri;
 use DateTimeImmutable;
-use InvalidArgumentException;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 
@@ -247,19 +245,11 @@ class StreamAdapter extends AbstractAdapter
 
         $headersTime = microtime(true);
 
-        try {
-            $response = new Response(
-                statusCode: $statusCode ?? 0,
-                headers: $headers,
-                reasonPhrase: $reasonPhrase
-            );
-        } catch (InvalidArgumentException $exception) {
-            throw new HttpException(
-                'Invalid HTTP response: ' . $exception->getMessage(),
-                $request,
-                previous: $exception,
-            );
-        }
+        $response = new Response(
+            statusCode: $statusCode ?? 0,
+            headers: $headers,
+            reasonPhrase: $reasonPhrase
+        );
         $response = $response->withProtocolVersion($protocolVersion);
 
         if (strtoupper($method) == Request::HTTP_METHOD_HEAD) {

@@ -24,7 +24,6 @@ use Berlioz\Http\Core\Exception\Http\BadRequestHttpException;
 use Berlioz\Http\Core\Exception\Http\ForbiddenHttpException;
 use Berlioz\Http\Core\Exception\Http\InternalServerErrorHttpException;
 use Berlioz\Http\Core\Exception\Http\NotFoundHttpException;
-use Berlioz\Http\Core\Exception\HttpException;
 use Berlioz\Http\Core\Http\Handler\Error\ErrorHandler;
 use Berlioz\Http\Core\TestProject\FakeDefaultDirectories;
 use Berlioz\Http\Message\Exception\MalformedBodyException;
@@ -174,30 +173,6 @@ class ErrorHandlerTest extends TestCase
             $this->assertStringNotContainsString($exception->getMessage(), (string)$response->getBody());
         }
         $this->assertSame(500, $response->getStatusCode());
-    }
-
-    public static function provideUnusableHttpExceptions(): array
-    {
-        return [
-            'invalid status code' => [new HttpException(999)],
-            'invalid reason phrase' => [new HttpException(404, "Not\nFound")],
-        ];
-    }
-
-    #[DataProvider('provideUnusableHttpExceptions')]
-    public function testHandle_fallbackWithUnusableHttpException(HttpException $exception): void
-    {
-        $app = $this->getMockBuilder(HttpApp::class)
-            ->setConstructorArgs([new Core(new FakeDefaultDirectories(), cache: false)])
-            ->onlyMethods(['call', 'getConfigKey'])
-            ->getMock();
-        $app->method('getConfigKey')->willReturn([]);
-        $app->method('call')->willThrowException(new RuntimeException('Default renderer failure'));
-
-        $response = (new ErrorHandler($app))->handle(new ServerRequest('GET', '/'), $exception);
-
-        $this->assertSame(500, $response->getStatusCode());
-        $this->assertStringContainsString('Internal Server Error', (string)$response->getBody());
     }
 
     private function getApp(?Core $core = null): HttpApp

@@ -446,7 +446,7 @@ class MessageTest extends TestCase
         $message = $this->newMessageObj();
 
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('must not contain control characters');
+        $this->expectExceptionMessage('must not contain CR, LF or NUL');
 
         $message->withHeader('X-Foo', "value\r\nX-Injected: evil");
     }
@@ -498,25 +498,11 @@ class MessageTest extends TestCase
         $this->assertSame([$expected], $message->withAddedHeader('X-Foo', $value)->getHeader('X-Foo'));
     }
 
-    public static function provideHeaderValuesWithControlCharacters(): array
-    {
-        return [
-            'SOH' => ["a\x01b"],
-            'ESC' => ["a\x1Bb"],
-            'DEL' => ["a\x7Fb"],
-            'vertical tab' => ["a\x0Bb"],
-        ];
-    }
-
-    #[DataProvider('provideHeaderValuesWithControlCharacters')]
-    public function testWithHeaderRejectsControlCharacters(string $value)
+    public function testWithHeaderAcceptsOtherControlCharacters()
     {
         $message = $this->newMessageObj();
 
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('must not contain control characters');
-
-        $message->withHeader('X-Foo', $value);
+        $this->assertSame(["a\x01b"], $message->withHeader('X-Foo', "a\x01b")->getHeader('X-Foo'));
     }
 
     public function testWithHeaderRejectsNameWithTrailingNewline()

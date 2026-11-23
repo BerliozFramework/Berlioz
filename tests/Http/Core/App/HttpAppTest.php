@@ -559,6 +559,28 @@ class HttpAppTest extends TestCase
         }
     }
 
+    #[RunInSeparateProcess]
+    public function testPrint_nativeResponseWithControlCharacterEmitsNothing(): void
+    {
+        $app = new HttpApp(new Core(new FakeDefaultDirectories(), false));
+        $response = new Response('FOO', 200, ['X-Foo' => "a\x01b"]);
+
+        $this->assertSame(["a\x01b"], $response->getHeader('X-Foo'));
+        $this->expectOutputString('');
+
+        try {
+            $app->print($response);
+            $this->fail('Expected invalid response');
+        } catch (InvalidResponseException $exception) {
+            $this->assertStringContainsString('X-Foo', $exception->getMessage());
+        }
+
+        $this->assertFalse(http_response_code());
+        if (null !== ($headers = $this->getEmittedHeaders())) {
+            $this->assertSame([], $headers);
+        }
+    }
+
     public static function provideInvalidResponses(): array
     {
         return [

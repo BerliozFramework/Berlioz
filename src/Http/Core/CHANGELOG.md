@@ -25,14 +25,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Debug toolbar shows the response time; dashboard, performances and activities show response time and total time
 - Debug router panel includes `QUERY` in the default methods
 - `HttpApp::print()` validates the complete response (status line and headers) before any output; an invalid
-  response throws an `InvalidResponseException` and emits no header nor body. Native responses already reject
-  invalid values when built, inside the error handling; only responses from another PSR-7 implementation can reach
-  `print()` invalid, and the exception is then left to the front controller
+  response throws an `InvalidResponseException` and emits no header nor body; the exception is left to the front
+  controller
 
 ### Fixed
 
-- The fallback error response uses a 500 status when the `HttpException` code or message cannot be used as a status
-  code or reason phrase, instead of failing
 - Fix `ResponseHelperTrait::jsonResponse()` silently returning an empty 204 response when JSON encoding fails; an
   `InternalServerErrorHttpException` is now thrown
 - A malformed incoming request body (`MalformedBodyException` raised for the server request, e.g. invalid JSON) produces a 400 Bad Request instead of a 500 Internal Server Error, and is no longer logged as a server error; malformed bodies of other messages (e.g. upstream responses) remain logged 500 errors
