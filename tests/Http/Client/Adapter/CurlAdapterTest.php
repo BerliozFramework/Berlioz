@@ -13,6 +13,7 @@
 namespace Berlioz\Http\Client\Tests\Adapter;
 
 use Berlioz\Http\Client\Adapter\CurlAdapter;
+use Berlioz\Http\Client\Exception\RequestException;
 use Berlioz\Http\Client\HttpContext;
 use Berlioz\Http\Message\Request;
 use Berlioz\Http\Message\ServerRequest;
@@ -102,5 +103,112 @@ class CurlAdapterTest extends TestCase
         // Original adapter is untouched
         $preparedOptions = $adapter->prepareCurlOptions($request);
         $this->assertEquals($credentials, array_intersect_key($preparedOptions, $credentials));
+    }
+
+    private function createAdapter(bool $httpsProxySupported = true): CurlAdapter
+    {
+        return new class($httpsProxySupported) extends CurlAdapter {
+            public function __construct(private readonly bool $httpsProxySupported)
+            {
+                parent::__construct();
+            }
+
+            public function prepareCurlOptions(
+                RequestInterface $request,
+                array $options = [],
+                ?HttpContext $context = null,
+            ): array {
+                return parent::prepareCurlOptions($request, $options, $context);
+            }
+
+            protected function supportsHttpsProxy(): bool
+            {
+                return $this->httpsProxySupported;
+            }
+        };
+    }
+
+    public function testOptions_httpProxy()
+    {
+        $options = $this->createAdapter()->prepareCurlOptions(
+            new Request(method: Request::HTTP_METHOD_GET, uri: 'https://getberlioz.com/'),
+            context: new HttpContext(proxy: 'http://us%40er:p%3Ass@proxy.local'),
+        );
+
+        $this->assertSame('http://proxy.local:80', $options[CURLOPT_PROXY]);
+        $this->assertSame(CURLPROXY_HTTP, $options[CURLOPT_PROXYTYPE]);
+        $this->assertTrue($options[CURLOPT_HTTPPROXYTUNNEL]);
+        $this->assertSame('us@er', $options[CURLOPT_PROXYUSERNAME]);
+        $this->assertSame('p:ss', $options[CURLOPT_PROXYPASSWORD]);
+        $this->assertArrayNotHasKey(CURLOPT_PROXYUSERPWD, $options);
+    }
+
+    public function testOptions_httpsProxy()
+    {
+        $options = $this->createAdapter()->prepareCurlOptions(
+            new Request(method: Request::HTTP_METHOD_GET, uri: 'https://getberlioz.com/'),
+            context: new HttpContext(
+                proxy: 'HTTPS://proxy.local',
+                ssl_verify_peer: false,
+                ssl_verify_host: false,
+                ssl_cafile: '/origin/ca.pem',
+                proxy_ssl_cafile: '/proxy/ca.pem',
+            ),
+        );
+
+        $this->assertSame('https://proxy.local:443', $options[CURLOPT_PROXY]);
+        $this->assertSame(CURLPROXY_HTTPS, $options[CURLOPT_PROXYTYPE]);
+        $this->assertArrayNotHasKey(CURLOPT_PROXYUSERNAME, $options);
+        // Origin and proxy TLS are configured independently
+        $this->assertFalse($options[CURLOPT_SSL_VERIFYPEER]);
+        $this->assertSame(0, $options[CURLOPT_SSL_VERIFYHOST]);
+        $this->assertSame('/origin/ca.pem', $options[CURLOPT_CAINFO]);
+        $this->assertTrue($options[CURLOPT_PROXY_SSL_VERIFYPEER]);
+        $this->assertSame(2, $options[CURLOPT_PROXY_SSL_VERIFYHOST]);
+        $this->assertSame('/proxy/ca.pem', $options[CURLOPT_PROXY_CAINFO]);
+    }
+
+    public function testOptions_proxyCaFallback()
+    {
+        $options = $this->createAdapter()->prepareCurlOptions(
+            new Request(method: Request::HTTP_METHOD_GET, uri: 'https://getberlioz.com/'),
+            context: new HttpContext(
+                proxy: 'https://proxy.local:8443',
+                ssl_cafile: '/origin/ca.pem',
+                ssl_capath: '/origin/certs',
+                proxy_ssl_verify_peer: false,
+                proxy_ssl_verify_host: false,
+            ),
+        );
+
+        $this->assertSame('https://proxy.local:8443', $options[CURLOPT_PROXY]);
+        $this->assertSame('/origin/ca.pem', $options[CURLOPT_PROXY_CAINFO]);
+        $this->assertSame('/origin/certs', $options[CURLOPT_PROXY_CAPATH]);
+        $this->assertTrue($options[CURLOPT_SSL_VERIFYPEER]);
+        $this->assertFalse($options[CURLOPT_PROXY_SSL_VERIFYPEER]);
+        $this->assertSame(0, $options[CURLOPT_PROXY_SSL_VERIFYHOST]);
+    }
+
+    public function testOptions_withoutProxy()
+    {
+        $options = $this->createAdapter()->prepareCurlOptions(
+            new Request(method: Request::HTTP_METHOD_GET, uri: 'https://getberlioz.com/'),
+            context: new HttpContext(),
+        );
+
+        $this->assertFalse($options[CURLOPT_HTTPPROXYTUNNEL]);
+        $this->assertArrayNotHasKey(CURLOPT_PROXY, $options);
+        $this->assertArrayNotHasKey(CURLOPT_PROXYTYPE, $options);
+    }
+
+    public function testOptions_httpsProxyUnsupported()
+    {
+        $this->expectException(RequestException::class);
+        $this->expectExceptionMessage('HTTPS proxy is not supported');
+
+        $this->createAdapter(httpsProxySupported: false)->prepareCurlOptions(
+            new Request(method: Request::HTTP_METHOD_GET, uri: 'https://getberlioz.com/'),
+            context: new HttpContext(proxy: 'https://proxy.local'),
+        );
     }
 }

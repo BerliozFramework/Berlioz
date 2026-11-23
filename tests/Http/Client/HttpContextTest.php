@@ -37,6 +37,16 @@ class HttpContextTest extends TestCase
         $this->assertSame($expected2, $options2->ssl_ciphers);
     }
 
+    public function testProxySslDefaults()
+    {
+        $context = new HttpContext(ssl_verify_peer: false, ssl_verify_host: false);
+
+        $this->assertTrue($context->proxy_ssl_verify_peer);
+        $this->assertTrue($context->proxy_ssl_verify_host);
+        $this->assertNull($context->proxy_ssl_cafile);
+        $this->assertNull($context->proxy_ssl_capath);
+    }
+
     public function testMake_null()
     {
         $options = HttpContext::make(['proxy' => 'https://getberlioz.com:8080']);
