@@ -15,6 +15,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `QUERY` requests keep their method and body when following a 301 or 302 redirection (RFC 10008, section 2.5);
   only a 303 switches to `GET`
+- `CurlAdapter` and `StreamAdapter` throw an `HttpException` (PSR-18 `ClientExceptionInterface`) when the received
+  response is invalid (e.g. missing status line, status code outside 100-599, control characters in a header
+  value), instead of an `InvalidArgumentException` or a response with a `0` status code
 
 ## [3.3.2] - 2026-10-25
 

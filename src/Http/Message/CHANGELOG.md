@@ -21,6 +21,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `JsonParser` throws `MalformedBodyException` on invalid JSON, and `getParsedBody()` throws it when the parsed body is neither an array, an object nor `null` (e.g. a scalar JSON root); `getParsedBody()` attaches the message to the exception when a parser does not
 - Header names are validated with the same RFC 9110 field-name grammar as `Http1ResponseValidator`; pseudo-headers
   remain accepted (e.g. HAR replay)
+- Leading and trailing spaces and tabs of header values are removed (optional whitespace, RFC 9110), and header
+  values containing control characters other than the horizontal tab are rejected (previously only CR, LF and NUL)
+- `Response` rejects status codes outside the 100-599 range (constructor and `withStatus()`), and reason phrases
+  containing control characters other than the horizontal tab (previously only CR, LF and NUL)
 
 ### Fixed
 

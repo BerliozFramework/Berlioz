@@ -74,4 +74,25 @@ class HttpFieldGrammarTest extends TestCase
     {
         $this->assertSame($expected, HttpFieldGrammar::isFieldValue($value));
     }
+
+    public static function provideReasonPhrases(): array
+    {
+        return [
+            'empty' => ['', true],
+            'simple' => ['Not Found', true],
+            'tab' => ["Not\tFound", true],
+            'surrounding spaces' => [' OK ', true],
+            'obs-text' => ["Requ\xEAte OK", true],
+            'CRLF' => ["OK\r\nX-Injected: evil", false],
+            'NUL' => ["OK\0", false],
+            'other control' => ["OK\x01", false],
+            'DEL' => ["OK\x7F", false],
+        ];
+    }
+
+    #[DataProvider('provideReasonPhrases')]
+    public function testIsReasonPhrase(string $reasonPhrase, bool $expected): void
+    {
+        $this->assertSame($expected, HttpFieldGrammar::isReasonPhrase($reasonPhrase));
+    }
 }

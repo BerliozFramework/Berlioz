@@ -64,10 +64,36 @@ final class HttpFieldGrammar
      */
     public static function isFieldValue(string $value): bool
     {
-        if (1 === preg_match('/[\x00-\x08\x0A-\x1F\x7F]/', $value)) {
+        if (self::hasControlCharacter($value)) {
             return false;
         }
 
         return 1 !== preg_match('/^[ \t]|[ \t]$/D', $value);
+    }
+
+    /**
+     * Is a valid reason phrase?
+     *
+     * Control characters other than HTAB are forbidden. An empty reason phrase is allowed.
+     *
+     * @param string $reasonPhrase
+     *
+     * @return bool
+     */
+    public static function isReasonPhrase(string $reasonPhrase): bool
+    {
+        return !self::hasControlCharacter($reasonPhrase);
+    }
+
+    /**
+     * Has a control character other than HTAB?
+     *
+     * @param string $str
+     *
+     * @return bool
+     */
+    private static function hasControlCharacter(string $str): bool
+    {
+        return 1 === preg_match('/[\x00-\x08\x0A-\x1F\x7F]/', $str);
     }
 }

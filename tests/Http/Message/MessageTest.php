@@ -446,7 +446,7 @@ class MessageTest extends TestCase
         $message = $this->newMessageObj();
 
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('must not contain CR, LF or NUL');
+        $this->expectExceptionMessage('must not contain control characters');
 
         $message->withHeader('X-Foo', "value\r\nX-Injected: evil");
     }
@@ -476,6 +476,47 @@ class MessageTest extends TestCase
         $message = $message->withHeader(':method', 'GET');
 
         $this->assertSame(['GET'], $message->getHeader(':method'));
+    }
+
+    public static function provideHeaderValuesWithWhitespace(): array
+    {
+        return [
+            'leading space' => [' </a>; rel=preload', '</a>; rel=preload'],
+            'trailing space' => ['bar ', 'bar'],
+            'tabs and spaces' => ["\t bar \t", 'bar'],
+            'inner whitespace kept' => [" a \t b ", "a \t b"],
+            'only whitespace' => [" \t ", ''],
+        ];
+    }
+
+    #[DataProvider('provideHeaderValuesWithWhitespace')]
+    public function testWithHeaderTrimsOptionalWhitespace(string $value, string $expected)
+    {
+        $message = $this->newMessageObj();
+
+        $this->assertSame([$expected], $message->withHeader('X-Foo', $value)->getHeader('X-Foo'));
+        $this->assertSame([$expected], $message->withAddedHeader('X-Foo', $value)->getHeader('X-Foo'));
+    }
+
+    public static function provideHeaderValuesWithControlCharacters(): array
+    {
+        return [
+            'SOH' => ["a\x01b"],
+            'ESC' => ["a\x1Bb"],
+            'DEL' => ["a\x7Fb"],
+            'vertical tab' => ["a\x0Bb"],
+        ];
+    }
+
+    #[DataProvider('provideHeaderValuesWithControlCharacters')]
+    public function testWithHeaderRejectsControlCharacters(string $value)
+    {
+        $message = $this->newMessageObj();
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('must not contain control characters');
+
+        $message->withHeader('X-Foo', $value);
     }
 
     public function testWithHeaderRejectsNameWithTrailingNewline()

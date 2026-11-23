@@ -505,6 +505,20 @@ class HttpAppTest extends TestCase
         $this->assertSame($statusCode, http_response_code());
     }
 
+    /**
+     * Get headers emitted by header(), only recorded by Xdebug (CLI does not record them).
+     *
+     * @return string[]|null
+     */
+    private function getEmittedHeaders(): ?array
+    {
+        if (!function_exists('xdebug_info') || [] === xdebug_info('mode')) {
+            return null;
+        }
+
+        return xdebug_get_headers();
+    }
+
     #[RunInSeparateProcess]
     public function testPrint_thirdPartyResponse(): void
     {
@@ -524,11 +538,24 @@ class HttpAppTest extends TestCase
         $app->print($response);
 
         $this->assertSame(202, http_response_code());
-        if (function_exists('xdebug_get_headers')) {
-            $this->assertSame(
-                ['Location: /jobs/1', 'set-cookie: a=1', 'Set-Cookie: b=2', 'Set-Cookie: c=3'],
-                xdebug_get_headers(),
-            );
+        if (null !== ($headers = $this->getEmittedHeaders())) {
+            $this->assertSame(['Location: /jobs/1', 'set-cookie: a=1', 'Set-Cookie: b=2', 'Set-Cookie: c=3'], $headers);
+        }
+    }
+
+    #[RunInSeparateProcess]
+    public function testPrint_nativeResponseWithSurroundingWhitespace(): void
+    {
+        $app = new HttpApp(new Core(new FakeDefaultDirectories(), false));
+        $response = new Response('FOO', 200, ['Link' => ' </a>; rel=preload', 'X-Foo' => "bar \t"]);
+
+        $this->expectOutputString('FOO');
+        $app->print($response);
+
+        $this->assertSame(200, http_response_code());
+        $this->assertSame(['Link' => ['</a>; rel=preload'], 'X-Foo' => ['bar']], $app->getResponseInfo()['headers']);
+        if (null !== ($headers = $this->getEmittedHeaders())) {
+            $this->assertSame(['Link: </a>; rel=preload', 'X-Foo: bar'], $headers);
         }
     }
 
@@ -573,8 +600,8 @@ class HttpAppTest extends TestCase
 
         $this->assertFalse(http_response_code());
         $this->assertNull($app->getResponseInfo());
-        if (function_exists('xdebug_get_headers')) {
-            $this->assertSame([], xdebug_get_headers());
+        if (null !== ($headers = $this->getEmittedHeaders())) {
+            $this->assertSame([], $headers);
         }
 
         // Application remains printable

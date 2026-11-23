@@ -20,6 +20,7 @@ use Berlioz\Http\Client\Tests\PhpServerTrait;
 use Berlioz\Http\Message\Request;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
+use Psr\Http\Client\ClientExceptionInterface;
 
 class AdapterTest extends TestCase
 {
@@ -75,6 +76,15 @@ class AdapterTest extends TestCase
         $response = $adapter->sendRequest(new Request('GET', 'http://localhost:8080/request.php?redirect=1'));
 
         $this->assertEquals(301, $response->getStatusCode());
+    }
+
+    #[DataProvider('adapterProvider')]
+    public function testSendRequest_invalidResponse(AdapterInterface $adapter)
+    {
+        $this->expectException(ClientExceptionInterface::class);
+        $this->expectExceptionMessage('Invalid HTTP response');
+
+        $adapter->sendRequest(new Request('GET', 'http://localhost:8080/request.php?test=invalid_status_code'));
     }
 
     #[DataProvider('adapterProvider')]

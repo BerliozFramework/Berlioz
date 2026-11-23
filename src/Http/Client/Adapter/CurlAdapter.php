@@ -16,6 +16,7 @@ namespace Berlioz\Http\Client\Adapter;
 
 use Berlioz\Http\Client\Components\HeaderParserTrait;
 use Berlioz\Http\Client\Exception\HttpClientException;
+use Berlioz\Http\Client\Exception\HttpException;
 use Berlioz\Http\Client\Exception\NetworkException;
 use Berlioz\Http\Client\Exception\RequestException;
 use Berlioz\Http\Client\History\Timings;
@@ -25,6 +26,7 @@ use Berlioz\Http\Message\Response;
 use Berlioz\Http\Message\Stream\MemoryStream;
 use Berlioz\Http\Message\Uri;
 use DateTimeImmutable;
+use InvalidArgumentException;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 
@@ -192,12 +194,20 @@ class CurlAdapter extends AbstractAdapter
         }
 
         // Create response
-        $response = new Response(
-            $this->createStream($bodyStream, $headers['Content-Encoding'] ?? null),
-            curl_getinfo($ch, CURLINFO_RESPONSE_CODE),
-            $headers,
-            $reasonPhrase ?? ''
-        );
+        try {
+            $response = new Response(
+                $this->createStream($bodyStream, $headers['Content-Encoding'] ?? null),
+                curl_getinfo($ch, CURLINFO_RESPONSE_CODE),
+                $headers,
+                $reasonPhrase ?? ''
+            );
+        } catch (InvalidArgumentException $exception) {
+            throw new HttpException(
+                'Invalid HTTP response: ' . $exception->getMessage(),
+                $request,
+                previous: $exception,
+            );
+        }
 
         return $response->withProtocolVersion($protocolVersion);
     }

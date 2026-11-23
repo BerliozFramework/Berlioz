@@ -268,7 +268,8 @@ abstract class Message implements MessageInterface, Stringable
 
             $values = [];
             foreach ((array)$value as $singleValue) {
-                $singleValue = (string)$singleValue;
+                // Optional whitespace around the value is not part of it (RFC 9110)
+                $singleValue = trim((string)$singleValue, " \t");
                 $this->assertHeaderValue($singleValue);
                 $values[] = $singleValue;
             }
@@ -280,7 +281,7 @@ abstract class Message implements MessageInterface, Stringable
     }
 
     /**
-     * Assert that a header name is valid (RFC 7230 token).
+     * Assert that a header name is valid (RFC 9110 token or pseudo-header).
      *
      * @param string $name
      *
@@ -297,7 +298,7 @@ abstract class Message implements MessageInterface, Stringable
     }
 
     /**
-     * Assert that a header value does not contain CR, LF or NUL characters.
+     * Assert that a header value is valid (RFC 9110 field value, no control characters except HTAB).
      *
      * @param string $value
      *
@@ -306,8 +307,8 @@ abstract class Message implements MessageInterface, Stringable
      */
     private function assertHeaderValue(string $value): void
     {
-        if (1 === preg_match('/[\r\n\0]/', $value)) {
-            throw new InvalidArgumentException('Header value must not contain CR, LF or NUL characters');
+        if (!HttpFieldGrammar::isFieldValue($value)) {
+            throw new InvalidArgumentException('Header value must not contain control characters');
         }
     }
 

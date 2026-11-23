@@ -38,6 +38,9 @@ switch ($_GET['test'] ?? null) {
         $reason = 'HTTP/1.1 200 Requête OK';
         header(mb_convert_encoding($reason, 'ISO-8859-1', mb_detect_encoding($reason)));
         break;
+    case 'invalid_status_code':
+        header('HTTP/1.1 999 Invalid');
+        break;
 }
 
 if ($_GET['encoding'] ?? null) {

@@ -22,6 +22,12 @@ use Psr\Http\Message\ResponseInterface;
  *
  * Validates the status line and header fields of any PSR-7 response before an HTTP/1 emission.
  * Invalid fields are rejected, never altered. The body is not read.
+ *
+ * "HTTP/1" refers to the produced format: a status line and "Name: value" field lines, as expected by PHP
+ * header(). The server (FPM, Apache, nginx...) translates them to the protocol negotiated with the client,
+ * so the protocol version of the status line is not restricted to 1.x (e.g. "2" when copied from an HTTP/2
+ * request). Rules specific to HTTP/2 or HTTP/3 (lowercase names, connection-specific fields) are not checked;
+ * pseudo-header fields do not exist in this format and are rejected.
  */
 final class Http1ResponseValidator
 {
@@ -46,7 +52,7 @@ final class Http1ResponseValidator
         }
 
         $reasonPhrase = $response->getReasonPhrase();
-        if (1 === preg_match('/[\x00-\x08\x0A-\x1F\x7F]/', $reasonPhrase)) {
+        if (false === HttpFieldGrammar::isReasonPhrase($reasonPhrase)) {
             throw InvalidResponseException::invalidReasonPhrase();
         }
 

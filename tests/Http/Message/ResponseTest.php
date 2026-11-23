@@ -15,6 +15,7 @@ namespace Berlioz\Http\Message\Tests;
 use Berlioz\Http\Message\Response;
 use Berlioz\Http\Message\Stream;
 use InvalidArgumentException;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 class ResponseTest extends TestCase
@@ -45,9 +46,53 @@ class ResponseTest extends TestCase
     public function testConstructRejectsCRLFInReasonPhrase()
     {
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('Reason phrase must not contain CR, LF or NUL');
+        $this->expectExceptionMessage('Reason phrase must not contain control characters');
 
         new Response(null, 200, [], "OK\r\nInjected: evil");
+    }
+
+    public function testConstructRejectsControlCharacterInReasonPhrase()
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Reason phrase must not contain control characters');
+
+        new Response(null, 200, [], "OK\x01");
+    }
+
+    public function testConstructAcceptsTabInReasonPhrase()
+    {
+        $this->assertSame("Very\tOK", (new Response(null, 200, [], "Very\tOK"))->getReasonPhrase());
+    }
+
+    public static function provideInvalidStatusCodes(): array
+    {
+        return [[0], [99], [600], [999], [-200]];
+    }
+
+    #[DataProvider('provideInvalidStatusCodes')]
+    public function testConstructRejectsInvalidStatusCode(int $statusCode)
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Status code must be between 100 and 599');
+
+        new Response(null, $statusCode);
+    }
+
+    #[DataProvider('provideInvalidStatusCodes')]
+    public function testWithStatusRejectsInvalidStatusCode(int $statusCode)
+    {
+        $response = new Response(null, 200);
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Status code must be between 100 and 599');
+
+        $response->withStatus($statusCode);
+    }
+
+    public function testStatusCodeBounds()
+    {
+        $this->assertSame(100, (new Response(null, 100))->getStatusCode());
+        $this->assertSame(599, (new Response(null, 200))->withStatus(599)->getStatusCode());
     }
 
     public function testWithStatusRejectsCRLFInReasonPhrase()
