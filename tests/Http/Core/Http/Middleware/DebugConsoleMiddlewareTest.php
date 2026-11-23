@@ -59,12 +59,34 @@ class DebugConsoleMiddlewareTest extends AbstractTestCase
         );
     }
 
-    public function testProcess_allowsConsoleWhenDebugEnabledWithoutIpRestriction()
+    public function testProcess_allowsLoopbackConsoleByDefault()
     {
         $middleware = $this->middleware(['berlioz' => ['debug' => ['enable' => true]]]);
-        $middleware->process($this->consoleRequest(), $handler = new FakeRequestHandler());
+        $middleware->process(
+            $this->consoleRequest(['REMOTE_ADDR' => '::1']),
+            $handler = new FakeRequestHandler()
+        );
 
         $this->assertTrue($handler->isHandled());
+    }
+
+    public function testProcess_blocksExternalConsoleByDefault()
+    {
+        $middleware = $this->middleware(['berlioz' => ['debug' => ['enable' => true]]]);
+
+        $this->expectException(NotFoundHttpException::class);
+        $middleware->process(
+            $this->consoleRequest(['REMOTE_ADDR' => '203.0.113.10']),
+            new FakeRequestHandler()
+        );
+    }
+
+    public function testProcess_blocksConsoleWithoutRemoteAddress()
+    {
+        $middleware = $this->middleware(['berlioz' => ['debug' => ['enable' => true]]]);
+
+        $this->expectException(NotFoundHttpException::class);
+        $middleware->process($this->consoleRequest(), new FakeRequestHandler());
     }
 
     public function testProcess_blocksConsoleWhenIpNotAllowed()
@@ -104,6 +126,20 @@ class DebugConsoleMiddlewareTest extends AbstractTestCase
             $this->consoleRequest([
                 'REMOTE_ADDR' => '203.0.113.10',
                 'HTTP_X_FORWARDED_FOR' => '127.0.0.1',
+            ]),
+            new FakeRequestHandler()
+        );
+    }
+
+    public function testProcess_blocksExternalClientBehindLoopbackProxy()
+    {
+        $middleware = $this->middleware(['berlioz' => ['debug' => ['enable' => true]]]);
+
+        $this->expectException(NotFoundHttpException::class);
+        $middleware->process(
+            $this->consoleRequest([
+                'REMOTE_ADDR' => '127.0.0.1',
+                'HTTP_X_FORWARDED_FOR' => '203.0.113.10',
             ]),
             new FakeRequestHandler()
         );

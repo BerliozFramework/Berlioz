@@ -12,8 +12,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `FileCacheDriver::set()` now writes atomically (temporary file + `rename()`), preventing concurrent readers from
   getting "Corrupted data" exceptions
 
+### Security
+
+- Debug access is restricted to loopback clients (`127.0.0.1`, `::1`) by default when `berlioz.debug.enable` is
+  `true`; an explicitly empty `berlioz.debug.ip` list now denies access instead of allowing everyone
+- Debug access is denied when the client cannot be determined reliably: forwarding headers (`Forwarded`,
+  `X-Forwarded-For`, `X-Real-IP`) sent by an untrusted peer, or a trusted proxy that does not forward the client
+
 ### Deprecated
 
+- Hostnames (reverse DNS) in `berlioz.debug.ip` configuration; use IP addresses, CIDR ranges or aliases instead.
+  An `E_USER_DEPRECATED` is triggered when a hostname entry is evaluated
 - Service declarations in `container.services` configuration; register services from a service provider listed in
   `container.providers` instead. An `E_USER_DEPRECATED` is triggered when `container.services` is not empty
 
@@ -25,6 +34,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- `berlioz.debug.ip` defaults to `null` (loopback only) and accepts CIDR ranges and the `loopback`, `private`,
+  `public` and `*` aliases; use `["*"]` to allow every client
+- CLI processes are considered local for debug only with the default `berlioz.debug.ip` configuration
+- New `DebugAccessPolicy` shared by `DebugHandler::isEnabledInConfig()` and the HTTP debug console
+- Require `berlioz/helpers` `^1.15`
 - `SnapshotLoader::save()` removes the pending marker of the snapshot
 - `SnapshotCleaner` also removes expired pending markers (`clean()`), all markers (`clear()`) and the marker of a deleted snapshot (`delete()`)
 

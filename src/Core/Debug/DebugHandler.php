@@ -27,7 +27,6 @@ use Berlioz\Core\Debug\Snapshot\SystemInfo;
 use Berlioz\Core\Debug\Snapshot\Timeline;
 use Berlioz\Core\Debug\Snapshot\TimelineActivity;
 use Berlioz\Core\Debug\Snapshot\TimelineEvent;
-use Berlioz\Helpers\NetworkHelper;
 use DateTime;
 use DateTimeImmutable;
 use DateTimeInterface;
@@ -108,48 +107,13 @@ class DebugHandler
      */
     public function isEnabledInConfig(ConfigInterface $config): bool
     {
-        $debug = $config->get('berlioz.debug.enable', false);
+        $policy = new DebugAccessPolicy($config);
 
-        if (!is_bool($debug) || false === $debug) {
-            return false;
+        if (PHP_SAPI === 'cli' && !isset($_SERVER['REMOTE_ADDR'])) {
+            return $policy->isLocalProcessAllowed();
         }
 
-        // Get ip addresses from config
-        $configIpAddresses = $config->get('berlioz.debug.ip', []);
-        if (!is_array($configIpAddresses)) {
-            return false;
-        }
-
-        // No ip restriction
-        if (empty($configIpAddresses)) {
-            return true;
-        }
-
-        // Resolve the authoritative client IP. `X-Forwarded-For` is NOT trusted by default: it is only
-        // honoured when the direct peer (`REMOTE_ADDR`) is a configured trusted proxy. This prevents a
-        // remote client from spoofing an allow-listed IP to enable debug mode.
-        $trustedProxies = $config->get('berlioz.proxies.trusted', []);
-        if (!is_array($trustedProxies)) {
-            $trustedProxies = [];
-        }
-
-        $clientIp = NetworkHelper::clientIp($trustedProxies);
-
-        if (null === $clientIp) {
-            return false;
-        }
-
-        // Find ip
-        if (in_array($clientIp, $configIpAddresses, true)) {
-            return true;
-        }
-
-        // Find host (reverse-DNS is performed only on the validated client IP, never on raw input)
-        if (in_array(gethostbyaddr($clientIp), $configIpAddresses, true)) {
-            return true;
-        }
-
-        return false;
+        return $policy->isClientAllowed($_SERVER);
     }
 
     /**

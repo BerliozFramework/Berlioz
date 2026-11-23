@@ -42,6 +42,11 @@ class DebugControllerTest extends TestCase
         return new HttpApp($core);
     }
 
+    private function consoleRequest(string $path): ServerRequest
+    {
+        return new ServerRequest('GET', $path, serverParams: ['REMOTE_ADDR' => '127.0.0.1']);
+    }
+
     private function getLoader(HttpApp $app): SnapshotLoader
     {
         return new SnapshotLoader($app->getCore()->getFilesystem(), $app->getConfig());
@@ -57,7 +62,7 @@ class DebugControllerTest extends TestCase
         $handler->markResponseSent(10.25);
         $this->getLoader($app)->save($handler->getSnapshot());
 
-        $response = $app->handle(new ServerRequest('GET', '/_console/' . $handler->getUniqid() . '/toolbar'));
+        $response = $app->handle($this->consoleRequest('/_console/' . $handler->getUniqid() . '/toolbar'));
 
         $body = (string)$response->getBody();
 
@@ -73,7 +78,7 @@ class DebugControllerTest extends TestCase
         $uniqid = uniqid();
         $this->getLoader($app)->markPending($uniqid, ['responseTime' => 0.0421]);
 
-        $response = $app->handle(new ServerRequest('GET', '/_console/' . $uniqid . '/toolbar'));
+        $response = $app->handle($this->consoleRequest('/_console/' . $uniqid . '/toolbar'));
         $body = (string)$response->getBody();
 
         $this->assertSame(202, $response->getStatusCode());
@@ -89,7 +94,7 @@ class DebugControllerTest extends TestCase
         $uniqid = uniqid();
         $this->getLoader($app)->markPending($uniqid, ['responseTime' => 0.0421]);
 
-        $response = $app->handle(new ServerRequest('GET', '/_console/' . $uniqid));
+        $response = $app->handle($this->consoleRequest('/_console/' . $uniqid));
         $body = (string)$response->getBody();
 
         $this->assertSame(202, $response->getStatusCode());
@@ -109,7 +114,7 @@ class DebugControllerTest extends TestCase
             json_encode(['uniqid' => $uniqid, 'expire' => microtime(true) - 1]),
         );
 
-        $response = $app->handle(new ServerRequest('GET', '/_console/' . $uniqid . '/activities'));
+        $response = $app->handle($this->consoleRequest('/_console/' . $uniqid . '/activities'));
         $body = (string)$response->getBody();
 
         $this->assertSame(410, $response->getStatusCode());
@@ -126,7 +131,7 @@ class DebugControllerTest extends TestCase
             json_encode(['uniqid' => $uniqid, 'expire' => microtime(true) - 1]),
         );
 
-        $response = $app->handle(new ServerRequest('GET', '/_console/' . $uniqid . '/toolbar'));
+        $response = $app->handle($this->consoleRequest('/_console/' . $uniqid . '/toolbar'));
         $body = (string)$response->getBody();
 
         $this->assertSame(410, $response->getStatusCode());
@@ -139,7 +144,7 @@ class DebugControllerTest extends TestCase
     {
         $app = $this->getApp();
 
-        $response = $app->handle(new ServerRequest('GET', '/_console/' . uniqid() . '/activities'));
+        $response = $app->handle($this->consoleRequest('/_console/' . uniqid() . '/activities'));
 
         $this->assertSame(404, $response->getStatusCode());
     }
@@ -154,7 +159,7 @@ class DebugControllerTest extends TestCase
         $handler->markResponseSent(10.25);
         $this->getLoader($app)->save($handler->getSnapshot());
 
-        $response = $app->handle(new ServerRequest('GET', '/_console/' . $handler->getUniqid() . '/activities'));
+        $response = $app->handle($this->consoleRequest('/_console/' . $handler->getUniqid() . '/activities'));
         $body = (string)$response->getBody();
 
         $this->assertSame(200, $response->getStatusCode());

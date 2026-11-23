@@ -4,7 +4,7 @@
     "locale": null,
     "debug": {
       "enable": false,
-      "ip": [],
+      "ip": null,
       "pending_ttl": null,
       "gc": {
         "probability": 1,
