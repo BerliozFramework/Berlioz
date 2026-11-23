@@ -229,6 +229,26 @@ class MessageTest extends TestCase
         $this->assertObjectHasProperty('json', $message->getParsedBody());
     }
 
+    public static function provideMixedCaseContentTypes(): array
+    {
+        return [
+            'capitalized JSON' => ['Application/JSON', '{"a":1}', ['a' => 1]],
+            'uppercase JSON with parameter' => ['APPLICATION/JSON; charset=utf-8', '{"a":1}', ['a' => 1]],
+            'structured syntax suffix' => ['Application/Vnd.Api+JSON', '{"a":1}', ['a' => 1]],
+            'form URL encoded' => ['Application/X-WWW-Form-Urlencoded', 'a=1', ['a' => '1']],
+        ];
+    }
+
+    #[DataProvider('provideMixedCaseContentTypes')]
+    public function testGetParsedBody_mixedCaseContentType(string $contentType, string $body, array $expected)
+    {
+        $message = $this->newMessageObj();
+        $message = $message->withBody(new MemoryStream($body))
+            ->withHeader('Content-Type', $contentType);
+
+        $this->assertEquals($expected, (array)$message->getParsedBody());
+    }
+
     public function testGetParsedBodyWithEmptyJsonBody()
     {
         $message = $this->newMessageObj();
@@ -375,6 +395,18 @@ class MessageTest extends TestCase
         $this->assertArrayHasKey('json', $message->getParsedBody());
         $this->assertArrayHasKey('application/json', $message::getBodyParsers());
         $this->assertSame(FakeParser::class, $message::getBodyParsers()['application/json']);
+    }
+
+    public function testAddBodyParser_mixedCaseMime()
+    {
+        $message = $this->newMessageObj();
+        $message::addBodyParser('Application/X-Fake-Mixed-Case', FakeParser::class);
+        $message = $message->withBody(new MemoryStream('{"json": true}'))
+            ->withHeader('Content-Type', 'application/x-fake-mixed-case');
+
+        $this->assertArrayHasKey('json', $message->getParsedBody());
+        $this->assertArrayHasKey('application/x-fake-mixed-case', $message::getBodyParsers());
+        $this->assertArrayNotHasKey('Application/X-Fake-Mixed-Case', $message::getBodyParsers());
     }
 
     public function testAddBadParser()
