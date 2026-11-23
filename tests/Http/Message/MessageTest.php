@@ -28,10 +28,23 @@ use Berlioz\Http\Message\Tests\Parser\FakeParser;
 use InvalidArgumentException;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
+use ReflectionProperty;
 use stdClass;
 
 class MessageTest extends TestCase
 {
+    private array $bodyParsers;
+
+    protected function setUp(): void
+    {
+        $this->bodyParsers = Message::getBodyParsers();
+    }
+
+    protected function tearDown(): void
+    {
+        (new ReflectionProperty(Message::class, 'bodyParser'))->setValue(null, $this->bodyParsers);
+    }
+
     private function newMessageObj()
     {
         return new class extends Message {
