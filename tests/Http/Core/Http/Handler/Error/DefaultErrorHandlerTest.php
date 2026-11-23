@@ -22,6 +22,7 @@ use Berlioz\Http\Core\TestProject\FakeDefaultDirectories;
 use Berlioz\Http\Message\Response;
 use Berlioz\Http\Message\ServerRequest;
 use Exception;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 class DefaultErrorHandlerTest extends TestCase
@@ -78,5 +79,33 @@ class DefaultErrorHandlerTest extends TestCase
         $this->assertStringContainsString('404 error', (string)$response->getBody());
         $this->assertStringContainsString('Oops, the page you\'re looking for doesn\'t exist',
             (string)$response->getBody());
+    }
+
+    public function testHandle_reasonPhrase(): void
+    {
+        $handler = $this->getHandler();
+        $response = $handler->handle(new ServerRequest('GET', '/'), new NotFoundHttpException('User not found'));
+
+        $this->assertSame(Response::HTTP_STATUS_NOT_FOUND, $response->getStatusCode());
+        $this->assertSame('User not found', $response->getReasonPhrase());
+    }
+
+    public static function provideUnusableReasonPhrases(): iterable
+    {
+        yield 'line feed' => ["User 42\nnot found"];
+        yield 'carriage return' => ["User 42\rnot found"];
+        yield 'carriage return and line feed' => ["Not\r\nFound"];
+        yield 'NUL' => ["Not\0Found"];
+    }
+
+    #[DataProvider('provideUnusableReasonPhrases')]
+    public function testHandle_unusableReasonPhrase(string $message): void
+    {
+        $handler = $this->getHandler();
+        $response = $handler->handle(new ServerRequest('GET', '/'), new NotFoundHttpException($message));
+
+        $this->assertSame(Response::HTTP_STATUS_NOT_FOUND, $response->getStatusCode());
+        $this->assertSame('Not Found', $response->getReasonPhrase());
+        $this->assertStringContainsString('404 error', (string)$response->getBody());
     }
 }

@@ -19,6 +19,7 @@ use Berlioz\Http\Core\Controller\AbstractController;
 use Berlioz\Http\Core\Exception\Http\InternalServerErrorHttpException;
 use Berlioz\Http\Core\Exception\HttpException;
 use Berlioz\Http\Message\Response;
+use InvalidArgumentException;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Throwable;
@@ -57,10 +58,15 @@ class DefaultErrorHandler extends AbstractController implements ErrorHandlerInte
             ]
         );
 
-        return new Response(
-            body: $str,
-            statusCode: $httpException->getCode(),
-            reasonPhrase: $httpException->getMessage()
-        );
+        try {
+            return new Response(
+                body: $str,
+                statusCode: $httpException->getCode(),
+                reasonPhrase: $httpException->getMessage()
+            );
+        } catch (InvalidArgumentException) {
+            // Message not usable as a reason phrase: default one of the status code
+            return new Response(body: $str, statusCode: $httpException->getCode());
+        }
     }
 }

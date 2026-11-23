@@ -24,6 +24,7 @@ use Berlioz\Http\Core\Exception\Http\BadRequestHttpException;
 use Berlioz\Http\Core\Exception\Http\ForbiddenHttpException;
 use Berlioz\Http\Core\Exception\Http\InternalServerErrorHttpException;
 use Berlioz\Http\Core\Exception\Http\NotFoundHttpException;
+use Berlioz\Http\Core\Exception\HttpException;
 use Berlioz\Http\Core\Http\Handler\Error\ErrorHandler;
 use Berlioz\Http\Core\TestProject\FakeDefaultDirectories;
 use Berlioz\Http\Message\Exception\MalformedBodyException;
@@ -311,5 +312,57 @@ class ErrorHandlerTest extends TestCase
 
         $this->assertStringContainsString('Internal Server Error', (string)$response->getBody());
         $this->assertStringContainsString('<pre', (string)$response->getBody());
+    }
+
+    public static function provideUnusableReasonPhrases(): iterable
+    {
+        yield 'line feed' => [new NotFoundHttpException("User 42\nnot found")];
+        yield 'carriage return' => [new NotFoundHttpException("User 42\rnot found")];
+        yield 'carriage return and line feed' => [new HttpException(404, "Not\r\nFound")];
+        yield 'NUL' => [new NotFoundHttpException("Not\0Found")];
+    }
+
+    #[DataProvider('provideUnusableReasonPhrases')]
+    public function testHandle_unusableReasonPhrase(HttpException $exception): void
+    {
+        $response = (new ErrorHandler($this->getApp()))->handle(new ServerRequest('GET', '/'), $exception);
+
+        $this->assertSame(404, $response->getStatusCode());
+        $this->assertSame('Not Found', $response->getReasonPhrase());
+        $this->assertStringContainsString('404 error', (string)$response->getBody());
+        $this->assertSame('', file_get_contents($this->errorLog));
+    }
+
+    public function testHandle_fallbackReasonPhrase(): void
+    {
+        $response = (new ErrorHandler($this->getAppWithoutRenderer()))
+            ->handle(new ServerRequest('GET', '/'), new NotFoundHttpException('User not found'));
+
+        $this->assertSame(404, $response->getStatusCode());
+        $this->assertSame('User not found', $response->getReasonPhrase());
+        $this->assertStringContainsString('Internal Server Error', (string)$response->getBody());
+    }
+
+    #[DataProvider('provideUnusableReasonPhrases')]
+    public function testHandle_fallbackUnusableReasonPhrase(HttpException $exception): void
+    {
+        $response = (new ErrorHandler($this->getAppWithoutRenderer()))
+            ->handle(new ServerRequest('GET', '/'), $exception);
+
+        $this->assertSame(404, $response->getStatusCode());
+        $this->assertSame('Not Found', $response->getReasonPhrase());
+        $this->assertStringContainsString('Internal Server Error', (string)$response->getBody());
+    }
+
+    private function getAppWithoutRenderer(): HttpApp
+    {
+        $app = $this->getMockBuilder(HttpApp::class)
+            ->setConstructorArgs([new Core(new FakeDefaultDirectories(), cache: false)])
+            ->onlyMethods(['call', 'getConfigKey'])
+            ->getMock();
+        $app->method('getConfigKey')->willReturn([]);
+        $app->method('call')->willThrowException(new RuntimeException('Default renderer failure'));
+
+        return $app;
     }
 }

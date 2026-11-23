@@ -20,6 +20,7 @@ use Berlioz\Http\Core\Exception\Http\InternalServerErrorHttpException;
 use Berlioz\Http\Core\Exception\HttpException;
 use Berlioz\Http\Message\Exception\MalformedBodyException;
 use Berlioz\Http\Message\Response;
+use InvalidArgumentException;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
@@ -151,11 +152,14 @@ class ErrorHandler implements ErrorHandlerInterface
             '</html>';
 
         if ($throwable instanceof HttpException) {
-            return new Response(
-                body: $str,
-                statusCode: $throwable->getCode() ?: 500,
-                reasonPhrase: $throwable->getMessage()
-            );
+            $statusCode = $throwable->getCode() ?: 500;
+
+            try {
+                return new Response(body: $str, statusCode: $statusCode, reasonPhrase: $throwable->getMessage());
+            } catch (InvalidArgumentException) {
+                // Message not usable as a reason phrase: default one of the status code
+                return new Response(body: $str, statusCode: $statusCode);
+            }
         }
 
         return new Response(body: $str, statusCode: 500);
