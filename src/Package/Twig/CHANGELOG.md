@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+
+- `nl2p` filter escapes its input before adding paragraph and line break markup, like Twig `nl2br`
+  (GHSA-543h-rf5x-cc4g); HTML passed to the filter is now escaped unless marked safe upstream (e.g. `|raw`)
+
 ### Fixed
 
 - Twig debug console template no longer uses the `spaceless` filter, deprecated since Twig 3.12
