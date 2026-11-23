@@ -81,13 +81,20 @@ class DefaultErrorHandlerTest extends TestCase
             (string)$response->getBody());
     }
 
-    public function testHandle_reasonPhrase(): void
+    public static function provideUsableReasonPhrases(): iterable
+    {
+        yield 'text' => ['User not found'];
+        yield 'tab' => ["User\tnot found"];
+    }
+
+    #[DataProvider('provideUsableReasonPhrases')]
+    public function testHandle_reasonPhrase(string $message): void
     {
         $handler = $this->getHandler();
-        $response = $handler->handle(new ServerRequest('GET', '/'), new NotFoundHttpException('User not found'));
+        $response = $handler->handle(new ServerRequest('GET', '/'), new NotFoundHttpException($message));
 
         $this->assertSame(Response::HTTP_STATUS_NOT_FOUND, $response->getStatusCode());
-        $this->assertSame('User not found', $response->getReasonPhrase());
+        $this->assertSame($message, $response->getReasonPhrase());
     }
 
     public static function provideUnusableReasonPhrases(): iterable
@@ -96,6 +103,9 @@ class DefaultErrorHandlerTest extends TestCase
         yield 'carriage return' => ["User 42\rnot found"];
         yield 'carriage return and line feed' => ["Not\r\nFound"];
         yield 'NUL' => ["Not\0Found"];
+        yield 'escape' => ["\x1B[31mUser not found\x1B[0m"];
+        yield 'vertical tab' => ["User\x0Bnot found"];
+        yield 'DEL' => ["User\x7Fnot found"];
     }
 
     #[DataProvider('provideUnusableReasonPhrases')]

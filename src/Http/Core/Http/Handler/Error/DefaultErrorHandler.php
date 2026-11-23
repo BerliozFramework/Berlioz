@@ -19,7 +19,6 @@ use Berlioz\Http\Core\Controller\AbstractController;
 use Berlioz\Http\Core\Exception\Http\InternalServerErrorHttpException;
 use Berlioz\Http\Core\Exception\HttpException;
 use Berlioz\Http\Message\Response;
-use InvalidArgumentException;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Throwable;
@@ -58,15 +57,27 @@ class DefaultErrorHandler extends AbstractController implements ErrorHandlerInte
             ]
         );
 
-        try {
-            return new Response(
-                body: $str,
-                statusCode: $httpException->getCode(),
-                reasonPhrase: $httpException->getMessage()
-            );
-        } catch (InvalidArgumentException) {
-            // Message not usable as a reason phrase: default one of the status code
-            return new Response(body: $str, statusCode: $httpException->getCode());
-        }
+        return new Response(
+            body: $str,
+            statusCode: $httpException->getCode(),
+            reasonPhrase: $this->getReasonPhrase($httpException)
+        );
+    }
+
+    /**
+     * Get the reason phrase of an HTTP exception.
+     *
+     * A message with a control character other than HTAB cannot be emitted in a status line: no reason phrase is
+     * given, so the default one of the status code applies.
+     *
+     * @param HttpException $httpException
+     *
+     * @return string|null
+     */
+    private function getReasonPhrase(HttpException $httpException): ?string
+    {
+        $message = $httpException->getMessage();
+
+        return 1 === preg_match('/[\x00-\x08\x0A-\x1F\x7F]/', $message) ? null : $message;
     }
 }

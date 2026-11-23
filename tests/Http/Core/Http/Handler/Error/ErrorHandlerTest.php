@@ -320,6 +320,27 @@ class ErrorHandlerTest extends TestCase
         yield 'carriage return' => [new NotFoundHttpException("User 42\rnot found")];
         yield 'carriage return and line feed' => [new HttpException(404, "Not\r\nFound")];
         yield 'NUL' => [new NotFoundHttpException("Not\0Found")];
+        yield 'escape' => [new NotFoundHttpException("\x1B[31mUser not found\x1B[0m")];
+        yield 'vertical tab' => [new NotFoundHttpException("User\x0Bnot found")];
+        yield 'DEL' => [new NotFoundHttpException("User\x7Fnot found")];
+    }
+
+    public static function provideUsableReasonPhrases(): iterable
+    {
+        yield 'text' => ['User not found'];
+        yield 'tab' => ["User\tnot found"];
+    }
+
+    #[DataProvider('provideUsableReasonPhrases')]
+    public function testHandle_reasonPhrase(string $message): void
+    {
+        $response = (new ErrorHandler($this->getApp()))
+            ->handle(new ServerRequest('GET', '/'), new NotFoundHttpException($message));
+
+        $this->assertSame(404, $response->getStatusCode());
+        $this->assertSame($message, $response->getReasonPhrase());
+        $this->assertStringContainsString('404 error', (string)$response->getBody());
+        $this->assertSame('', file_get_contents($this->errorLog));
     }
 
     #[DataProvider('provideUnusableReasonPhrases')]
@@ -333,13 +354,14 @@ class ErrorHandlerTest extends TestCase
         $this->assertSame('', file_get_contents($this->errorLog));
     }
 
-    public function testHandle_fallbackReasonPhrase(): void
+    #[DataProvider('provideUsableReasonPhrases')]
+    public function testHandle_fallbackReasonPhrase(string $message): void
     {
         $response = (new ErrorHandler($this->getAppWithoutRenderer()))
-            ->handle(new ServerRequest('GET', '/'), new NotFoundHttpException('User not found'));
+            ->handle(new ServerRequest('GET', '/'), new NotFoundHttpException($message));
 
         $this->assertSame(404, $response->getStatusCode());
-        $this->assertSame('User not found', $response->getReasonPhrase());
+        $this->assertSame($message, $response->getReasonPhrase());
         $this->assertStringContainsString('Internal Server Error', (string)$response->getBody());
     }
 
