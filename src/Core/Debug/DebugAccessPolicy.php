@@ -29,7 +29,7 @@ final readonly class DebugAccessPolicy
     public const DEFAULT_ALLOWED = ['127.0.0.1', '::1'];
 
     private const FORWARDING_HEADERS = ['HTTP_FORWARDED', 'HTTP_X_FORWARDED_FOR', 'HTTP_X_REAL_IP'];
-    private const ALIASES = ['loopback', 'private', 'public', '*', 'any'];
+    private const ALIASES = ['loopback', 'private', 'public', '*'];
 
     public function __construct(private ConfigInterface $config)
     {
@@ -48,13 +48,20 @@ final readonly class DebugAccessPolicy
     /**
      * Is a local process (CLI, without remote client) allowed?
      *
-     * Only the default policy (no `berlioz.debug.ip` configured) considers a local process as allowed.
+     * A local process is allowed when the allow-list allows loopback clients.
      *
      * @throws ConfigException
      */
     public function isLocalProcessAllowed(): bool
     {
-        return $this->isEnabled() && null === $this->config->get('berlioz.debug.ip');
+        $allowed = $this->getAllowed();
+        if (null === $allowed) {
+            return false;
+        }
+
+        return $this->allowsEveryone($allowed)
+            || $this->matches(self::DEFAULT_ALLOWED[0], $allowed)
+            || $this->matches(self::DEFAULT_ALLOWED[1], $allowed);
     }
 
     /**
@@ -66,13 +73,14 @@ final readonly class DebugAccessPolicy
      */
     public function isClientAllowed(array $serverParams): bool
     {
-        if (!$this->isEnabled()) {
+        $allowed = $this->getAllowed();
+        if (null === $allowed) {
             return false;
         }
 
-        $allowed = $this->config->get('berlioz.debug.ip') ?? self::DEFAULT_ALLOWED;
-        if (!is_array($allowed) || [] === $allowed) {
-            return false;
+        // Client identity is irrelevant when everyone is allowed
+        if ($this->allowsEveryone($allowed)) {
+            return true;
         }
 
         $clientIp = $this->resolveClientIp($serverParams);
@@ -81,6 +89,30 @@ final readonly class DebugAccessPolicy
         }
 
         return $this->matches($clientIp, $allowed);
+    }
+
+    /**
+     * Get the allow-list, or null when debug is disabled or nobody is allowed.
+     *
+     * @throws ConfigException
+     */
+    private function getAllowed(): ?array
+    {
+        if (!$this->isEnabled()) {
+            return null;
+        }
+
+        $allowed = $this->config->get('berlioz.debug.ip') ?? self::DEFAULT_ALLOWED;
+        if (!is_array($allowed) || [] === $allowed) {
+            return null;
+        }
+
+        return $allowed;
+    }
+
+    private function allowsEveryone(array $allowed): bool
+    {
+        return in_array('*', array_map(fn(mixed $entry) => is_string($entry) ? trim($entry) : $entry, $allowed), true);
     }
 
     /**

@@ -81,6 +81,18 @@ class DebugAccessPolicyTest extends TestCase
             true,
         ];
         yield 'everyone IPv4' => [['enable' => true, 'ip' => ['*']], [], ['REMOTE_ADDR' => '203.0.113.10'], true];
+        yield 'everyone behind undeclared proxy' => [
+            ['enable' => true, 'ip' => ['*']],
+            [],
+            ['REMOTE_ADDR' => '127.0.0.1', 'HTTP_X_FORWARDED_FOR' => '203.0.113.10'],
+            true,
+        ];
+        yield 'everyone behind non-forwarding trusted proxy' => [
+            ['enable' => true, 'ip' => ['*']],
+            ['loopback'],
+            ['REMOTE_ADDR' => '127.0.0.1'],
+            true,
+        ];
         yield 'everyone IPv6' => [['enable' => true, 'ip' => ['*']], [], ['REMOTE_ADDR' => '2001:db8::1'], true];
         yield 'private alias' => [
             ['enable' => true, 'ip' => ['loopback', 'private']],
@@ -166,12 +178,25 @@ class DebugAccessPolicyTest extends TestCase
         $this->assertSame($expected, $this->policy($debug, $trustedProxies)->isClientAllowed($server));
     }
 
-    public function testIsLocalProcessAllowed(): void
+    /**
+     * @return iterable<string, array{array, bool}>
+     */
+    public static function provideLocalProcess(): iterable
     {
-        $this->assertFalse($this->policy([])->isLocalProcessAllowed());
-        $this->assertTrue($this->policy(['enable' => true])->isLocalProcessAllowed());
-        $this->assertFalse($this->policy(['enable' => true, 'ip' => []])->isLocalProcessAllowed());
-        $this->assertFalse($this->policy(['enable' => true, 'ip' => ['127.0.0.1']])->isLocalProcessAllowed());
+        yield 'disabled' => [[], false];
+        yield 'default' => [['enable' => true], true];
+        yield 'empty allow-list' => [['enable' => true, 'ip' => []], false];
+        yield 'IPv4 loopback' => [['enable' => true, 'ip' => ['127.0.0.1']], true];
+        yield 'IPv6 loopback' => [['enable' => true, 'ip' => ['::1']], true];
+        yield 'loopback and private aliases' => [['enable' => true, 'ip' => ['loopback', 'private']], true];
+        yield 'everyone' => [['enable' => true, 'ip' => ['*']], true];
+        yield 'remote only' => [['enable' => true, 'ip' => ['203.0.113.10', '10.0.0.0/8']], false];
+    }
+
+    #[DataProvider('provideLocalProcess')]
+    public function testIsLocalProcessAllowed(array $debug, bool $expected): void
+    {
+        $this->assertSame($expected, $this->policy($debug)->isLocalProcessAllowed());
     }
 
     public function testIsClientAllowed_hostnameIsDeprecated(): void

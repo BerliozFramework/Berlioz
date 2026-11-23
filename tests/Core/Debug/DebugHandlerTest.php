@@ -271,7 +271,7 @@ class DebugHandlerTest extends TestCase
         unset($_SERVER['REMOTE_ADDR']);
     }
 
-    public function testIsEnabledInConfig_cliIsLocalWithDefaultPolicyOnly()
+    public function testIsEnabledInConfig_cliIsLocalWhenLoopbackIsAllowed()
     {
         $debug = new DebugHandler();
         unset($_SERVER['REMOTE_ADDR']);
@@ -282,8 +282,11 @@ class DebugHandlerTest extends TestCase
         $this->assertFalse($debug->isEnabledInConfig(
             new ArrayAdapter(['berlioz' => ['debug' => ['enable' => true, 'ip' => []]]])
         ));
+        $this->assertTrue($debug->isEnabledInConfig(
+            new ArrayAdapter(['berlioz' => ['debug' => ['enable' => true, 'ip' => ['loopback', 'private']]]])
+        ));
         $this->assertFalse($debug->isEnabledInConfig(
-            new ArrayAdapter(['berlioz' => ['debug' => ['enable' => true, 'ip' => ['127.0.0.1']]]])
+            new ArrayAdapter(['berlioz' => ['debug' => ['enable' => true, 'ip' => ['203.0.113.10']]]])
         ));
     }
 

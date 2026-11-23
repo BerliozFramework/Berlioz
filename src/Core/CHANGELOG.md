@@ -35,8 +35,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - `berlioz.debug.ip` defaults to `null` (loopback only) and accepts CIDR ranges and the `loopback`, `private`,
-  `public` and `*` aliases; use `["*"]` to allow every client
-- CLI processes are considered local for debug only with the default `berlioz.debug.ip` configuration
+  `public` and `*` aliases; use `["*"]` to allow every client, including behind a reverse proxy
+- CLI processes (`cli` SAPI without `REMOTE_ADDR`) are considered local for debug when `berlioz.debug.ip` allows
+  loopback clients; other non-web SAPIs (`phpdbg`, `embed`) are no longer granted debug by default
 - New `DebugAccessPolicy` shared by `DebugHandler::isEnabledInConfig()` and the HTTP debug console
 - Require `berlioz/helpers` `^1.15`
 - `SnapshotLoader::save()` removes the pending marker of the snapshot
