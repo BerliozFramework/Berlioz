@@ -16,6 +16,7 @@ namespace Berlioz\Http\Client;
 
 use Berlioz\Http\Client\Exception\RequestException;
 use Psr\Http\Message\RequestInterface;
+use SensitiveParameter;
 
 /**
  * Class Proxy.
@@ -34,8 +35,24 @@ final readonly class Proxy
         public string $host,
         public int $port,
         public ?string $user = null,
-        public ?string $password = null,
+        #[SensitiveParameter] public ?string $password = null,
     ) {
+    }
+
+    /**
+     * __debugInfo() magic method.
+     *
+     * @return array
+     */
+    public function __debugInfo(): array
+    {
+        return [
+            'scheme' => $this->scheme,
+            'host' => $this->host,
+            'port' => $this->port,
+            'user' => $this->user,
+            'password' => null !== $this->password ? '*** HIDDEN ***' : null,
+        ];
     }
 
     /**

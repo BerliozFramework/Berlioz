@@ -34,11 +34,10 @@ use Symfony\Component\Process\Process;
  */
 class AdapterProxyTest extends TestCase
 {
-    private const HTTP_PROXY_PORT = 8181;
-    private const HTTPS_PROXY_PORT = 8182;
-
     private static string $dir;
     private static string $certFile;
+    /** @var array<string, int> Fake proxies ports, by name ("http" or "https") */
+    private static array $ports = [];
     /** @var Process[] */
     private static array $processes = [];
 
@@ -48,18 +47,21 @@ class AdapterProxyTest extends TestCase
         mkdir(self::$dir);
         self::$certFile = self::createCertificate(self::$dir);
 
-        foreach ([self::HTTP_PROXY_PORT => null, self::HTTPS_PROXY_PORT => 'tls'] as $port => $flag) {
+        foreach (['http' => null, 'https' => 'tls'] as $name => $flag) {
             $process = new Process(array_filter([
-                'php',
+                PHP_BINARY,
                 __DIR__ . '/../proxy/proxy.php',
-                (string)$port,
-                self::logFile($port),
+                self::logFile($name),
                 self::$certFile,
                 $flag,
             ]));
             $process->start();
             self::$processes[] = $process;
-            self::waitForPort($port);
+
+            $process->waitUntil(fn($type, $output) => Process::OUT === $type && str_contains($output, PHP_EOL));
+            if (0 === (self::$ports[$name] = (int)$process->getOutput())) {
+                throw new RuntimeException('Unable to start fake proxy: ' . $process->getErrorOutput());
+            }
         }
     }
 
@@ -75,26 +77,13 @@ class AdapterProxyTest extends TestCase
 
     protected function setUp(): void
     {
-        file_put_contents(self::logFile(self::HTTP_PROXY_PORT), '');
-        file_put_contents(self::logFile(self::HTTPS_PROXY_PORT), '');
+        file_put_contents(self::logFile('http'), '');
+        file_put_contents(self::logFile('https'), '');
     }
 
-    private static function logFile(int $port): string
+    private static function logFile(string $name): string
     {
-        return self::$dir . '/proxy-' . $port . '.log';
-    }
-
-    private static function waitForPort(int $port): void
-    {
-        for ($i = 0; $i < 50; $i++) {
-            if (false !== ($fp = @fsockopen('127.0.0.1', $port, $errno, $errstr, 0.1))) {
-                fclose($fp);
-                return;
-            }
-            usleep(100000);
-        }
-
-        throw new RuntimeException(sprintf('Fake proxy not started on port %d', $port));
+        return self::$dir . '/proxy-' . $name . '.log';
     }
 
     /**
@@ -110,7 +99,7 @@ class AdapterProxyTest extends TestCase
             distinguished_name = dn
             [dn]
             [v3]
-            subjectAltName = IP:127.0.0.1, DNS:origin.invalid
+            subjectAltName = IP:127.0.0.1, DNS:origin.invalid, DNS:forged.invalid
             basicConstraints = critical, CA:TRUE
             keyUsage = critical, digitalSignature, keyEncipherment, keyCertSign
             CNF
@@ -133,11 +122,11 @@ class AdapterProxyTest extends TestCase
      *
      * @return array<array{type: string, head: string}>
      */
-    private static function received(int $port): array
+    private static function received(string $name): array
     {
         return array_map(
             fn(string $line) => json_decode($line, true),
-            array_filter(explode("\n", file_get_contents(self::logFile($port)))),
+            array_filter(explode("\n", file_get_contents(self::logFile($name)))),
         );
     }
 
@@ -154,12 +143,12 @@ class AdapterProxyTest extends TestCase
     {
         $response = $adapter->sendRequest(
             new Request('GET', 'http://origin.invalid/path?foo=bar'),
-            new HttpContext(proxy: 'http://us%40er:p%3Ass@127.0.0.1:' . self::HTTP_PROXY_PORT),
+            new HttpContext(proxy: 'http://us%40er:p%3Ass@127.0.0.1:' . self::$ports['http']),
         );
 
         $this->assertSame(200, $response->getStatusCode());
 
-        $received = self::received(self::HTTP_PROXY_PORT);
+        $received = self::received('http');
         $this->assertNotEmpty($received);
         $this->assertStringContainsString(
             'Proxy-Authorization: Basic ' . base64_encode('us@er:p:ss'),
@@ -183,11 +172,11 @@ class AdapterProxyTest extends TestCase
     {
         $response = $adapter->sendRequest(
             new Request('GET', 'http://origin.invalid/'),
-            new HttpContext(proxy: '127.0.0.1:' . self::HTTP_PROXY_PORT),
+            new HttpContext(proxy: '127.0.0.1:' . self::$ports['http']),
         );
 
         $this->assertSame(200, $response->getStatusCode());
-        $this->assertNotEmpty(self::received(self::HTTP_PROXY_PORT));
+        $this->assertNotEmpty(self::received('http'));
     }
 
     /**
@@ -206,7 +195,7 @@ class AdapterProxyTest extends TestCase
         $response = $adapter->sendRequest(
             new Request('GET', 'https://origin.invalid/path'),
             new HttpContext(
-                proxy: 'http://user:pass@127.0.0.1:' . self::HTTP_PROXY_PORT,
+                proxy: 'http://user:pass@127.0.0.1:' . self::$ports['http'],
                 ssl_cafile: self::$certFile,
             ),
         );
@@ -214,7 +203,7 @@ class AdapterProxyTest extends TestCase
         $this->assertSame(200, $response->getStatusCode());
         $this->assertSame('tunneled', (string)$response->getBody());
 
-        $received = self::received(self::HTTP_PROXY_PORT);
+        $received = self::received('http');
         $this->assertSame(['connect', 'tunneled'], array_column($received, 'type'));
         $this->assertStringStartsWith('CONNECT origin.invalid:443 HTTP/1.1', $received[0]['head']);
         $this->assertStringContainsString(
@@ -235,12 +224,12 @@ class AdapterProxyTest extends TestCase
             $adapter->sendRequest(
                 new Request('GET', 'https://origin.invalid/'),
                 new HttpContext(
-                    proxy: 'http://127.0.0.1:' . self::HTTP_PROXY_PORT,
+                    proxy: 'http://127.0.0.1:' . self::$ports['http'],
                     proxy_ssl_cafile: self::$certFile,
                 ),
             );
         } finally {
-            $this->assertNotContains('tunneled', array_column(self::received(self::HTTP_PROXY_PORT), 'type'));
+            $this->assertNotContains('tunneled', array_column(self::received('http'), 'type'));
         }
     }
 
@@ -251,8 +240,24 @@ class AdapterProxyTest extends TestCase
 
         $adapter->sendRequest(
             new Request('GET', 'https://denied.invalid/'),
-            new HttpContext(proxy: 'http://127.0.0.1:' . self::HTTP_PROXY_PORT, ssl_cafile: self::$certFile),
+            new HttpContext(proxy: 'http://127.0.0.1:' . self::$ports['http'], ssl_cafile: self::$certFile),
         );
+    }
+
+    #[DataProvider('provideAdapters')]
+    public function testHttpsOriginThroughHttpProxy_plaintextAfterConnectRejected(AdapterInterface $adapter): void
+    {
+        $this->expectException(NetworkException::class);
+
+        try {
+            // The proxy sends a forged response with the CONNECT response, then a trusted TLS handshake
+            $adapter->sendRequest(
+                new Request('GET', 'https://forged.invalid/'),
+                new HttpContext(proxy: 'http://127.0.0.1:' . self::$ports['http'], ssl_cafile: self::$certFile),
+            );
+        } finally {
+            $this->assertNotContains('tunneled', array_column(self::received('http'), 'type'));
+        }
     }
 
     #[DataProvider('provideAdapters')]
@@ -261,14 +266,14 @@ class AdapterProxyTest extends TestCase
         $response = $adapter->sendRequest(
             new Request('GET', 'http://origin.invalid/path'),
             new HttpContext(
-                proxy: 'https://127.0.0.1:' . self::HTTPS_PROXY_PORT,
+                proxy: 'https://127.0.0.1:' . self::$ports['https'],
                 proxy_ssl_cafile: self::$certFile,
             ),
         );
 
         $this->assertSame(200, $response->getStatusCode());
-        $this->assertNotContains('proxy-tls-failed', array_column(self::received(self::HTTPS_PROXY_PORT), 'type'));
-        $this->assertNotEmpty(self::received(self::HTTPS_PROXY_PORT));
+        $this->assertNotContains('proxy-tls-failed', array_column(self::received('https'), 'type'));
+        $this->assertNotEmpty(self::received('https'));
     }
 
     #[DataProvider('provideAdapters')]
@@ -281,7 +286,7 @@ class AdapterProxyTest extends TestCase
             $adapter->sendRequest(
                 new Request('GET', 'http://origin.invalid/'),
                 new HttpContext(
-                    proxy: 'https://127.0.0.1:' . self::HTTPS_PROXY_PORT,
+                    proxy: 'https://127.0.0.1:' . self::$ports['https'],
                     ssl_verify_peer: false,
                     ssl_verify_host: false,
                 ),
@@ -289,7 +294,7 @@ class AdapterProxyTest extends TestCase
         } finally {
             $this->assertSame(
                 [],
-                array_diff(array_column(self::received(self::HTTPS_PROXY_PORT), 'type'), ['proxy-tls-failed']),
+                array_diff(array_column(self::received('https'), 'type'), ['proxy-tls-failed']),
             );
         }
     }
@@ -300,7 +305,7 @@ class AdapterProxyTest extends TestCase
         $response = $adapter->sendRequest(
             new Request('GET', 'http://origin.invalid/'),
             new HttpContext(
-                proxy: 'https://127.0.0.1:' . self::HTTPS_PROXY_PORT,
+                proxy: 'https://127.0.0.1:' . self::$ports['https'],
                 proxy_ssl_verify_peer: false,
                 proxy_ssl_verify_host: false,
             ),
@@ -317,23 +322,23 @@ class AdapterProxyTest extends TestCase
             (new StreamAdapter(timeout: 5))->sendRequest(
                 new Request('GET', 'https://origin.invalid/'),
                 new HttpContext(
-                    proxy: 'https://127.0.0.1:' . self::HTTPS_PROXY_PORT,
+                    proxy: 'https://127.0.0.1:' . self::$ports['https'],
                     ssl_cafile: self::$certFile,
                 ),
             );
         } finally {
-            $this->assertSame([], self::received(self::HTTPS_PROXY_PORT));
+            $this->assertSame([], self::received('https'));
         }
     }
 
     public static function provideInvalidProxies(): array
     {
         $proxies = [
-            'socks5' => 'socks5://127.0.0.1:' . self::HTTP_PROXY_PORT,
-            'ftp' => 'ftp://127.0.0.1:' . self::HTTP_PROXY_PORT,
+            'socks5' => 'socks5://127.0.0.1:{port}',
+            'ftp' => 'ftp://127.0.0.1:{port}',
             'no host' => 'http://',
-            'path' => 'http://127.0.0.1:' . self::HTTP_PROXY_PORT . '/path',
-            'query' => 'http://127.0.0.1:' . self::HTTP_PROXY_PORT . '?foo',
+            'path' => 'http://127.0.0.1:{port}/path',
+            'query' => 'http://127.0.0.1:{port}?foo',
             'empty' => '',
         ];
         $data = [];
@@ -355,11 +360,11 @@ class AdapterProxyTest extends TestCase
         try {
             // Reachable origin: a direct connection would succeed if the proxy was ignored
             $adapter->sendRequest(
-                new Request('GET', 'http://127.0.0.1:' . self::HTTP_PROXY_PORT . '/'),
-                new HttpContext(proxy: $proxy),
+                new Request('GET', 'http://127.0.0.1:' . self::$ports['http'] . '/'),
+                new HttpContext(proxy: str_replace('{port}', (string)self::$ports['http'], $proxy)),
             );
         } finally {
-            $this->assertSame([], self::received(self::HTTP_PROXY_PORT));
+            $this->assertSame([], self::received('http'));
         }
     }
 }

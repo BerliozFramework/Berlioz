@@ -15,23 +15,28 @@ declare(strict_types=1);
 /*
  * Fake forward proxy for tests, never forwards anything to the network.
  *
- * Usage: php proxy.php <port> <log file> <certificate file> [tls]
+ * Usage: php proxy.php <log file> <certificate file> [tls]
  *
+ * - Listens on an ephemeral port, written on STDOUT.
  * - Every received request head is appended to the log file (one JSON line).
  * - Absolute-form requests are answered by the proxy itself ("proxied").
- * - CONNECT to "denied.invalid" is refused (403). Other CONNECT are accepted; when the target port is 443, the proxy
- *   then acts as the TLS origin with the given certificate, and answers the tunneled request ("tunneled").
+ * - CONNECT to "denied.invalid" is refused (403).
+ * - CONNECT to "forged.invalid" is accepted, with a forged plaintext response sent together with the CONNECT response.
+ * - Other CONNECT are accepted; when the target port is 443, the proxy then acts as the TLS origin with the given
+ *   certificate, and answers the tunneled request ("tunneled").
  * - With the "tls" flag, clients must first establish TLS with the proxy.
  */
 
-[, $port, $logFile, $certFile] = $argv;
-$tls = ($argv[4] ?? null) === 'tls';
+[, $logFile, $certFile] = $argv;
+$tls = ($argv[3] ?? null) === 'tls';
 
-$server = stream_socket_server('tcp://127.0.0.1:' . $port, $errno, $errstr);
+$server = stream_socket_server('tcp://127.0.0.1:0', $errno, $errstr);
 if (false === $server) {
     fwrite(STDERR, $errstr);
     exit(1);
 }
+fwrite(STDOUT, parse_url('tcp://' . stream_socket_get_name($server, false), PHP_URL_PORT) . PHP_EOL);
+fflush(STDOUT);
 
 $log = function (string $type, string $head) use ($logFile): void {
     file_put_contents($logFile, json_encode(['type' => $type, 'head' => $head]) . "\n", FILE_APPEND | LOCK_EX);
@@ -90,7 +95,11 @@ while (true) {
             continue;
         }
 
-        fwrite($conn, "HTTP/1.1 200 Connection established\r\n\r\n");
+        $established = "HTTP/1.1 200 Connection established\r\n\r\n";
+        if (str_starts_with($target, 'forged.invalid:')) {
+            $established .= "HTTP/1.1 200 OK\r\nContent-Length: 6\r\nConnection: close\r\n\r\nFORGED";
+        }
+        fwrite($conn, $established);
 
         if (str_ends_with($target, ':443') && !$enableTls($conn)) {
             $log('origin-tls-failed', '');

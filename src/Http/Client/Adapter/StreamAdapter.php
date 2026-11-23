@@ -25,6 +25,7 @@ use Berlioz\Http\Message\Response;
 use DateTimeImmutable;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
+use Throwable;
 
 /**
  * Class StreamAdapter.
@@ -214,7 +215,7 @@ class StreamAdapter extends AbstractAdapter
         if (null !== $proxy && $secure) {
             try {
                 $this->openTunnel($fp, $request, $proxy, $context);
-            } catch (NetworkException $exception) {
+            } catch (Throwable $exception) {
                 fclose($fp);
                 throw $exception;
             }
@@ -254,6 +255,14 @@ class StreamAdapter extends AbstractAdapter
         if (($status = (int)$matches[1]) < 200 || $status >= 300) {
             throw new NetworkException(
                 sprintf('Proxy refused CONNECT %s with status %d', $target, $status),
+                $request
+            );
+        }
+
+        // Bytes received before the TLS handshake would be read as if they came from the authenticated origin
+        if (stream_get_meta_data($fp)['unread_bytes'] > 0) {
+            throw new NetworkException(
+                sprintf('Unexpected data from proxy after CONNECT %s response', $target),
                 $request
             );
         }

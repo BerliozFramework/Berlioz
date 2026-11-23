@@ -89,6 +89,14 @@ class ProxyTest extends TestCase
         Proxy::fromContext(new HttpContext(proxy: $value), new Request('GET', 'https://getberlioz.com/'));
     }
 
+    public function testDebugInfo_hidesPassword()
+    {
+        $dump = print_r(new Proxy('http', 'proxy.local', 80, 'user', 's3cr3t'), true);
+
+        $this->assertStringContainsString('user', $dump);
+        $this->assertStringNotContainsString('s3cr3t', $dump);
+    }
+
     public function testGetAuthorization()
     {
         $this->assertNull((new Proxy('http', 'proxy.local', 80))->getAuthorization());

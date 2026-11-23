@@ -30,9 +30,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Configured proxy is enforced across adapters (GHSA-3jc3-3r75-xrx6): the cURL adapter now keeps the proxy scheme, so
   an `https://` proxy is reached over TLS instead of plain HTTP; the stream adapter now connects through the proxy
-  (absolute-form requests, `CONNECT` tunnel for HTTPS origins) instead of connecting directly to the origin, sends
-  proxy credentials in `Proxy-Authorization` instead of `Authorization`, and rejects HTTPS origins through an HTTPS
-  proxy, which PHP streams cannot handle
+  (absolute-form requests, `CONNECT` tunnel for HTTPS origins, data sent by the proxy before the origin TLS handshake
+  rejected) instead of connecting directly to the origin, sends proxy credentials in `Proxy-Authorization` instead of
+  `Authorization`, and rejects HTTPS origins through an HTTPS proxy, which PHP streams cannot handle
 - Origin transport credentials (client certificate, key and passphrases of `HttpContext`, credential options of
   `CurlAdapter` such as `CURLOPT_USERPWD`, `CURLOPT_XOAUTH2_BEARER` or `CURLOPT_COOKIE`) are no longer sent when
   a redirection leaves the initial origin or the approved ones; proxy settings are kept
