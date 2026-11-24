@@ -42,7 +42,7 @@ class DefaultExtension extends AbstractExtension
         $filters = [];
         $filters[] = new TwigFilter('date_format', $this->filterDateFormat(...));
         $filters[] = new TwigFilter('truncate', 'b_str_truncate');
-        $filters[] = new TwigFilter('nl2p', 'b_nl2p', ['is_safe' => ['html']]);
+        $filters[] = new TwigFilter('nl2p', 'b_nl2p', ['pre_escape' => 'html', 'is_safe' => ['html']]);
         $filters[] = new TwigFilter('human_file_size', 'b_human_file_size');
         $filters[] = new TwigFilter('json_decode', 'json_decode');
         $filters[] = new TwigFilter('basename', 'basename');
