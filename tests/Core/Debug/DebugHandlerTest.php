@@ -254,19 +254,51 @@ class DebugHandlerTest extends TestCase
 
         $this->assertFalse($debug->isEnabledInConfig($config));
 
-        $_SERVER['REMOTE_ADDR'] = '127.0.0.1';
+        unset($_SERVER['REMOTE_ADDR'], $_SERVER['HTTP_X_FORWARDED_FOR']);
+    }
 
-        $config = new ArrayAdapter([
-            'berlioz' => [
-                'debug' => [
-                    'enable' => true,
-                    'ip' => [gethostbyaddr('127.0.0.1')]
-                ]
-            ]
-        ]);
+    public function testIsEnabledInConfig_defaultAllowsLoopbackOnly()
+    {
+        $debug = new DebugHandler();
+        $config = new ArrayAdapter(['berlioz' => ['debug' => ['enable' => true]]]);
+
+        $_SERVER['REMOTE_ADDR'] = '::1';
         $this->assertTrue($debug->isEnabledInConfig($config));
 
-        unset($_SERVER['REMOTE_ADDR'], $_SERVER['HTTP_X_FORWARDED_FOR']);
+        $_SERVER['REMOTE_ADDR'] = '203.0.113.10';
+        $this->assertFalse($debug->isEnabledInConfig($config));
+
+        unset($_SERVER['REMOTE_ADDR']);
+    }
+
+    public function testIsEnabledInConfig_cliIsLocalWhenLoopbackIsAllowed()
+    {
+        $debug = new DebugHandler();
+        unset($_SERVER['REMOTE_ADDR']);
+
+        $this->assertTrue($debug->isEnabledInConfig(
+            new ArrayAdapter(['berlioz' => ['debug' => ['enable' => true]]])
+        ));
+        $this->assertFalse($debug->isEnabledInConfig(
+            new ArrayAdapter(['berlioz' => ['debug' => ['enable' => true, 'ip' => []]]])
+        ));
+        $this->assertTrue($debug->isEnabledInConfig(
+            new ArrayAdapter(['berlioz' => ['debug' => ['enable' => true, 'ip' => ['loopback', 'private']]]])
+        ));
+        $this->assertFalse($debug->isEnabledInConfig(
+            new ArrayAdapter(['berlioz' => ['debug' => ['enable' => true, 'ip' => ['203.0.113.10']]]])
+        ));
+    }
+
+    public function testIsEnabledInConfig_emptyAllowListDenies()
+    {
+        $debug = new DebugHandler();
+        $config = new ArrayAdapter(['berlioz' => ['debug' => ['enable' => true, 'ip' => []]]]);
+
+        $_SERVER['REMOTE_ADDR'] = '127.0.0.1';
+        $this->assertFalse($debug->isEnabledInConfig($config));
+
+        unset($_SERVER['REMOTE_ADDR']);
     }
 
     /**

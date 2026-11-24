@@ -101,7 +101,7 @@ Key entry points:
     "locale": null,
     "debug": {
       "enable": false,
-      "ip": []
+      "ip": null
     },
     "directories": {
       "app": "{var: berlioz.directories.app}",

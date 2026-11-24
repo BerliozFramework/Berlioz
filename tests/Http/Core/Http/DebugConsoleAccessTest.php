@@ -116,8 +116,8 @@ class DebugConsoleAccessTest extends TestCase
         $router = $builder->getRouter();
         $router->addRoute(new Route('/diagnostics', context: [DebugController::class, 'phpInfoRaw']));
 
-        $request = new ServerRequest($method, $path, serverParams: [
-            'REMOTE_ADDR' => $allowed ? '127.0.0.1' : '192.0.2.10',
+        $request = new ServerRequest($method, $path, serverParams: $allowed ? ['REMOTE_ADDR' => '127.0.0.1'] : [
+            'REMOTE_ADDR' => '192.0.2.10',
             // An untrusted peer must not gain access by claiming an allowed address.
             'HTTP_X_FORWARDED_FOR' => '127.0.0.1',
         ]);
