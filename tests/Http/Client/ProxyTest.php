@@ -23,12 +23,158 @@ use PHPUnit\Framework\TestCase;
 
 class ProxyTest extends TestCase
 {
+    use ProxyEnvironmentTrait;
+
     public function testFromContext_none()
     {
         $request = new Request('GET', 'https://getberlioz.com/');
+        $this->setProxyEnv(['https_proxy' => 'http://env.local:3128']);
 
         $this->assertNull(Proxy::fromContext(null, $request));
         $this->assertNull(Proxy::fromContext(new HttpContext(), $request));
+        $this->assertNull(Proxy::fromContext(new HttpContext(proxy: false), $request));
+    }
+
+    public function testResolve()
+    {
+        $request = new Request('GET', 'https://getberlioz.com/');
+        $this->setProxyEnv(['https_proxy' => 'http://env.local:3128']);
+
+        $this->assertSame('http://env.local:3128', Proxy::resolve(null, $request)?->getUrl());
+        $this->assertSame('http://env.local:3128', Proxy::resolve(new HttpContext(), $request)?->getUrl());
+        $this->assertNull(Proxy::resolve(new HttpContext(proxy: false), $request));
+        $this->assertSame(
+            'http://configured.local:8080',
+            Proxy::resolve(new HttpContext(proxy: 'configured.local:8080'), $request)?->getUrl(),
+        );
+    }
+
+    public function testResolve_noEnvironment()
+    {
+        $this->assertNull(Proxy::resolve(new HttpContext(), new Request('GET', 'https://getberlioz.com/')));
+    }
+
+    public static function provideEnvironments(): array
+    {
+        return [
+            'https' => [['https_proxy' => 'http://s.local:1'], 'https://getberlioz.com/', 'http://s.local:1'],
+            'HTTPS' => [['HTTPS_PROXY' => 'http://s.local:1'], 'https://getberlioz.com/', 'http://s.local:1'],
+            'https before HTTPS' => [
+                ['https_proxy' => 'http://lower.local:1', 'HTTPS_PROXY' => 'http://upper.local:1'],
+                'https://getberlioz.com/',
+                'http://lower.local:1',
+            ],
+            'https ignored for http' => [['https_proxy' => 'http://s.local:1'], 'http://getberlioz.com/', null],
+            'http' => [['http_proxy' => 'http://h.local:1'], 'http://getberlioz.com/', 'http://h.local:1'],
+            'http ignored for https' => [['http_proxy' => 'http://h.local:1'], 'https://getberlioz.com/', null],
+            'HTTP never used (httpoxy)' => [['HTTP_PROXY' => 'http://h.local:1'], 'http://getberlioz.com/', null],
+            'all for http' => [['all_proxy' => 'http://a.local:1'], 'http://getberlioz.com/', 'http://a.local:1'],
+            'ALL for https' => [['ALL_PROXY' => 'http://a.local:1'], 'https://getberlioz.com/', 'http://a.local:1'],
+            'specific before all' => [
+                ['all_proxy' => 'http://a.local:1', 'https_proxy' => 'http://s.local:1'],
+                'https://getberlioz.com/',
+                'http://s.local:1',
+            ],
+            'empty value' => [
+                ['https_proxy' => ' ', 'all_proxy' => 'a.local:1'],
+                'https://getberlioz.com/',
+                'http://a.local:1',
+            ],
+            'without scheme' => [['http_proxy' => 'h.local:3128'], 'http://getberlioz.com/', 'http://h.local:3128'],
+            'https proxy' => [['https_proxy' => 'https://s.local'], 'https://getberlioz.com/', 'https://s.local:443'],
+            'no_proxy' => [
+                ['https_proxy' => 'http://s.local:1', 'no_proxy' => 'example.com, getberlioz.com'],
+                'https://www.getberlioz.com/',
+                null,
+            ],
+            'NO_PROXY' => [
+                ['https_proxy' => 'http://s.local:1', 'NO_PROXY' => 'getberlioz.com'],
+                'https://getberlioz.com/',
+                null,
+            ],
+            'no_proxy not matching' => [
+                ['https_proxy' => 'http://s.local:1', 'no_proxy' => 'example.com'],
+                'https://getberlioz.com/',
+                'http://s.local:1',
+            ],
+        ];
+    }
+
+    #[DataProvider('provideEnvironments')]
+    public function testFromEnvironment(array $env, string $uri, ?string $expected)
+    {
+        $this->setProxyEnv($env);
+
+        $this->assertSame($expected, Proxy::fromEnvironment(new Request('GET', $uri))?->getUrl());
+    }
+
+    public function testFromEnvironment_credentials()
+    {
+        $this->setProxyEnv(['https_proxy' => 'http://us%40er:p%3Ass@s.local:3128']);
+
+        $proxy = Proxy::fromEnvironment(new Request('GET', 'https://getberlioz.com/'));
+
+        $this->assertSame('us@er', $proxy->user);
+        $this->assertSame('p:ss', $proxy->password);
+    }
+
+    public static function provideInvalidEnvironmentProxies(): array
+    {
+        return [
+            'socks5' => ['socks5://proxy.local:1080'],
+            'socks5h' => ['socks5h://proxy.local:1080'],
+            'path' => ['http://proxy.local/path'],
+        ];
+    }
+
+    #[DataProvider('provideInvalidEnvironmentProxies')]
+    public function testFromEnvironment_invalid(string $value)
+    {
+        $this->setProxyEnv(['all_proxy' => $value]);
+
+        $this->expectException(RequestException::class);
+
+        Proxy::fromEnvironment(new Request('GET', 'https://getberlioz.com/'));
+    }
+
+    public static function provideNoProxy(): array
+    {
+        return [
+            'all' => ['getberlioz.com', 443, '*', true],
+            'empty' => ['getberlioz.com', 443, ' , ', false],
+            'exact host' => ['getberlioz.com', 443, 'getberlioz.com', true],
+            'case insensitive' => ['GetBerlioz.COM', 443, 'getberlioz.com', true],
+            'sub-domain' => ['www.getberlioz.com', 443, 'getberlioz.com', true],
+            'sub-domain with dot' => ['www.getberlioz.com', 443, '.getberlioz.com', true],
+            'sub-domain with wildcard' => ['www.getberlioz.com', 443, '*.getberlioz.com', true],
+            'domain with leading dot' => ['getberlioz.com', 443, '.getberlioz.com', true],
+            'suffix is not a sub-domain' => ['notgetberlioz.com', 443, 'getberlioz.com', false],
+            'list' => ['getberlioz.com', 443, 'localhost, example.com,getberlioz.com', true],
+            'trailing dot of host' => ['getberlioz.com.', 443, 'getberlioz.com', true],
+            'port matching' => ['getberlioz.com', 8080, 'getberlioz.com:8080', true],
+            'port not matching' => ['getberlioz.com', 443, 'getberlioz.com:8080', false],
+            'ipv4' => ['192.168.1.10', 80, '192.168.1.10', true],
+            'ipv4 not matching' => ['192.168.1.11', 80, '192.168.1.10', false],
+            'ipv4 cidr' => ['192.168.1.10', 80, '192.168.0.0/16', true],
+            'ipv4 cidr not matching' => ['192.169.1.10', 80, '192.168.0.0/16', false],
+            'ipv4 cidr partial byte' => ['10.0.0.130', 80, '10.0.0.128/25', true],
+            'ipv4 cidr partial byte not matching' => ['10.0.0.127', 80, '10.0.0.128/25', false],
+            'ipv4 cidr zero' => ['8.8.8.8', 80, '0.0.0.0/0', true],
+            'ipv4 invalid cidr' => ['192.168.1.10', 80, '192.168.0.0/33', false],
+            'ipv6' => ['[::1]', 80, '::1', true],
+            'ipv6 brackets' => ['[::1]', 80, '[::1]', true],
+            'ipv6 brackets and port' => ['[::1]', 8080, '[::1]:8080', true],
+            'ipv6 cidr' => ['[2001:db8::1]', 80, '2001:db8::/32', true],
+            'ipv6 cidr not matching' => ['[2001:db9::1]', 80, '2001:db8::/32', false],
+            'ipv4 against ipv6' => ['127.0.0.1', 80, '::1', false],
+            'host against cidr' => ['localhost', 80, '127.0.0.0/8', false],
+        ];
+    }
+
+    #[DataProvider('provideNoProxy')]
+    public function testIsExcluded(string $host, int $port, string $noProxy, bool $expected)
+    {
+        $this->assertSame($expected, Proxy::isExcluded($host, $port, $noProxy));
     }
 
     public static function provideValidProxies(): array

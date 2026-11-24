@@ -20,6 +20,7 @@ use Berlioz\Http\Client\Adapter\StreamAdapter;
 use Berlioz\Http\Client\Exception\NetworkException;
 use Berlioz\Http\Client\Exception\RequestException;
 use Berlioz\Http\Client\HttpContext;
+use Berlioz\Http\Client\Tests\ProxyEnvironmentTrait;
 use Berlioz\Http\Message\Request;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -34,6 +35,8 @@ use Symfony\Component\Process\Process;
  */
 class AdapterProxyTest extends TestCase
 {
+    use ProxyEnvironmentTrait;
+
     private static string $dir;
     private static string $certFile;
     /** @var array<string, int> Fake proxies ports, by name ("http" or "https") */
@@ -165,6 +168,92 @@ class AdapterProxyTest extends TestCase
         };
         $this->assertSame($adapter->getName() == 'curl' ? 'tunneled' : 'proxied', (string)$response->getBody());
         $this->assertNoAuthorizationHeader($received);
+    }
+
+    public static function provideAdaptersAndContexts(): array
+    {
+        $data = [];
+
+        foreach (self::provideAdapters() as $adapterName => [$adapter]) {
+            $data[$adapterName . ' / default context'] = [$adapter, new HttpContext()];
+            $data[$adapterName . ' / no context'] = [$adapter, null];
+        }
+
+        return $data;
+    }
+
+    #[DataProvider('provideAdaptersAndContexts')]
+    public function testHttpOriginThroughEnvironmentProxy(AdapterInterface $adapter, ?HttpContext $context): void
+    {
+        $this->setProxyEnv(['http_proxy' => 'http://user:pass@127.0.0.1:' . self::$ports['http']]);
+
+        $response = $adapter->sendRequest(new Request('GET', 'http://origin.invalid/path'), $context);
+
+        $this->assertSame(200, $response->getStatusCode());
+
+        $received = self::received('http');
+        $this->assertNotEmpty($received);
+        $this->assertStringContainsString(
+            'Proxy-Authorization: Basic ' . base64_encode('user:pass'),
+            $received[0]['head'],
+        );
+        $this->assertNoAuthorizationHeader($received);
+    }
+
+    #[DataProvider('provideAdapters')]
+    public function testHttpsOriginThroughEnvironmentProxy(AdapterInterface $adapter): void
+    {
+        $this->setProxyEnv(['https_proxy' => 'http://127.0.0.1:' . self::$ports['http']]);
+
+        $response = $adapter->sendRequest(
+            new Request('GET', 'https://origin.invalid/path'),
+            new HttpContext(ssl_cafile: self::$certFile),
+        );
+
+        $this->assertSame('tunneled', (string)$response->getBody());
+        $this->assertSame(['connect', 'tunneled'], array_column(self::received('http'), 'type'));
+    }
+
+    public static function provideBypassedEnvironments(): array
+    {
+        $data = [];
+
+        foreach (self::provideAdapters() as $adapterName => [$adapter]) {
+            $data[$adapterName . ' / disabled'] = [
+                $adapter,
+                new HttpContext(proxy: false),
+                ['http_proxy' => '{proxy}', 'all_proxy' => '{proxy}'],
+            ];
+            $data[$adapterName . ' / no_proxy'] = [
+                $adapter,
+                new HttpContext(),
+                ['http_proxy' => '{proxy}', 'no_proxy' => '.invalid'],
+            ];
+            $data[$adapterName . ' / NO_PROXY'] = [
+                $adapter,
+                null,
+                ['all_proxy' => '{proxy}', 'NO_PROXY' => 'origin.invalid'],
+            ];
+            $data[$adapterName . ' / HTTP_PROXY'] = [$adapter, new HttpContext(), ['HTTP_PROXY' => '{proxy}']];
+        }
+
+        return $data;
+    }
+
+    #[DataProvider('provideBypassedEnvironments')]
+    public function testEnvironmentProxyBypassed(AdapterInterface $adapter, ?HttpContext $context, array $env): void
+    {
+        $proxy = 'http://127.0.0.1:' . self::$ports['http'];
+        $this->setProxyEnv(array_map(fn($value) => str_replace('{proxy}', $proxy, $value), $env));
+
+        $this->expectException(NetworkException::class);
+
+        try {
+            // Direct connection to the ".invalid" origin cannot succeed
+            $adapter->sendRequest(new Request('GET', 'http://origin.invalid/'), $context);
+        } finally {
+            $this->assertSame([], self::received('http'));
+        }
     }
 
     #[DataProvider('provideAdapters')]

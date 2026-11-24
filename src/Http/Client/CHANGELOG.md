@@ -16,8 +16,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and `AutoAdapter`
 - `HttpContext` options `proxy_ssl_verify_peer`, `proxy_ssl_verify_host` (enabled by default, independent of the origin
   `ssl_verify_*` options), `proxy_ssl_cafile` and `proxy_ssl_capath` (default to `ssl_cafile` and `ssl_capath`)
+- Proxy environment variables are honored identically by the cURL and stream adapters: `https_proxy`/`HTTPS_PROXY`
+  for HTTPS requests, `http_proxy` for HTTP requests (never the uppercase `HTTP_PROXY`, httpoxy),
+  `all_proxy`/`ALL_PROXY` as fallback, and `no_proxy`/`NO_PROXY` exclusions (hosts, domains, IP addresses, CIDR
+  ranges, optional port)
 
 ### Changed
+
+- `HttpContext::$proxy` defaults to `null`, which follows the proxy environment variables in every adapter; `false` now
+  means no proxy at all, including for the cURL adapter, which previously still honored the environment variables
+- The cURL adapter resolves the proxy itself and always sets `CURLOPT_PROXY` (empty when no proxy is used), so libcurl
+  no longer reads the environment; a raw `CURLOPT_PROXY` option still takes precedence over the environment
 
 - `QUERY` requests keep their method and body when following a 301 or 302 redirection (RFC 10008, section 2.5);
   only a 303 switches to `GET`
