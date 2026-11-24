@@ -15,6 +15,7 @@ namespace Berlioz\Http\Message\Tests\Factory;
 use Berlioz\Http\Message\Factory\ServerRequestFactoryTrait;
 use Berlioz\Http\Message\Request;
 use Berlioz\Http\Message\Uri;
+use PHPUnit\Framework\Attributes\RunInSeparateProcess;
 use PHPUnit\Framework\TestCase;
 
 class ServerRequestFactoryTraitTest extends TestCase
@@ -55,5 +56,22 @@ class ServerRequestFactoryTraitTest extends TestCase
         $this->assertEquals($method, $serverRequest->getMethod());
         $this->assertEquals(['foo' => 'bar', 'baz' => 'qux'], $serverRequest->getQueryParams());
         $this->assertEquals($_SERVER, $serverRequest->getServerParams());
+    }
+
+    #[RunInSeparateProcess]
+    public function testCreateServerRequestFromGlobals_acceptsControlCharacterInHeaderValue()
+    {
+        $_SERVER['REQUEST_METHOD'] = 'GET';
+        $_SERVER['REQUEST_URI'] = '/test';
+        $_SERVER['REQUEST_SCHEME'] = 'https';
+        $_SERVER['HTTP_HOST'] = 'getberlioz.com';
+        $_SERVER['HTTP_X_FOO'] = "a\x01b";
+
+        $factory = new class {
+            use ServerRequestFactoryTrait;
+        };
+        $serverRequest = $factory->createServerRequestFromGlobals();
+
+        $this->assertSame(["a\x01b"], $serverRequest->getHeader('X-Foo'));
     }
 }

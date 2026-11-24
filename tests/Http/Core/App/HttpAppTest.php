@@ -31,6 +31,7 @@ use Berlioz\Http\Core\TestProject\Http\Middleware\BarMiddleware;
 use Berlioz\Http\Core\TestProject\Http\Middleware\BazMiddleware;
 use Berlioz\Http\Core\TestProject\Http\Middleware\FooMiddleware;
 use Berlioz\Http\Core\TestProject\Http\Middleware\QuxMiddleware;
+use Berlioz\Http\Message\Exception\InvalidResponseException;
 use Berlioz\Http\Message\Response;
 use Berlioz\Http\Message\ServerRequest;
 use Berlioz\Http\Message\Stream;
@@ -502,6 +503,132 @@ class HttpAppTest extends TestCase
         $app->print($response);
 
         $this->assertSame($statusCode, http_response_code());
+    }
+
+    /**
+     * Get headers emitted by header(), only recorded by Xdebug (CLI does not record them).
+     *
+     * @return string[]|null
+     */
+    private function getEmittedHeaders(): ?array
+    {
+        if (!function_exists('xdebug_info') || [] === xdebug_info('mode')) {
+            return null;
+        }
+
+        return xdebug_get_headers();
+    }
+
+    #[RunInSeparateProcess]
+    public function testPrint_thirdPartyResponse(): void
+    {
+        $app = new HttpApp(new Core(new FakeDefaultDirectories(), false));
+        $response = $this->createMock(ResponseInterface::class);
+        $response->method('getProtocolVersion')->willReturn('1.1');
+        $response->method('getStatusCode')->willReturn(202);
+        $response->method('getReasonPhrase')->willReturn('Queued');
+        $response->method('getHeaders')->willReturn([
+            'Location' => ['/jobs/1'],
+            'set-cookie' => ['a=1'],
+            'Set-Cookie' => ['b=2', 'c=3'],
+        ]);
+        $response->method('getBody')->willReturn(new Stream());
+
+        $this->expectOutputString('');
+        $app->print($response);
+
+        $this->assertSame(202, http_response_code());
+        if (null !== ($headers = $this->getEmittedHeaders())) {
+            $this->assertSame(['Location: /jobs/1', 'set-cookie: a=1', 'Set-Cookie: b=2', 'Set-Cookie: c=3'], $headers);
+        }
+    }
+
+    #[RunInSeparateProcess]
+    public function testPrint_nativeResponseWithSurroundingWhitespace(): void
+    {
+        $app = new HttpApp(new Core(new FakeDefaultDirectories(), false));
+        $response = new Response('FOO', 200, ['Link' => ' </a>; rel=preload', 'X-Foo' => "bar \t"]);
+
+        $this->expectOutputString('FOO');
+        $app->print($response);
+
+        $this->assertSame(200, http_response_code());
+        $this->assertSame(['Link' => ['</a>; rel=preload'], 'X-Foo' => ['bar']], $app->getResponseInfo()['headers']);
+        if (null !== ($headers = $this->getEmittedHeaders())) {
+            $this->assertSame(['Link: </a>; rel=preload', 'X-Foo: bar'], $headers);
+        }
+    }
+
+    #[RunInSeparateProcess]
+    public function testPrint_nativeResponseWithControlCharacterEmitsNothing(): void
+    {
+        $app = new HttpApp(new Core(new FakeDefaultDirectories(), false));
+        $response = new Response('FOO', 200, ['X-Foo' => "a\x01b"]);
+
+        $this->assertSame(["a\x01b"], $response->getHeader('X-Foo'));
+        $this->expectOutputString('');
+
+        try {
+            $app->print($response);
+            $this->fail('Expected invalid response');
+        } catch (InvalidResponseException $exception) {
+            $this->assertStringContainsString('X-Foo', $exception->getMessage());
+        }
+
+        $this->assertFalse(http_response_code());
+        if (null !== ($headers = $this->getEmittedHeaders())) {
+            $this->assertSame([], $headers);
+        }
+    }
+
+    public static function provideInvalidResponses(): array
+    {
+        return [
+            'invalid status code' => [['getStatusCode' => 1000]],
+            'invalid reason phrase' => [['getReasonPhrase' => "OK\r\nX-Injected: evil"]],
+            'invalid protocol version' => [['getProtocolVersion' => "1.1 200 OK\r\nX-Injected: evil\r\n"]],
+            'pseudo header' => [['getHeaders' => ['X-Foo' => ['Bar'], ':status' => ['200']]]],
+            'invalid last header' => [['getHeaders' => ['X-Foo' => ['Bar'], 'Set-Cookie' => ['a=1', "b=2\n"]]]],
+        ];
+    }
+
+    #[DataProvider('provideInvalidResponses')]
+    #[RunInSeparateProcess]
+    public function testPrint_invalidResponseEmitsNothing(array $invalid): void
+    {
+        $app = new HttpApp(new Core(new FakeDefaultDirectories(), false));
+        $response = $this->createMock(ResponseInterface::class);
+        $values = array_replace(
+            [
+                'getProtocolVersion' => '1.1',
+                'getStatusCode' => 200,
+                'getReasonPhrase' => 'OK',
+                'getHeaders' => ['X-Foo' => ['Bar']],
+            ],
+            $invalid,
+        );
+        foreach ($values as $method => $value) {
+            $response->method($method)->willReturn($value);
+        }
+        $response->expects($this->never())->method('getBody');
+
+        $this->expectOutputString('VALID');
+
+        try {
+            $app->print($response);
+            $this->fail('Expected invalid response');
+        } catch (InvalidResponseException) {
+        }
+
+        $this->assertFalse(http_response_code());
+        $this->assertNull($app->getResponseInfo());
+        if (null !== ($headers = $this->getEmittedHeaders())) {
+            $this->assertSame([], $headers);
+        }
+
+        // Application remains printable
+        $app->print(new Response('VALID', 503));
+        $this->assertSame(503, http_response_code());
     }
 
     public function testResponseInfo_afterMiddlewareWithoutAccessingBody(): void

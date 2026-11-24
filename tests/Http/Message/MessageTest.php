@@ -477,4 +477,41 @@ class MessageTest extends TestCase
 
         $this->assertSame(['GET'], $message->getHeader(':method'));
     }
+
+    public static function provideHeaderValuesWithWhitespace(): array
+    {
+        return [
+            'leading space' => [' </a>; rel=preload', '</a>; rel=preload'],
+            'trailing space' => ['bar ', 'bar'],
+            'tabs and spaces' => ["\t bar \t", 'bar'],
+            'inner whitespace kept' => [" a \t b ", "a \t b"],
+            'only whitespace' => [" \t ", ''],
+        ];
+    }
+
+    #[DataProvider('provideHeaderValuesWithWhitespace')]
+    public function testWithHeaderTrimsOptionalWhitespace(string $value, string $expected)
+    {
+        $message = $this->newMessageObj();
+
+        $this->assertSame([$expected], $message->withHeader('X-Foo', $value)->getHeader('X-Foo'));
+        $this->assertSame([$expected], $message->withAddedHeader('X-Foo', $value)->getHeader('X-Foo'));
+    }
+
+    public function testWithHeaderAcceptsOtherControlCharacters()
+    {
+        $message = $this->newMessageObj();
+
+        $this->assertSame(["a\x01b"], $message->withHeader('X-Foo', "a\x01b")->getHeader('X-Foo'));
+    }
+
+    public function testWithHeaderRejectsNameWithTrailingNewline()
+    {
+        $message = $this->newMessageObj();
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('not a valid header name');
+
+        $message->withHeader(":method\n", 'GET');
+    }
 }
