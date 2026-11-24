@@ -158,15 +158,10 @@ class AdapterProxyTest extends TestCase
             $received[0]['head'],
         );
 
-        match ($adapter->getName()) {
-            // cURL tunnels every request through the proxy
-            'curl' => $this->assertSame(['connect', 'tunneled'], array_column($received, 'type')),
-            'stream' => $this->assertStringStartsWith(
-                'GET http://origin.invalid/path?foo=bar HTTP/1.1',
-                $received[0]['head'],
-            ),
-        };
-        $this->assertSame($adapter->getName() == 'curl' ? 'tunneled' : 'proxied', (string)$response->getBody());
+        // Absolute-form, without tunnel
+        $this->assertSame(['request'], array_column($received, 'type'));
+        $this->assertStringStartsWith('GET http://origin.invalid/path?foo=bar HTTP/1.1', $received[0]['head']);
+        $this->assertSame('proxied', (string)$response->getBody());
         $this->assertNoAuthorizationHeader($received);
     }
 
@@ -192,12 +187,27 @@ class AdapterProxyTest extends TestCase
         $this->assertSame(200, $response->getStatusCode());
 
         $received = self::received('http');
-        $this->assertNotEmpty($received);
+        $this->assertSame(['request'], array_column($received, 'type'));
+        $this->assertStringStartsWith('GET http://origin.invalid/path HTTP/1.1', $received[0]['head']);
         $this->assertStringContainsString(
             'Proxy-Authorization: Basic ' . base64_encode('user:pass'),
             $received[0]['head'],
         );
         $this->assertNoAuthorizationHeader($received);
+    }
+
+    public function testCurl_disabledProxyBeforeRawProxyOption(): void
+    {
+        $adapter = new CurlAdapter([CURLOPT_TIMEOUT => 5, CURLOPT_PROXY => 'http://127.0.0.1:' . self::$ports['http']]);
+
+        $this->expectException(NetworkException::class);
+
+        try {
+            // Direct connection to the ".invalid" origin cannot succeed
+            $adapter->sendRequest(new Request('GET', 'http://origin.invalid/'), new HttpContext(proxy: false));
+        } finally {
+            $this->assertSame([], self::received('http'));
+        }
     }
 
     #[DataProvider('provideAdapters')]

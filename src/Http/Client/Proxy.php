@@ -114,22 +114,30 @@ final readonly class Proxy
         $uri = $request->getUri();
         $secure = 'https' === strtolower($uri->getScheme());
 
-        $value = match ($secure) {
+        $env = match ($secure) {
             true => self::getEnv('https_proxy', 'HTTPS_PROXY'),
             false => self::getHttpProxyEnv(),
         };
-        $value ??= self::getEnv('all_proxy', 'ALL_PROXY');
+        $env ??= self::getEnv('all_proxy', 'ALL_PROXY');
 
-        if (null === $value) {
+        if (null === $env) {
             return null;
         }
 
-        $noProxy = self::getEnv('no_proxy', 'NO_PROXY');
+        $noProxy = self::getEnv('no_proxy', 'NO_PROXY')[1] ?? null;
         if (null !== $noProxy && self::isExcluded($uri->getHost(), $uri->getPort() ?? ($secure ? 443 : 80), $noProxy)) {
             return null;
         }
 
-        return self::fromString($value, $request);
+        try {
+            return self::fromString($env[1], $request);
+        } catch (RequestException $exception) {
+            throw new RequestException(
+                sprintf('Environment variable "%s": %s', $env[0], $exception->getMessage()),
+                $request,
+                previous: $exception,
+            );
+        }
     }
 
     /**
@@ -137,15 +145,15 @@ final readonly class Proxy
      *
      * @param string ...$names
      *
-     * @return string|null
+     * @return array{string, string}|null Name and value of variable
      */
-    private static function getEnv(string ...$names): ?string
+    private static function getEnv(string ...$names): ?array
     {
         foreach ($names as $name) {
             $value = getenv($name);
 
             if (is_string($value) && '' !== trim($value)) {
-                return trim($value);
+                return [$name, trim($value)];
             }
         }
 
@@ -158,9 +166,9 @@ final readonly class Proxy
      * Environment variables are case-insensitive on Windows: "http_proxy" may be the "HTTP_PROXY" one,
      * set by the "Proxy" request header outside of CLI.
      *
-     * @return string|null
+     * @return array{string, string}|null Name and value of variable
      */
-    private static function getHttpProxyEnv(): ?string
+    private static function getHttpProxyEnv(): ?array
     {
         if ('Windows' === PHP_OS_FAMILY && 'cli' !== PHP_SAPI) {
             return null;
@@ -174,6 +182,7 @@ final readonly class Proxy
      *
      * Entries are separated by commas: "*" for all hosts, host names (also matching their sub-domains,
      * with or without leading dot), IP addresses or CIDR ranges, with an optional port.
+     * An IP address host only matches IP address and CIDR range entries.
      *
      * @param string $host
      * @param int $port
@@ -184,6 +193,7 @@ final readonly class Proxy
     public static function isExcluded(string $host, int $port, string $noProxy): bool
     {
         $host = rtrim(strtolower(trim($host, '[]')), '.');
+        $hostIsIp = false !== @inet_pton($host);
 
         foreach (explode(',', $noProxy) as $entry) {
             $entry = strtolower(trim($entry));
@@ -206,8 +216,12 @@ final readonly class Proxy
 
             $entry = trim($entry, '[]');
 
-            if (self::matchIp($host, $entry)) {
-                return true;
+            if ($hostIsIp) {
+                if (self::matchIp($host, $entry)) {
+                    return true;
+                }
+
+                continue;
             }
 
             $entry = rtrim(ltrim($entry, '*.'), '.');

@@ -133,6 +133,7 @@ class ProxyTest extends TestCase
         $this->setProxyEnv(['all_proxy' => $value]);
 
         $this->expectException(RequestException::class);
+        $this->expectExceptionMessage('Environment variable "all_proxy"');
 
         Proxy::fromEnvironment(new Request('GET', 'https://getberlioz.com/'));
     }
@@ -168,6 +169,11 @@ class ProxyTest extends TestCase
             'ipv6 cidr not matching' => ['[2001:db9::1]', 80, '2001:db8::/32', false],
             'ipv4 against ipv6' => ['127.0.0.1', 80, '::1', false],
             'host against cidr' => ['localhost', 80, '127.0.0.0/8', false],
+            'ipv4 is not a domain' => ['192.168.1.10', 80, '1.10', false],
+            'ipv4 is not a domain with dot' => ['192.168.1.10', 80, '.10', false],
+            'ipv4 is not a domain with wildcard' => ['10.0.0.1', 80, '*.0.1', false],
+            'ipv4 and port' => ['192.168.1.10', 8080, '192.168.1.10:8080', true],
+            'ipv4 all' => ['192.168.1.10', 80, '*', true],
         ];
     }
 

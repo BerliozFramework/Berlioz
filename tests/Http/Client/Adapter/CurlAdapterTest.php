@@ -15,8 +15,8 @@ namespace Berlioz\Http\Client\Tests\Adapter;
 use Berlioz\Http\Client\Adapter\CurlAdapter;
 use Berlioz\Http\Client\Exception\RequestException;
 use Berlioz\Http\Client\HttpContext;
-use Berlioz\Http\Message\Request;
 use Berlioz\Http\Client\Tests\ProxyEnvironmentTrait;
+use Berlioz\Http\Message\Request;
 use Berlioz\Http\Message\ServerRequest;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -318,6 +318,38 @@ class CurlAdapterTest extends TestCase
         );
 
         $this->assertSame('http://configured.local:8080', $options[CURLOPT_PROXY]);
+
+        $options = $this->createAdapter([CURLOPT_PROXY => 'http://raw.local:3128'])->prepareCurlOptions(
+            new Request(method: Request::HTTP_METHOD_GET, uri: 'https://getberlioz.com/'),
+            context: new HttpContext(proxy: false),
+        );
+
+        $this->assertSame('', $options[CURLOPT_PROXY]);
+        $this->assertFalse($options[CURLOPT_HTTPPROXYTUNNEL]);
+    }
+
+    public static function provideProxyTunnels(): array
+    {
+        return [
+            'https origin' => ['https://getberlioz.com/', true],
+            'http origin' => ['http://getberlioz.com/', false],
+        ];
+    }
+
+    #[DataProvider('provideProxyTunnels')]
+    public function testOptions_proxyTunnelForHttpsOriginOnly(string $uri, bool $expected)
+    {
+        $this->setProxyEnv(['http_proxy' => 'http://env.local:3128', 'https_proxy' => 'http://env.local:3128']);
+
+        foreach ([new HttpContext(proxy: 'http://configured.local:8080'), new HttpContext(), null] as $context) {
+            $options = $this->createAdapter()->prepareCurlOptions(
+                new Request(method: Request::HTTP_METHOD_GET, uri: $uri),
+                context: $context,
+            );
+
+            $this->assertNotSame('', $options[CURLOPT_PROXY]);
+            $this->assertSame($expected, $options[CURLOPT_HTTPPROXYTUNNEL]);
+        }
     }
 
     public function testOptions_httpsProxyUnsupported()

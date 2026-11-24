@@ -25,9 +25,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `HttpContext::$proxy` defaults to `null`, which follows the proxy environment variables in every adapter; `false` now
   means no proxy at all, including for the cURL adapter, which previously still honored the environment variables
-- The cURL adapter resolves the proxy itself and always sets `CURLOPT_PROXY` (empty when no proxy is used), so libcurl
-  no longer reads the environment; a raw `CURLOPT_PROXY` option still takes precedence over the environment
-
+- The stream adapter now goes through the proxy of the environment variables, it previously always connected directly
+- The cURL adapter resolves the proxy itself: libcurl no longer reads the proxy environment variables, except when a
+  raw `CURLOPT_PROXY` option is given with the default `null` proxy; a configured proxy or `false` takes precedence
+  over a raw `CURLOPT_PROXY` option
+- A proxy of the environment variables with an unsupported scheme (e.g. `socks5://`) is rejected with a
+  `RequestException` naming the variable, the cURL adapter previously used it
+- A proxy of the environment variables without port uses port 80 (`http`) or 443 (`https`), libcurl used 1080
+- The cURL adapter only opens a `CONNECT` tunnel for HTTPS origins; HTTP requests are sent to the proxy in
+  absolute-form, as the stream adapter does
 - `QUERY` requests keep their method and body when following a 301 or 302 redirection (RFC 10008, section 2.5);
   only a 303 switches to `GET`
 - Disabling origin TLS verification (`ssl_verify_peer`, `ssl_verify_host`) no longer disables proxy TLS verification;
