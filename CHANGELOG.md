@@ -7,6 +7,198 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.4.0] - 2026-11-24
+
+### Added
+
+- [cli-core] `CliTerminateEvent` dispatched by `CliApp::terminate()`, with the exit code of the command (`CliApp::getExitCode()`)
+- [core] `AbstractApp::terminate()` dispatching a `TerminateEvent`, to run work once the application has done its job (debug activity in the `Terminate` group)
+- [core] Debug response time: `DebugHandler::markResponseSent()`, `Snapshot::getResponseTime()` and `Timeline::getDurationUntil()`
+- [core] Pending debug snapshot marker: `SnapshotLoader::markPending()`, `SnapshotLoader::status()` (`SnapshotStatus` enum) and `berlioz.debug.pending_ttl` configuration (default to `max_execution_time`, or 300 seconds if unlimited)
+- [form] `strictJson` option on `ApiDataProvider` to preserve JSON types: only the root object is converted to an array,
+  nested objects stay `stdClass` (a `{}` field is no longer confused with `[]`)
+- [form] `Group::submitValue()` accepts a `stdClass` value
+- [form] `ApiDataProvider` handles `PATCH` and `DELETE` requests, like `FormDataProvider`
+- [form] `FormDataProvider` and `ApiDataProvider` read submitted data from the body of `QUERY` requests (RFC 10008)
+- [form] `ScalarValidator` and `ScalarConstraint`, rejecting non-scalar values (arrays, objects) submitted to a simple type
+- [form] Staged submission: `Form::handle($request, apply: false)` submits and validates without modifying mapped data,
+  then `Form::apply()` applies the accepted submission; collection `add` / `remove` callbacks are deferred to
+  `apply()`
+- [form] `HydrationQueue` and `AbstractHydrator::plan()`, planning hydration writes before committing them
+- [hector-package] Support constant names (e.g. `PDO::ATTR_TIMEOUT`) as attributes of `hector.options`
+- [hector-package] Support list format `[{attribute, value}]` for `hector.options`
+- [hector-package] Declare `username`, `password` and `options` in default configuration
+- [http-client] `Client::query()` shortcut for the HTTP `QUERY` method (RFC 10008)
+- [http-client] `HttpContext::$credentials_origins` to approve additional origins receiving origin transport credentials on
+  redirects (`https://auth.example.com`, or `https://*.example.com` for one subdomain level)
+- [http-client] `OriginCredentialsAwareInterface` for adapters holding their own origin credentials, implemented by `CurlAdapter`
+  and `AutoAdapter`
+- [http-client] `HttpContext` options `proxy_ssl_verify_peer`, `proxy_ssl_verify_host` (enabled by default, independent of the origin
+  `ssl_verify_*` options), `proxy_ssl_cafile` and `proxy_ssl_capath` (default to `ssl_cafile` and `ssl_capath`)
+- [http-client] Proxy environment variables are honored identically by the cURL and stream adapters: `https_proxy`/`HTTPS_PROXY`
+  for HTTPS requests, `http_proxy` for HTTP requests (never the uppercase `HTTP_PROXY`, httpoxy),
+  `all_proxy`/`ALL_PROXY` as fallback, and `no_proxy`/`NO_PROXY` exclusions (hosts, domains, IP addresses, CIDR
+  ranges, optional port)
+- [http-core] `HttpApp::terminate()` releasing the session lock and dispatching an `HttpTerminateEvent` (request and response metadata)
+- [http-core] `berlioz.http.finish_request` configuration (default `true`)
+- [http-core] `acceptQuery` route option and `AcceptQueryMiddleware` (enabled by default) for the HTTP `QUERY` method
+  (RFC 10008): sends the `Accept-Query` header and rejects `QUERY` requests with a missing or malformed (400) or
+  unsupported (415) content type
+- [http-core] `MediaType` parser for media types and media ranges (RFC 9110), with quoted parameter values
+- [http-core] `UnsupportedMediaTypeHttpException`
+- [http-message] `Request::HTTP_METHOD_QUERY` constant (HTTP QUERY method, RFC 10008)
+- [http-message] `MalformedBodyException` (extends `RuntimeException`), thrown when a message body cannot be parsed into usable data; `getHttpMessage()` returns the message whose body is malformed
+- [http-message] `Http1ResponseValidator`, validating the status line and header fields of any PSR-7 response for an HTTP/1
+  emission without side effects (protocol version, status code 100-599, reason phrase, header names and values;
+  pseudo-headers are rejected); it returns an `Http1ResponseHead` (status line, status code, headers)
+- [http-message] `InvalidResponseException` (extends `InvalidArgumentException`), thrown by `Http1ResponseValidator`
+- [mailer] SMTP transport encryption with `encryption` argument (`SmtpEncryption` enum or string): `starttls` (mandatory
+  STARTTLS, without plaintext fallback) and `tls` (implicit TLS)
+- [mailer] SMTP transport `context` argument, to give stream context or stream context options (e.g. `ssl.cafile`)
+- [mailer] SMTP transport `timeout` argument, now also applied to reads
+- [queue-manager] `QueueInterface::getMaxAttempts()`, implemented by all queues (`null` if the queue has no limit or if the limit is unknown); custom `QueueInterface` implementations must implement it
+- [queue-manager] `JobInterface::getMaxAttempts()` (from the job queue) and `JobInterface::isLastAttempt()` to let a job handler know whether the current attempt is the last one; custom `JobInterface` implementations not extending `Job` must implement them
+- [queue-manager] Optional `maxAttempts` constructor parameter on `AwsSqsQueue`; if not given, `AwsSqsQueue::getMaxAttempts()` reads the `maxReceiveCount` of the queue redrive policy
+- [queue-manager] `QueueInterface::getRetryTime()`, time after which a consumed job, neither deleted nor released, becomes available again (`null` for queues without such a delay: AMQP, null queue and queue manager); custom `QueueInterface` implementations must implement it
+- [queue-manager] `RedisQueue::getMaxAttempts()`
+- [queue-manager] `RedisQueue::getRetryTime()` and `RedisQueue::recoverProcessingJobs()`
+- [queue-manager] `RedisJob::getRedisMessage()`
+- [queue-manager] `Worker::drain()` to process jobs until the queue is empty (optional time limit), without sleep, limits nor signal handlers
+- [queue-manager] `Worker::processJob()` extracted from `Worker::run()` (execute, then delete or release on failure)
+- [queue-manager] `QueueManager::getQueue()`, `QueueManager::hasQueue()` and `QueueManager::getDefaultQueue()` to get a queue (and its settings) by name
+- [queue-manager] `RabbitMqQueue` constructor parameter `managementApiContext` (stream context or stream context options, e.g. `ssl.cafile`) for management API requests
+- [queue-manager-package] `max_attempts` option for AWS SQS queues
+- [queue-manager-package] Deferred queues consumed on application terminate (after the HTTP response is sent, or at the end of a CLI command), configured with `berlioz.queues.deferred.queues` and `berlioz.queues.deferred.time_limit`; memory queues are purged afterwards
+- [queue-manager-package] Debug activities for deferred queues and jobs (`Terminate` group)
+- [queue-manager-package] Queue factories for Redis, AMQP (DSN and/or explicit connection parameters), RabbitMQ and Null queues, registered by default; an `amqps://` DSN requires verified TLS (CA certificate and verification enabled) and fails before connecting otherwise; the RabbitMQ `management` options (`base_url`, `username`, `password`, `context`) require explicit credentials (broker credentials are never reused) and are validated before connecting
+- [router] Support of the HTTP `QUERY` method (RFC 10008): routes declared with `method: 'QUERY'` were silently ignored
+
+### Changed
+
+- [cli-core] `berlioz` entry point calls `CliApp::terminate()` after the command, even when it fails
+- [core] `berlioz.debug.ip` defaults to `null` (loopback only) and accepts CIDR ranges and the `loopback`, `private`,
+  `public` and `*` aliases; use `["*"]` to allow every client, including behind a reverse proxy
+- [core] CLI processes (`cli` SAPI without `REMOTE_ADDR`) are considered local for debug when `berlioz.debug.ip` allows
+  loopback clients; other non-web SAPIs (`phpdbg`, `embed`) are no longer granted debug by default
+- [core] New `DebugAccessPolicy` shared by `DebugHandler::isEnabledInConfig()` and the HTTP debug console
+- [core] Require `berlioz/helpers` `^1.15`
+- [core] `SnapshotLoader::save()` removes the pending marker of the snapshot
+- [core] `SnapshotCleaner` also removes expired pending markers (`clean()`), all markers (`clear()`) and the marker of a deleted snapshot (`delete()`)
+- [form] Simple types (`Text`, `Number`, `Date`, `Hidden`, ...) now reject non-scalar submitted values by default with a
+  `ScalarConstraint`, and no longer hydrate them into the mapped object (previously a `TypeError` on typed setters or
+  properties). `File` and `Choice` are not affected
+- [form] Hydration runs every conversion before the first write: a failing transformer no longer leaves the mapped object
+  partially updated. Reads done while planning (sub-objects, collection items) see the mapped object as it was before
+  any setter ran, so a setter replacing a sub-object no longer affects the hydration of that sub-object
+- [form] `Form::handle()` has a second parameter `bool $apply = true`: subclasses overriding `handle()` must add it
+- [form] `AbstractHydrator` implements `hydrate()` (plan, then commit) and declares the abstract `plan()` method: custom
+  hydrators extending it must implement `plan()` instead of `hydrate()`
+- [form] `AbstractHydrator::getSubMapped()` has a fourth parameter `?HydrationQueue $queue = null` and
+  `AbstractHydrator::locateHydrator()` returns `AbstractHydrator`: overriding subclasses must match
+- [hector-package] Require HectorORM 1.5 or later, the first version supporting PDO connection options
+- [http-client] `HttpContext::$proxy` defaults to `null`, which follows the proxy environment variables in every adapter; `false` now
+  means no proxy at all, including for the cURL adapter, which previously still honored the environment variables
+- [http-client] The stream adapter now goes through the proxy of the environment variables, it previously always connected directly
+- [http-client] The cURL adapter resolves the proxy itself: libcurl no longer reads the proxy environment variables, except when a
+  raw `CURLOPT_PROXY` option is given with the default `null` proxy; a configured proxy or `false` takes precedence
+  over a raw `CURLOPT_PROXY` option
+- [http-client] A proxy of the environment variables with an unsupported scheme (e.g. `ftp://`) is rejected with a
+  `RequestException` naming the variable; SOCKS proxies (`socks4`, `socks4a`, `socks5`, `socks5h`) are still handed
+  over to libcurl by the cURL adapter, and rejected by the stream adapter
+- [http-client] A proxy of the environment variables without port uses port 80 (`http`) or 443 (`https`), libcurl used 1080
+- [http-client] The cURL adapter only opens a `CONNECT` tunnel for HTTPS origins; HTTP requests are sent to the proxy in
+  absolute-form, as the stream adapter does
+- [http-client] `QUERY` requests keep their method and body when following a 301 or 302 redirection (RFC 10008, section 2.5);
+  only a 303 switches to `GET`
+- [http-client] Disabling origin TLS verification (`ssl_verify_peer`, `ssl_verify_host`) no longer disables proxy TLS verification;
+  use `proxy_ssl_verify_peer` and `proxy_ssl_verify_host`
+- [http-client] An unsupported proxy configuration (scheme other than `http`/`https`, missing host, path, query or fragment) is
+  rejected with a `RequestException` before any connection; a proxy without scheme is an `http` proxy
+- [http-core] `HttpApp::print()` closes the client connection once the response is printed (`fastcgi_finish_request()` or `litespeed_finish_request()` when available); output produced afterwards is no longer sent to the client
+- [http-core] `HttpApp::print()` marks the debug response as sent and writes a pending snapshot marker when debug is enabled
+- [http-core] Debug console and toolbar show an "in progress" page (HTTP 202, auto-reload) while the snapshot is pending, an "incomplete" page (HTTP 410) when abandoned, and a 404 when unknown, instead of waiting server-side
+- [http-core] Debug toolbar shows the response time; dashboard, performances and activities show response time and total time
+- [http-core] Debug router panel includes `QUERY` in the default methods
+- [http-core] `HttpApp::print()` validates the complete response (status line and headers) before any output; an invalid
+  response throws an `InvalidResponseException` and emits no header nor body; the exception is left to the front
+  controller
+- [http-message] `JsonParser` throws `MalformedBodyException` on invalid JSON, and `getParsedBody()` throws it when the parsed body is neither an array, an object nor `null` (e.g. a scalar JSON root); `getParsedBody()` attaches the message to the exception when a parser does not
+- [http-message] Header names are validated with the same RFC 9110 field-name grammar as `Http1ResponseValidator`; pseudo-headers
+  remain accepted (e.g. HAR replay)
+- [http-message] Leading and trailing spaces and tabs of header values are removed (optional whitespace, RFC 9110)
+- [queue-manager] `RedisQueue` stops retrying a job after `maxAttempts` (new constructor parameter, 5 by default like the other queues): the job is moved to the `<name>:dead` list instead of being released again
+- [queue-manager] `Worker` installs its signal handlers when `run()` starts instead of in the constructor
+- [queue-manager] `RabbitMqQueue` throws a `QueueException` from its constructor, before connecting, if a management API base URL is given without explicit username and password, or if it is not a valid `http`/`https` URL (other stream wrappers, credentials, query or fragment are rejected)
+- [router] Routes without explicit methods also match `QUERY` requests
+
+### Deprecated
+
+- [core] Hostnames (reverse DNS) in `berlioz.debug.ip` configuration; use IP addresses, CIDR ranges or aliases instead.
+  An `E_USER_DEPRECATED` is triggered when a hostname entry is evaluated
+- [core] Service declarations in `container.services` configuration; register services from a service provider listed in
+  `container.providers` instead. An `E_USER_DEPRECATED` is triggered when `container.services` is not empty
+- [form] Constructing `ApiDataProvider` without `strictJson: true`; strict JSON will be the only behavior in v4
+- [form] `scalar` option of simple types: `false` disables the non-scalar check, `true` is redundant; the option will be
+  removed in v4 and non-scalar values always rejected, use a `Collection` or a `RawType` instead
+- [mailer] Argument `$options` of `Smtp::__construct()`, use named argument `$timeout` instead; it will be removed in 4.0
+- [twig-package] `preload()` parameter `nopush`, HTTP/2 Server Push is no longer supported by browsers
+- [twig-package] `AssetRuntimeExtension::H2PUSH_CACHE_COOKIE` constant and `AssetRuntimeExtension::setCookie()` method, no longer used
+
+### Fixed
+
+- [cli-core] `--help` displays the command usage without instantiating the command and its dependencies
+- [core] `FileCacheDriver::set()` now writes atomically (temporary file + `rename()`), preventing concurrent readers from
+  getting "Corrupted data" exceptions
+- [form] `ApiDataProvider` ignores a scalar parsed body instead of throwing a `TypeError`
+- [form] `isValid()` takes into account constraints added with `invalid()`, on the element and its parents;
+  `resetConstraints()` (now part of `ValidatorHandlerInterface`) clears them recursively, `Form::handle()` resets
+  them, and cloned elements (including `Collection` entries) no longer copy the constraints of the original
+- [http-core] Fix `ResponseHelperTrait::jsonResponse()` silently returning an empty 204 response when JSON encoding fails; an
+  `InternalServerErrorHttpException` is now thrown
+- [http-core] A malformed incoming request body (`MalformedBodyException` raised for the server request, e.g. invalid JSON) produces a 400 Bad Request instead of a 500 Internal Server Error, and is no longer logged as a server error; malformed bodies of other messages (e.g. upstream responses) remain logged 500 errors
+- [http-core] `DefaultErrorHandler` and the fallback of `ErrorHandler` use the default reason phrase of the status code when the
+  `HttpException` message cannot be used as a reason phrase (control character other than a tab), instead of failing
+  and losing the status code
+- [http-message] `getParsedBody()` compares the media type case-insensitively (RFC 9110), so bodies sent as e.g. `Application/JSON` are now parsed; `addBodyParser()` registers media types in lowercase
+- [http-message] Header names ending with a line feed are rejected
+- [queue-manager] `RedisQueue` no longer loses a job when the worker dies during its processing: consumed jobs are kept in a `<name>:processing` set and, if neither deleted nor released within `retryTime` (new constructor parameter, 30 seconds by default like the other queues), pushed back to the queue as a failed attempt (or moved to the `<name>:dead` list once `maxAttempts` is reached)
+- [queue-manager] `AmqpQueue` counts a message redelivered by the broker (consumer died without deleting or releasing the job) as a failed attempt: it is published again with incremented attempts, or to the dead queue once `maxAttempts` is reached, instead of being redelivered indefinitely
+- [twig-package] Twig debug console template no longer uses the `spaceless` filter, deprecated since Twig 3.12
+- [twig-package] `date_format` filter accepts any `DateTimeInterface`, `DateTimeImmutable` no longer throws a `TypeError`
+- [twig-package] `path()` keeps the routing exception as previous exception of the Twig `RuntimeError`
+- [twig-package] `path_exists()` accepts a `RouteAttributes` object, like `path()`
+- [twig-package] `entrypoints()` with the `preload` option now preloads every rendered file, not only the first one
+- [twig-package] `entrypoints()` no longer preloads files when the `preload` option is `false`
+- [twig-package] `preload()` always sends the `Link` preload header (once per link and response) and no longer sets
+  `h2pushes[...]` cookies, the HTTP/2 Server Push cache is removed
+- [twig-package] `asset()` reports `No manifest file` instead of `No entry points file` when no manifest is configured
+
+### Security
+
+- [core] Debug access is restricted to loopback clients (`127.0.0.1`, `::1`) by default when `berlioz.debug.enable` is
+  `true`; an explicitly empty `berlioz.debug.ip` list now denies access instead of allowing everyone
+- [core] Debug access is denied when the client cannot be determined reliably: forwarding headers (`Forwarded`,
+  `X-Forwarded-For`, `X-Real-IP`) sent by an untrusted peer, or a trusted proxy that does not forward the client
+- [http-client] Configured proxy is enforced across adapters (GHSA-3jc3-3r75-xrx6): the cURL adapter now keeps the proxy scheme, so
+  an `https://` proxy is reached over TLS instead of plain HTTP; the stream adapter now connects through the proxy
+  (absolute-form requests, `CONNECT` tunnel for HTTPS origins, data sent by the proxy before the origin TLS handshake
+  rejected) instead of connecting directly to the origin, sends proxy credentials in `Proxy-Authorization` instead of
+  `Authorization`, and rejects HTTPS origins through an HTTPS proxy, which PHP streams cannot handle
+- [http-client] Origin transport credentials (client certificate, key and passphrases of `HttpContext`, credential options of
+  `CurlAdapter` such as `CURLOPT_USERPWD`, `CURLOPT_XOAUTH2_BEARER` or `CURLOPT_COOKIE`) are no longer sent when
+  a redirection leaves the initial origin or the approved ones; proxy settings are kept (GHSA-7xg7-qg7v-j4r4)
+- [http-client] Custom adapters holding their own origin credentials must implement `OriginCredentialsAwareInterface`: the client
+  uses their `withoutOriginCredentials()` copy on those redirections, other adapters only receive the `HttpContext`
+  without TLS client options
+- [http-core] Debug console access follows the core `DebugAccessPolicy`: loopback clients only by default, an empty
+  `berlioz.debug.ip` list denies access, and clients behind an untrusted or non-forwarding proxy are denied
+- [http-message] `MultipartStream` validates part framing metadata (GHSA-r8g6-2j96-hjg9): boundaries must follow RFC 2046 (1-70 allowed characters, no trailing space), part header names must be tokens and values must be strings without control characters (except tab), otherwise an `InvalidArgumentException` is thrown before any bytes are appended; default `Content-Disposition` `name` and `filename` parameters are escaped as in HTML forms (`"`, CR and LF percent-encoded), and backslash is percent-encoded (`%5C`) so that receivers applying quoted-pair unescaping, such as PHP, cannot read it as an escape character; `addElements()` adds no element if one of them is invalid
+- [mailer] SMTP transport no longer discloses Bcc recipients in message headers, they are kept in the envelope only
+  (GHSA-3cwp-w36j-c8j6)
+- [queue-manager] `RabbitMqQueue` no longer follows redirections of the management API, which could send the credentials to another origin, and ignores non-`200` responses (GHSA-xmfp-689m-hfp6)
+- [twig-package] `nl2p` filter escapes its input before adding paragraph and line break markup, like Twig `nl2br`
+  (GHSA-543h-rf5x-cc4g); HTML passed to the filter is now escaped unless marked safe upstream (e.g. `|raw`)
+
 ## [3.3.2] - 2026-10-25
 
 ### Fixed

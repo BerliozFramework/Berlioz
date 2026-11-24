@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.4.0] - 2026-11-24
+
 ### Security
 
 - `nl2p` filter escapes its input before adding paragraph and line break markup, like Twig `nl2br`
@@ -28,7 +30,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `preload()` parameter `nopush`, HTTP/2 Server Push is no longer supported by browsers
 - `AssetRuntimeExtension::H2PUSH_CACHE_COOKIE` constant and `AssetRuntimeExtension::setCookie()` method, no longer used
-
 
 ## [3.3.2] - 2026-10-25
 
