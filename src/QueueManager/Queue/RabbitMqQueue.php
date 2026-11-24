@@ -15,31 +15,95 @@ declare(strict_types=1);
 namespace Berlioz\QueueManager\Queue;
 
 use AMQPConnection;
+use Berlioz\QueueManager\Exception\QueueException;
 use Berlioz\QueueManager\RateLimiter\NullRateLimiter;
 use Berlioz\QueueManager\RateLimiter\RateLimiterInterface;
 use DateTimeImmutable;
 use Exception;
+use SensitiveParameter;
 
 /**
  * Class RabbitMqQueue.
  */
 readonly class RabbitMqQueue extends AmqpQueue implements MonitorableQueueInterface
 {
+    private ?RabbitMqManagementApi $managementApi;
+
+    /**
+     * RabbitMqQueue constructor.
+     *
+     * Management API is optional, used for monitoring metrics. If a base URL is given, explicit credentials are
+     * required: a dedicated read-only user (with "monitoring" tag) is recommended, never the broker credentials.
+     *
+     * @param AMQPConnection $connection
+     * @param string $name
+     * @param int $maxAttempts
+     * @param RateLimiterInterface $limiter
+     * @param string|null $managementApiBaseUrl HTTP(S) base URL of the management API
+     * @param string|null $managementApiUsername
+     * @param string|null $managementApiPassword
+     * @param string $vhost
+     * @param array|resource|null $managementApiContext Stream context or stream context options (e.g. "ssl.cafile")
+     *
+     * @throws QueueException
+     */
     public function __construct(
         AMQPConnection $connection,
         string $name = 'default',
         int $maxAttempts = 5,
         RateLimiterInterface $limiter = new NullRateLimiter(),
-        private ?string $managementApiBaseUrl = null,
-        private ?string $managementApiUsername = null,
-        private ?string $managementApiPassword = null,
+        ?string $managementApiBaseUrl = null,
+        ?string $managementApiUsername = null,
+        #[SensitiveParameter] ?string $managementApiPassword = null,
         private string $vhost = '/',
+        mixed $managementApiContext = null,
     ) {
+        // Validated before connecting to the broker
+        $this->managementApi = $this->createManagementApi(
+            $managementApiBaseUrl,
+            $managementApiUsername,
+            $managementApiPassword,
+            $managementApiContext,
+        );
+
         parent::__construct(
             connection: $connection,
             name: $name,
             maxAttempts: $maxAttempts,
             limiter: $limiter,
+        );
+    }
+
+    /**
+     * Create management API client.
+     *
+     * @param string|null $baseUrl
+     * @param string|null $username
+     * @param string|null $password
+     * @param mixed $context
+     *
+     * @return RabbitMqManagementApi|null
+     * @throws QueueException
+     */
+    private function createManagementApi(
+        ?string $baseUrl,
+        ?string $username,
+        #[SensitiveParameter] ?string $password,
+        mixed $context,
+    ): ?RabbitMqManagementApi {
+        if (null === $baseUrl) {
+            return null;
+        }
+
+        if (null === $username || '' === $username || null === $password) {
+            throw QueueException::invalidManagementApi('explicit username and password are required');
+        }
+
+        return new RabbitMqManagementApi(
+            baseUrl: $baseUrl,
+            username: $username,
+            password: $password,
+            context: $context,
         );
     }
 
@@ -98,9 +162,7 @@ readonly class RabbitMqQueue extends AmqpQueue implements MonitorableQueueInterf
      */
     private function getHeadMessageTimestamp(): ?int
     {
-        if (null === $this->managementApiBaseUrl
-            || null === $this->managementApiUsername
-            || null === $this->managementApiPassword) {
+        if (null === $this->managementApi) {
             return null;
         }
 
@@ -147,33 +209,7 @@ readonly class RabbitMqQueue extends AmqpQueue implements MonitorableQueueInterf
      */
     private function fetchManagementApiJson(string $path): mixed
     {
-        if (null === $this->managementApiBaseUrl
-            || null === $this->managementApiUsername
-            || null === $this->managementApiPassword) {
-            return null;
-        }
-
-        $context = stream_context_create([
-            'http' => [
-                'method' => 'GET',
-                'header' => [
-                    sprintf('Authorization: Basic %s', base64_encode(sprintf(
-                        '%s:%s',
-                        $this->managementApiUsername,
-                        $this->managementApiPassword,
-                    ))),
-                ],
-                'timeout' => 2,
-                'ignore_errors' => true,
-            ],
-        ]);
-
-        $body = file_get_contents(rtrim($this->managementApiBaseUrl, '/') . $path, false, $context);
-        if (false === $body) {
-            return null;
-        }
-
-        return json_decode($body, true);
+        return $this->managementApi?->get($path);
     }
 
     /**
