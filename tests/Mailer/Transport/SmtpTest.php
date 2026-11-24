@@ -36,6 +36,7 @@ class SmtpTest extends TestCase
     /** @var resource|null */
     private $process = null;
     private ?string $logFile = null;
+    private ?string $captureFile = null;
 
     public static function setUpBeforeClass(): void
     {
@@ -95,14 +96,25 @@ class SmtpTest extends TestCase
      * Start fake SMTP server.
      *
      * @param string $scenario
+     * @param bool $capture Capture envelope recipients and message data
      *
      * @return int Port
      */
-    private function startServer(string $scenario): int
+    private function startServer(string $scenario, bool $capture = false): int
     {
         $this->logFile = self::$directory . '/' . $scenario . '-' . bin2hex(random_bytes(4)) . '.log';
+        $this->captureFile = $capture ? $this->logFile . '.capture' : null;
         $this->process = proc_open(
-            [PHP_BINARY, __DIR__ . '/Fake/smtp-server.php', $scenario, self::$certificate, $this->logFile],
+            array_filter(
+                [
+                    PHP_BINARY,
+                    __DIR__ . '/Fake/smtp-server.php',
+                    $scenario,
+                    self::$certificate,
+                    $this->logFile,
+                    $this->captureFile,
+                ],
+            ),
             [1 => ['pipe', 'w'], 2 => ['pipe', 'w']],
             $pipes,
         );
@@ -126,6 +138,37 @@ class SmtpTest extends TestCase
         $this->process = null;
 
         return file($this->logFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    }
+
+    /**
+     * Get captured envelope recipients and message data, after server stop.
+     *
+     * @return array{rcpt: string[], data: string[]}
+     */
+    private function getCapture(): array
+    {
+        $capture = ['rcpt' => [], 'data' => []];
+
+        foreach (file($this->captureFile, FILE_IGNORE_NEW_LINES) as $line) {
+            [$type, $value] = explode(':', $line, 2);
+            $capture[$type][] = $value;
+        }
+
+        return $capture;
+    }
+
+    /**
+     * Get headers of captured message data.
+     *
+     * @param string[] $data
+     *
+     * @return string[]
+     */
+    private function getCapturedHeaders(array $data): array
+    {
+        $end = array_search('', $data, true);
+
+        return false === $end ? $data : array_slice($data, 0, $end);
     }
 
     private function createMail(): Mail
@@ -161,6 +204,57 @@ class SmtpTest extends TestCase
             ['plain:EHLO', 'plain:AUTH', 'plain:MAIL', 'plain:RCPT', 'plain:DATA', 'plain:QUIT'],
             $this->stopServer(),
         );
+    }
+
+    public function testSend_withBcc(): void
+    {
+        $port = $this->startServer('plain', capture: true);
+
+        $mail = $this->createMail()
+            ->setCc([new Address('copy@getberlioz.com')])
+            ->setBcc([new Address('blind1@getberlioz.com', 'Blind'), new Address('blind2@getberlioz.com')]);
+
+        $smtp = new Smtp('127.0.0.1', port: $port, timeout: 5);
+        $smtp->send($mail);
+        unset($smtp);
+        $this->stopServer();
+        $capture = $this->getCapture();
+        $headers = $this->getCapturedHeaders($capture['data']);
+
+        $this->assertSame(
+            [
+                '<recipient@getberlioz.com>',
+                '<copy@getberlioz.com>',
+                '<blind1@getberlioz.com>',
+                '<blind2@getberlioz.com>',
+            ],
+            $capture['rcpt'],
+        );
+        $this->assertContains('To: recipient@getberlioz.com', $headers);
+        $this->assertContains('Cc: copy@getberlioz.com', $headers);
+        $this->assertEmpty(preg_grep('/^bcc:/i', $headers));
+        $this->assertStringNotContainsString('blind', implode("\n", $capture['data']));
+    }
+
+    public function testSend_bccOnly(): void
+    {
+        $port = $this->startServer('plain', capture: true);
+
+        $mail = $this->createMail()
+            ->setTo([])
+            ->setBcc([new Address('blind@getberlioz.com')]);
+
+        $smtp = new Smtp('127.0.0.1', port: $port, timeout: 5);
+        $smtp->send($mail);
+        unset($smtp);
+        $this->stopServer();
+        $capture = $this->getCapture();
+        $headers = $this->getCapturedHeaders($capture['data']);
+
+        $this->assertSame(['<blind@getberlioz.com>'], $capture['rcpt']);
+        $this->assertContains('To: undisclosed-recipients:;', $headers);
+        $this->assertEmpty(preg_grep('/^bcc:/i', $headers));
+        $this->assertStringNotContainsString('blind', implode("\n", $capture['data']));
     }
 
     public function testSend_starttls(): void

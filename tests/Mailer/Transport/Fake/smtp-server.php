@@ -15,7 +15,7 @@ declare(strict_types=1);
 /**
  * Fake SMTP server for tests, accepting a single connection.
  *
- * Usage: php smtp-server.php <scenario> <certificate> <log file>
+ * Usage: php smtp-server.php <scenario> <certificate> <log file> [<capture file>]
  *
  * Scenarios:
  * - plain: no STARTTLS capability
@@ -26,9 +26,12 @@ declare(strict_types=1);
  *
  * Writes the listening port on STDOUT, and each received command prefixed by
  * the connection state ("plain" or "tls") in the log file.
+ * If a capture file is given, writes in it each envelope recipient prefixed by "rcpt:"
+ * and each line of message data prefixed by "data:".
  */
 
 [, $scenario, $certificate, $logFile] = $argv;
+$captureFile = $argv[4] ?? null;
 
 $context = stream_context_create([
     'ssl' => [
@@ -53,6 +56,7 @@ fwrite(STDOUT, parse_url('tcp://' . stream_socket_get_name($server, false), PHP_
 fflush(STDOUT);
 
 $log = fopen($logFile, 'w');
+$capture = null !== $captureFile ? fopen($captureFile, 'w') : null;
 $tls = 'implicit' === $scenario;
 
 // Handshake failure of implicit TLS
@@ -72,12 +76,18 @@ while (false !== ($line = fgets($conn))) {
         if ('.' === $line) {
             $data = false;
             $reply('starttls-injected' === $scenario ? '550 Rejected' : '250 OK');
+            continue;
         }
+        $capture && fwrite($capture, 'data:' . $line . PHP_EOL);
         continue;
     }
 
     $command = strtoupper(strtok($line, ' ') ?: '');
     fwrite($log, ($tls ? 'tls' : 'plain') . ':' . $command . PHP_EOL);
+
+    if ('RCPT' === $command && $capture) {
+        fwrite($capture, 'rcpt:' . trim(substr($line, strlen('RCPT TO:'))) . PHP_EOL);
+    }
 
     switch ($command) {
         case 'EHLO':
