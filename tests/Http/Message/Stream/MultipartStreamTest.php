@@ -14,12 +14,377 @@ declare(strict_types=1);
 
 namespace Berlioz\Http\Message\Tests\Stream;
 
+use Berlioz\Http\Message\Stream\MemoryStream;
 use Berlioz\Http\Message\Stream\MultipartStream;
+use InvalidArgumentException;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
+use stdClass;
+use Stringable;
 
 class MultipartStreamTest extends TestCase
 {
+    public static function provideValidBoundaries(): array
+    {
+        return [
+            'alphanumeric' => ['abcXYZ0123'],
+            'punctuation' => ['\'()+_,-./:=?'],
+            'inner space' => ['foo bar'],
+            'single char' => ['a'],
+            '70 chars' => [str_repeat('a', 70)],
+            'zero' => ['0'],
+        ];
+    }
+
+    #[DataProvider('provideValidBoundaries')]
+    public function testConstruct_validBoundary(string $boundary): void
+    {
+        $multipart = new MultipartStream($boundary);
+        $multipart->addElement('field', 'value', ['Content-Type' => 'text/plain']);
+
+        $this->assertSame($boundary, $multipart->getBoundary());
+        $this->assertSame(
+            '--' . $boundary . MultipartStream::EOL .
+            'content-type: text/plain' . MultipartStream::EOL .
+            'content-disposition: form-data; name="field"' . MultipartStream::EOL .
+            'content-length: 5' . MultipartStream::EOL .
+            MultipartStream::EOL .
+            'value' . MultipartStream::EOL .
+            '--' . $boundary . '--' . MultipartStream::EOL,
+            $multipart->getContents(),
+        );
+    }
+
+    public static function provideInvalidBoundaries(): array
+    {
+        return [
+            'CRLF' => ["foo\r\nContent-Type: text/html"],
+            'LF' => ["foo\nbar"],
+            'NUL' => ["foo\0bar"],
+            'trailing space' => ['foo '],
+            'double quote' => ['foo"bar'],
+            'semicolon' => ['foo;bar'],
+            'unicode' => ['fooé'],
+            '71 chars' => [str_repeat('a', 71)],
+        ];
+    }
+
+    #[DataProvider('provideInvalidBoundaries')]
+    public function testConstruct_invalidBoundary(string $boundary): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+
+        new MultipartStream($boundary);
+    }
+
+    public static function provideInvalidHeaders(): array
+    {
+        return [
+            'name with CRLF' => [["X-Foo\r\nX-Injected" => 'bar']],
+            'name with colon' => [['X-Foo: bar' => 'baz']],
+            'name with space' => [['X Foo' => 'bar']],
+            'empty name' => [['' => 'bar']],
+            'value with CRLF' => [['X-Foo' => "bar\r\n\r\n--boundary"]],
+            'value with LF' => [['X-Foo' => "bar\nX-Injected: baz"]],
+            'value with CR' => [['X-Foo' => "bar\rbaz"]],
+            'value with NUL' => [['X-Foo' => "bar\0baz"]],
+            'value with DEL' => [['X-Foo' => "bar\x7Fbaz"]],
+            'array value' => [['X-Foo' => ['bar']]],
+            'object value' => [['X-Foo' => new stdClass()]],
+            'content-disposition with CRLF' => [
+                ['Content-Disposition' => "form-data; name=\"foo\"\r\nContent-Type: text/html"],
+            ],
+            'content-type with CRLF' => [['Content-Type' => "text/plain\r\n\r\ninjected"]],
+        ];
+    }
+
+    #[DataProvider('provideInvalidHeaders')]
+    public function testAddElement_invalidHeaders(array $headers): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+
+        $multipart = new MultipartStream();
+        $multipart->addElement('field', 'value', $headers);
+    }
+
+    public function testAddElement_validHeaderValues(): void
+    {
+        $multipart = new MultipartStream('boundary');
+        $multipart->addElement('field', 'value', [
+            'Content-Type' => 'text/plain',
+            'X-Tab' => "foo\tbar",
+            'X-Int' => 123,
+            'X-Stringable' => new class implements Stringable {
+                public function __toString(): string
+                {
+                    return 'stringable';
+                }
+            },
+            'X-Null' => null,
+        ]);
+
+        $this->assertSame(
+            '--boundary' . MultipartStream::EOL .
+            'content-type: text/plain' . MultipartStream::EOL .
+            "x-tab: foo\tbar" . MultipartStream::EOL .
+            'x-int: 123' . MultipartStream::EOL .
+            'x-stringable: stringable' . MultipartStream::EOL .
+            'content-disposition: form-data; name="field"' . MultipartStream::EOL .
+            'content-length: 5' . MultipartStream::EOL .
+            MultipartStream::EOL .
+            'value' . MultipartStream::EOL .
+            '--boundary--' . MultipartStream::EOL,
+            $multipart->getContents(),
+        );
+    }
+
+    public static function provideFieldNames(): array
+    {
+        return [
+            'double quote' => ['foo"bar'],
+            'quote injection' => ['foo"; filename="evil.php'],
+            'CRLF injection' => ["foo\"\r\nContent-Type: text/html\r\n\r\n--boundary"],
+            'LF' => ["foo\nbar"],
+            'CR' => ["foo\rbar"],
+            'backslash' => ['foo\\bar'],
+            'trailing backslash' => ['file\\'],
+            'double trailing backslash' => ['file\\\\'],
+            'escaped quote injection' => ['file\\"; filename="evil.php'],
+            'punctuation' => ['foo;bar=baz, qux[]\'(%)'],
+            'unicode' => ['éàü 漢字 🎉'],
+            'tab' => ["foo\tbar"],
+            'percent' => ['100%'],
+        ];
+    }
+
+    #[DataProvider('provideFieldNames')]
+    public function testAddElement_fieldNameRoundTrip(string $fieldName): void
+    {
+        $multipart = new MultipartStream();
+        $multipart->addElement($fieldName, 'value', ['Content-Type' => 'text/plain']);
+        $multipart->addElement('next', 'other', ['Content-Type' => 'text/plain']);
+
+        $parts = $this->parseMultipart((string)$multipart, $multipart->getBoundary());
+
+        $this->assertCount(2, $parts);
+        $this->assertSame(['content-type', 'content-disposition', 'content-length'], array_keys($parts[0]['headers']));
+        $this->assertDispositionRoundTrip($parts[0]['headers']['content-disposition'], ['name' => $fieldName]);
+        $this->assertSame('value', $parts[0]['body']);
+        $this->assertDispositionRoundTrip($parts[1]['headers']['content-disposition'], ['name' => 'next']);
+        $this->assertSame('other', $parts[1]['body']);
+    }
+
+    #[DataProvider('provideFieldNames')]
+    public function testAddStream_filenameRoundTrip(string $filename): void
+    {
+        $multipart = new MultipartStream();
+        $multipart->addStream('file', new MemoryStream('value'), ['Content-Type' => 'text/plain'], $filename);
+
+        $parts = $this->parseMultipart((string)$multipart, $multipart->getBoundary());
+
+        $this->assertCount(1, $parts);
+        $this->assertDispositionRoundTrip(
+            $parts[0]['headers']['content-disposition'],
+            ['name' => 'file', 'filename' => basename($filename)],
+        );
+        $this->assertSame('value', $parts[0]['body']);
+    }
+
+    #[DataProvider('provideFieldNames')]
+    public function testAddStream_fieldNameWithFilenameRoundTrip(string $fieldName): void
+    {
+        $multipart = new MultipartStream();
+        $multipart->addStream($fieldName, new MemoryStream('value'), ['Content-Type' => 'text/plain'], 'report.pdf');
+
+        $parts = $this->parseMultipart((string)$multipart, $multipart->getBoundary());
+
+        $this->assertCount(1, $parts);
+        $this->assertDispositionRoundTrip(
+            $parts[0]['headers']['content-disposition'],
+            ['name' => $fieldName, 'filename' => 'report.pdf'],
+        );
+    }
+
+    public function testAddElement_fieldNameEncoding(): void
+    {
+        $multipart = new MultipartStream('boundary');
+        $multipart->addElement("a\"b\r\nc\\", 'value', ['Content-Type' => 'text/plain']);
+
+        $this->assertStringContainsString(
+            'content-disposition: form-data; name="a%22b%0D%0Ac%5C"' . MultipartStream::EOL,
+            $multipart->getContents(),
+        );
+    }
+
+    public function testAddElement_fieldNameWithNul(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+
+        $multipart = new MultipartStream();
+        $multipart->addElement("foo\0bar", 'value');
+    }
+
+    public function testAddStream_filenameWithNul(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+
+        $multipart = new MultipartStream();
+        $multipart->addStream('file', new MemoryStream('value'), filename: "foo\0bar.txt");
+    }
+
+    public function testRejectedPartLeavesStreamUnchanged(): void
+    {
+        $multipart = new MultipartStream();
+        $multipart->addElement('valid', 'value', ['Content-Type' => 'text/plain']);
+        $contents = $multipart->getContents();
+        $size = $multipart->getSize();
+
+        $attempts = [
+            fn() => $multipart->addElement('field', 'value', ['X-Foo' => "bar\r\nbaz"]),
+            fn() => $multipart->addElement("foo\0bar", 'value'),
+            fn() => $multipart->addStream('field', new MemoryStream('value'), ["X\r\nFoo" => 'bar']),
+            fn() => $multipart->addFile('file', __DIR__ . '/../test.txt', false, ['X-Foo' => ['bar']]),
+            fn() => $multipart->addElements(
+                ['first' => 'value', "second\0" => 'value'],
+                ['Content-Type' => 'text/plain'],
+            ),
+        ];
+
+        foreach ($attempts as $attempt) {
+            try {
+                $attempt();
+                $this->fail('Expected InvalidArgumentException');
+            } catch (InvalidArgumentException) {
+            }
+
+            $this->assertSame($contents, $multipart->getContents());
+            $this->assertSame($size, $multipart->getSize());
+        }
+    }
+
+    public function testAddElements_integerKeys(): void
+    {
+        $multipart = new MultipartStream('boundary');
+        $multipart->addElements(['foo', 'bar'], ['Content-Type' => 'text/plain']);
+
+        $parts = $this->parseMultipart($multipart->getContents(), 'boundary');
+
+        $this->assertCount(2, $parts);
+        $this->assertSame('form-data; name="0"', $parts[0]['headers']['content-disposition']);
+        $this->assertSame('form-data; name="1"', $parts[1]['headers']['content-disposition']);
+    }
+
+    /**
+     * Parse a multipart body, the way a strict receiver would.
+     *
+     * @return array<array{headers: array<string, string>, body: string}>
+     */
+    private function parseMultipart(string $contents, string $boundary): array
+    {
+        $eol = MultipartStream::EOL;
+        $closing = '--' . $boundary . '--' . $eol;
+
+        $this->assertStringEndsWith($closing, $contents);
+        $contents = substr($contents, 0, -strlen($closing));
+
+        if ('' === $contents) {
+            return [];
+        }
+
+        $this->assertStringStartsWith('--' . $boundary . $eol, $contents);
+        $chunks = explode($eol . '--' . $boundary . $eol, substr($contents, strlen('--' . $boundary . $eol), -2));
+
+        $parts = [];
+        foreach ($chunks as $chunk) {
+            [$rawHeaders, $body] = explode($eol . $eol, $chunk, 2);
+            $headers = [];
+            foreach (explode($eol, $rawHeaders) as $line) {
+                $this->assertMatchesRegularExpression('/\A[!#$%&\'*+\-.^_`|~0-9A-Za-z]+: [^\r\n]*\z/', $line);
+                [$name, $value] = explode(': ', $line, 2);
+                $this->assertArrayNotHasKey($name, $headers);
+                $headers[$name] = $value;
+            }
+            $parts[] = ['headers' => $headers, 'body' => $body];
+        }
+
+        return $parts;
+    }
+
+    /**
+     * Assert that both receiver families read the same parameters, and that they decode to the original values.
+     *
+     * @param array<string, string> $expected Original (decoded) parameter values
+     */
+    private function assertDispositionRoundTrip(string $header, array $expected): void
+    {
+        $encoded = array_map($this->encodeParameter(...), $expected);
+
+        $receivers = [
+            'WHATWG' => $this->parseDispositionParameters($header),
+            'quoted-pair' => $this->parseQuotedPairDispositionParameters($header),
+        ];
+
+        foreach ($receivers as $read) {
+            $this->assertSame($encoded, $read);
+            $this->assertSame($expected, array_map($this->decodeParameter(...), $read));
+        }
+    }
+
+    /**
+     * Parse Content-Disposition parameters like a WHATWG receiver (quoted-string values without escapes).
+     *
+     * @return array<string, string>
+     */
+    private function parseDispositionParameters(string $value): array
+    {
+        $this->assertMatchesRegularExpression('/\Aform-data(; [a-z]+="[^"\r\n\0]*")*\z/', $value);
+        preg_match_all('/; ([a-z]+)="([^"]*)"/', $value, $matches, PREG_SET_ORDER);
+
+        return $this->collectParameters($matches);
+    }
+
+    /**
+     * Parse Content-Disposition parameters like a receiver applying quoted-pair unescaping (RFC 9110, e.g. PHP).
+     *
+     * @return array<string, string>
+     */
+    private function parseQuotedPairDispositionParameters(string $value): array
+    {
+        $quotedString = '"((?:[^"\\\\\r\n\0]|\\\\[^\r\n\0])*)"';
+
+        $this->assertMatchesRegularExpression('/\Aform-data(?:; [a-z]+=' . $quotedString . ')*\z/', $value);
+        preg_match_all('/; ([a-z]+)=' . $quotedString . '/', $value, $matches, PREG_SET_ORDER);
+
+        return $this->collectParameters(array_map(
+            fn(array $match): array => [$match[0], $match[1], preg_replace('/\\\\(.)/s', '$1', $match[2])],
+            $matches,
+        ));
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function collectParameters(array $matches): array
+    {
+        $parameters = [];
+        foreach ($matches as [, $name, $paramValue]) {
+            $this->assertArrayNotHasKey($name, $parameters);
+            $parameters[$name] = $paramValue;
+        }
+
+        return $parameters;
+    }
+
+    private function encodeParameter(string $value): string
+    {
+        return str_replace(["\r", "\n", '"', '\\'], ['%0D', '%0A', '%22', '%5C'], $value);
+    }
+
+    private function decodeParameter(string $value): string
+    {
+        return str_replace(['%0D', '%0A', '%22', '%5C'], ["\r", "\n", '"', '\\'], $value);
+    }
+
     public static function provideBoundaries(): array
     {
         return [[null], [''], ['custom-boundary']];
