@@ -105,12 +105,37 @@ class CurlAdapterTest extends TestCase
         $this->assertEquals($credentials, array_intersect_key($preparedOptions, $credentials));
     }
 
-    private function createAdapter(bool $httpsProxySupported = true): CurlAdapter
+    public function testWithoutOriginCredentials_keepsContextProxy()
     {
-        return new class($httpsProxySupported) extends CurlAdapter {
-            public function __construct(private readonly bool $httpsProxySupported)
+        $adapter = $this->createAdapter([CURLOPT_USERPWD => 'user:password']);
+        $context = new HttpContext(
+            proxy: 'https://proxy-user:proxy-password@proxy.local:8443',
+            ssl_local_cert: '/client.pem',
+            proxy_ssl_cafile: '/proxy/ca.pem',
+        );
+
+        $options = $adapter->withoutOriginCredentials()->prepareCurlOptions(
+            new Request(method: Request::HTTP_METHOD_GET, uri: 'https://getberlioz.com/'),
+            context: $context->withoutOriginCredentials(),
+        );
+
+        $this->assertArrayNotHasKey(CURLOPT_USERPWD, $options);
+        $this->assertArrayNotHasKey(CURLOPT_SSLCERT, $options);
+        $this->assertSame('https://proxy.local:8443', $options[CURLOPT_PROXY]);
+        $this->assertSame(CURLPROXY_HTTPS, $options[CURLOPT_PROXYTYPE]);
+        $this->assertTrue($options[CURLOPT_HTTPPROXYTUNNEL]);
+        $this->assertSame('proxy-user', $options[CURLOPT_PROXYUSERNAME]);
+        $this->assertSame('proxy-password', $options[CURLOPT_PROXYPASSWORD]);
+        $this->assertSame('/proxy/ca.pem', $options[CURLOPT_PROXY_CAINFO]);
+        $this->assertTrue($options[CURLOPT_PROXY_SSL_VERIFYPEER]);
+    }
+
+    private function createAdapter(array $options = [], bool $httpsProxySupported = true): CurlAdapter
+    {
+        return new class($options, $httpsProxySupported) extends CurlAdapter {
+            public function __construct(array $options, private readonly bool $httpsProxySupported)
             {
-                parent::__construct();
+                parent::__construct($options);
             }
 
             public function prepareCurlOptions(

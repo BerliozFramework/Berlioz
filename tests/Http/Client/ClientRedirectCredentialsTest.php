@@ -42,6 +42,8 @@ class ClientRedirectCredentialsTest extends TestCase
         'ssl_local_pk' => '/client.key',
         'ssl_local_cert_passphrase' => 'cert-secret',
         'ssl_local_passphrase' => 'key-secret',
+        'proxy_ssl_verify_peer' => false,
+        'proxy_ssl_cafile' => '/proxy-ca.pem',
     ];
 
     /**
@@ -143,6 +145,9 @@ class ClientRedirectCredentialsTest extends TestCase
         self::assertSame(self::CONTEXT['proxy'], $hops[1][0]->proxy);
         self::assertFalse($hops[1][0]->ssl_verify_peer);
         self::assertSame('/ca.pem', $hops[1][0]->ssl_cafile);
+        self::assertFalse($hops[1][0]->proxy_ssl_verify_peer);
+        self::assertTrue($hops[1][0]->proxy_ssl_verify_host);
+        self::assertSame('/proxy-ca.pem', $hops[1][0]->proxy_ssl_cafile);
 
         // Client configuration and adapter are untouched
         self::assertSame('/client.pem', $client->getOptions()->context->ssl_local_cert);
