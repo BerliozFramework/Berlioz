@@ -106,7 +106,13 @@ while (true) {
             continue;
         }
 
-        $log('tunneled', $readHead($conn));
+        // With TLS 1.3, the server side of the handshake can succeed before the client rejects the certificate
+        if ('' === ($head = $readHead($conn))) {
+            $log('tunnel-closed', '');
+            continue;
+        }
+
+        $log('tunneled', $head);
         $respond($conn, 'tunneled');
     } finally {
         @fclose($conn);
