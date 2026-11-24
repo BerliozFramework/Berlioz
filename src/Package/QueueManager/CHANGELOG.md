@@ -7,13 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.4.0] - 2026-11-24
+
 ### Added
 
 - `max_attempts` option for AWS SQS queues
 - Deferred queues consumed on application terminate (after the HTTP response is sent, or at the end of a CLI command), configured with `berlioz.queues.deferred.queues` and `berlioz.queues.deferred.time_limit`; memory queues are purged afterwards
 - Debug activities for deferred queues and jobs (`Terminate` group)
 - Queue factories for Redis, AMQP (DSN and/or explicit connection parameters), RabbitMQ and Null queues, registered by default; an `amqps://` DSN requires verified TLS (CA certificate and verification enabled) and fails before connecting otherwise; the RabbitMQ `management` options (`base_url`, `username`, `password`, `context`) require explicit credentials (broker credentials are never reused) and are validated before connecting
-
 
 ## [3.3.2] - 2026-10-25
 

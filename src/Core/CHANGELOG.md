@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.4.0] - 2026-11-24
+
 ### Fixed
 
 - `FileCacheDriver::set()` now writes atomically (temporary file + `rename()`), preventing concurrent readers from
@@ -42,7 +44,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Require `berlioz/helpers` `^1.15`
 - `SnapshotLoader::save()` removes the pending marker of the snapshot
 - `SnapshotCleaner` also removes expired pending markers (`clean()`), all markers (`clear()`) and the marker of a deleted snapshot (`delete()`)
-
 
 ## [3.3.2] - 2026-10-25
 
