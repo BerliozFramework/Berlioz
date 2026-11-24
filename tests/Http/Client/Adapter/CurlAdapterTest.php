@@ -240,6 +240,46 @@ class CurlAdapterTest extends TestCase
     }
 
     #[DataProvider('provideContexts')]
+    public function testOptions_environmentSocksProxy(?HttpContext $context)
+    {
+        $this->setProxyEnv(['all_proxy' => 'socks5h://user:pass@socks.local:1080', 'no_proxy' => 'example.com']);
+
+        $options = $this->createAdapter()->prepareCurlOptions(
+            new Request(method: Request::HTTP_METHOD_GET, uri: 'https://getberlioz.com/'),
+            context: $context,
+        );
+
+        // Handed over to libcurl, which supports SOCKS proxies
+        $this->assertSame('socks5h://user:pass@socks.local:1080', $options[CURLOPT_PROXY]);
+        $this->assertFalse($options[CURLOPT_HTTPPROXYTUNNEL]);
+        $this->assertSame('', $options[CURLOPT_NOPROXY]);
+        $this->assertArrayNotHasKey(CURLOPT_PROXYTYPE, $options);
+
+        // Excluded host
+        $options = $this->createAdapter()->prepareCurlOptions(
+            new Request(method: Request::HTTP_METHOD_GET, uri: 'https://www.example.com/'),
+            context: $context,
+        );
+        $this->assertSame('', $options[CURLOPT_PROXY]);
+    }
+
+    public function testOptions_environmentSocksProxyIgnoredWhenConfigured()
+    {
+        $this->setProxyEnv(['all_proxy' => 'socks5://socks.local:1080']);
+
+        $cases = [[false, ''], ['http://configured.local:8080', 'http://configured.local:8080']];
+
+        foreach ($cases as [$proxy, $expected]) {
+            $options = $this->createAdapter()->prepareCurlOptions(
+                new Request(method: Request::HTTP_METHOD_GET, uri: 'https://getberlioz.com/'),
+                context: new HttpContext(proxy: $proxy),
+            );
+
+            $this->assertSame($expected, $options[CURLOPT_PROXY]);
+        }
+    }
+
+    #[DataProvider('provideContexts')]
     public function testOptions_environmentProxy(?HttpContext $context)
     {
         $this->setProxyEnv(['https_proxy' => 'http://user:pass@env.local:3128', 'no_proxy' => 'example.com']);

@@ -299,9 +299,17 @@ class CurlAdapter extends AbstractAdapter implements OriginCredentialsAwareInter
         // A raw cURL proxy option takes precedence over the environment, not over a configured or disabled proxy.
         $proxy = null;
         if (null !== $context?->proxy || !array_key_exists(CURLOPT_PROXY, $options)) {
-            $proxy = Proxy::resolve($context, $request);
             $options[CURLOPT_PROXY] = '';
             $options[CURLOPT_HTTPPROXYTUNNEL] = false;
+
+            // SOCKS proxy of environment, not supported by Proxy: handed over to libcurl ("no_proxy" already applied)
+            $socks = null === $context?->proxy ? Proxy::socksFromEnvironment($request) : null;
+            if (null !== $socks) {
+                $options[CURLOPT_PROXY] = $socks;
+                $options[CURLOPT_NOPROXY] = '';
+            } else {
+                $proxy = Proxy::resolve($context, $request);
+            }
         }
         if (null !== $proxy) {
             if ($proxy->isSecure() && !$this->supportsHttpsProxy()) {

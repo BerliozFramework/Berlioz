@@ -138,6 +138,29 @@ class ProxyTest extends TestCase
         Proxy::fromEnvironment(new Request('GET', 'https://getberlioz.com/'));
     }
 
+    public static function provideSocksEnvironments(): array
+    {
+        return [
+            'socks5h' => [
+                ['all_proxy' => 'socks5h://user:pass@socks.local:1080'],
+                'socks5h://user:pass@socks.local:1080',
+            ],
+            'uppercase scheme' => [['https_proxy' => 'SOCKS5://socks.local'], 'SOCKS5://socks.local'],
+            'socks4a' => [['https_proxy' => 'socks4a://socks.local:1080'], 'socks4a://socks.local:1080'],
+            'http proxy' => [['https_proxy' => 'http://env.local:3128'], null],
+            'excluded host' => [['all_proxy' => 'socks5://socks.local:1080', 'no_proxy' => 'getberlioz.com'], null],
+            'no proxy' => [[], null],
+        ];
+    }
+
+    #[DataProvider('provideSocksEnvironments')]
+    public function testSocksFromEnvironment(array $env, ?string $expected)
+    {
+        $this->setProxyEnv($env);
+
+        $this->assertSame($expected, Proxy::socksFromEnvironment(new Request('GET', 'https://getberlioz.com/')));
+    }
+
     public static function provideNoProxy(): array
     {
         return [

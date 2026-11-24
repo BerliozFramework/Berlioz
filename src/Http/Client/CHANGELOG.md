@@ -29,8 +29,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The cURL adapter resolves the proxy itself: libcurl no longer reads the proxy environment variables, except when a
   raw `CURLOPT_PROXY` option is given with the default `null` proxy; a configured proxy or `false` takes precedence
   over a raw `CURLOPT_PROXY` option
-- A proxy of the environment variables with an unsupported scheme (e.g. `socks5://`) is rejected with a
-  `RequestException` naming the variable, the cURL adapter previously used it
+- A proxy of the environment variables with an unsupported scheme (e.g. `ftp://`) is rejected with a
+  `RequestException` naming the variable; SOCKS proxies (`socks4`, `socks4a`, `socks5`, `socks5h`) are still handed
+  over to libcurl by the cURL adapter, and rejected by the stream adapter
 - A proxy of the environment variables without port uses port 80 (`http`) or 443 (`https`), libcurl used 1080
 - The cURL adapter only opens a `CONNECT` tunnel for HTTPS origins; HTTP requests are sent to the proxy in
   absolute-form, as the stream adapter does

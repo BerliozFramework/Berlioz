@@ -29,6 +29,7 @@ final readonly class Proxy
 {
     public const SCHEME_HTTP = 'http';
     public const SCHEME_HTTPS = 'https';
+    private const SOCKS_SCHEMES = ['socks4', 'socks4a', 'socks5', 'socks5h'];
 
     public function __construct(
         public string $scheme,
@@ -111,6 +112,51 @@ final readonly class Proxy
      */
     public static function fromEnvironment(RequestInterface $request): ?self
     {
+        if (null === ($env = self::getEnvironmentProxy($request))) {
+            return null;
+        }
+
+        try {
+            return self::fromString($env[1], $request);
+        } catch (RequestException $exception) {
+            throw new RequestException(
+                sprintf('Environment variable "%s": %s', $env[0], $exception->getMessage()),
+                $request,
+                previous: $exception,
+            );
+        }
+    }
+
+    /**
+     * Get the SOCKS proxy URL of environment variables.
+     *
+     * SOCKS proxies are not supported by this class, but the cURL adapter hands them over to libcurl,
+     * which used them before the proxy was resolved by the adapters.
+     *
+     * @param RequestInterface $request
+     *
+     * @return string|null Null if the proxy of environment is not a SOCKS proxy, or if there is none
+     */
+    public static function socksFromEnvironment(RequestInterface $request): ?string
+    {
+        if (null === ($env = self::getEnvironmentProxy($request))) {
+            return null;
+        }
+
+        $scheme = strtolower(strstr($env[1], '://', true) ?: '');
+
+        return in_array($scheme, self::SOCKS_SCHEMES, true) ? $env[1] : null;
+    }
+
+    /**
+     * Get the proxy environment variable of request, unless the host is excluded by "no_proxy".
+     *
+     * @param RequestInterface $request
+     *
+     * @return array{string, string}|null Name and value of variable
+     */
+    private static function getEnvironmentProxy(RequestInterface $request): ?array
+    {
         $uri = $request->getUri();
         $secure = 'https' === strtolower($uri->getScheme());
 
@@ -129,15 +175,7 @@ final readonly class Proxy
             return null;
         }
 
-        try {
-            return self::fromString($env[1], $request);
-        } catch (RequestException $exception) {
-            throw new RequestException(
-                sprintf('Environment variable "%s": %s', $env[0], $exception->getMessage()),
-                $request,
-                previous: $exception,
-            );
-        }
+        return $env;
     }
 
     /**
