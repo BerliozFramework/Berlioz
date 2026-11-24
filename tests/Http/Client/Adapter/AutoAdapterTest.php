@@ -105,4 +105,29 @@ class AutoAdapterTest extends TestCase
             $unserialized->resolveAdapter(),
         );
     }
+
+    public function testWithoutOriginCredentialsDelegates()
+    {
+        $resolved = new FakeOriginCredentialsAdapter(fn() => new Response());
+        $adapter = new AutoAdapter(curl: $resolved, stream: $resolved);
+        $without = $adapter->withoutOriginCredentials();
+
+        $this->assertNotSame($adapter, $without);
+        $this->assertNotSame($resolved, $without->resolveAdapter());
+        $this->assertFalse($without->resolveAdapter()->originCredentials);
+
+        // Original adapter is untouched
+        $this->assertSame($resolved, $adapter->resolveAdapter());
+        $this->assertTrue($resolved->originCredentials);
+    }
+
+    public function testWithoutOriginCredentials_unsupportedResolvedAdapter()
+    {
+        $resolved = new FakeAdapter(fn() => new Response());
+        $adapter = new AutoAdapter(curl: $resolved, stream: $resolved);
+        $without = $adapter->withoutOriginCredentials();
+
+        $this->assertNotSame($adapter, $without);
+        $this->assertSame($resolved, $without->resolveAdapter());
+    }
 }

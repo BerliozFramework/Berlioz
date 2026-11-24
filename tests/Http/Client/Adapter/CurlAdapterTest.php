@@ -55,4 +55,52 @@ class CurlAdapterTest extends TestCase
             array_intersect_key($preparedOptions, $expected),
         );
     }
+
+    public function testWithoutOriginCredentials()
+    {
+        $credentials = [
+            CURLOPT_HTTPAUTH => CURLAUTH_BASIC,
+            CURLOPT_USERPWD => 'user:password',
+            CURLOPT_USERNAME => 'user',
+            CURLOPT_PASSWORD => 'password',
+            CURLOPT_XOAUTH2_BEARER => 'token',
+            CURLOPT_SSLCERT => '/client.pem',
+            CURLOPT_SSLKEY => '/client.key',
+            CURLOPT_KEYPASSWD => 'key-secret',
+            CURLOPT_NETRC => 1,
+            CURLOPT_COOKIE => 'session=secret',
+            CURLOPT_COOKIEFILE => '/cookies.txt',
+            CURLOPT_COOKIELIST => 'Set-Cookie: session=secret',
+        ];
+        $transport = [
+            CURLOPT_TIMEOUT => 20,
+            CURLOPT_PROXY => 'proxy:3128',
+            CURLOPT_PROXYUSERPWD => 'proxy-user:proxy-password',
+            CURLOPT_SSL_VERIFYPEER => false,
+            CURLOPT_SSL_VERIFYHOST => 0,
+        ];
+        $adapter = new class($credentials + $transport) extends CurlAdapter {
+            public function prepareCurlOptions(
+                RequestInterface $request,
+                array $options = [],
+                ?HttpContext $context = null,
+            ): array {
+                return parent::prepareCurlOptions($request, $options, $context);
+            }
+        };
+        $request = new ServerRequest(method: Request::HTTP_METHOD_GET, uri: 'https://getberlioz.com/');
+        $without = $adapter->withoutOriginCredentials();
+
+        $this->assertNotSame($adapter, $without);
+        $this->assertInstanceOf($adapter::class, $without);
+
+        // Origin credentials are removed, transport options (including proxy credentials) are kept
+        $preparedOptions = $without->prepareCurlOptions($request);
+        $this->assertSame([CURLOPT_HTTPAUTH => CURLAUTH_BASIC], array_intersect_key($preparedOptions, $credentials));
+        $this->assertEquals($transport, array_intersect_key($preparedOptions, $transport));
+
+        // Original adapter is untouched
+        $preparedOptions = $adapter->prepareCurlOptions($request);
+        $this->assertEquals($credentials, array_intersect_key($preparedOptions, $credentials));
+    }
 }
