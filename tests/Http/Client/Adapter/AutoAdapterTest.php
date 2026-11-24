@@ -15,6 +15,7 @@ namespace Berlioz\Http\Client\Tests\Adapter;
 use Berlioz\Http\Client\Adapter\AutoAdapter;
 use Berlioz\Http\Client\Adapter\CurlAdapter;
 use Berlioz\Http\Client\Adapter\StreamAdapter;
+use Berlioz\Http\Client\HttpContext;
 use Berlioz\Http\Message\Response;
 use Berlioz\Http\Message\ServerRequest;
 use PHPUnit\Framework\TestCase;
@@ -84,6 +85,23 @@ class AutoAdapterTest extends TestCase
 
         $this->assertTrue($called);
         $this->assertSame($expected, $response);
+    }
+
+    public function testSendRequestForwardsContext()
+    {
+        $context = new HttpContext(proxy: 'https://proxy.local:8443');
+
+        $received = null;
+        $resolved = new FakeAdapter(function ($req, $ctx) use (&$received) {
+            $received = $ctx;
+
+            return new Response();
+        });
+
+        $adapter = new AutoAdapter(curl: $resolved, stream: $resolved);
+        $adapter->sendRequest(new ServerRequest(method: 'GET', uri: 'https://getberlioz.com/'), $context);
+
+        $this->assertSame($context, $received);
     }
 
     public function testGetTimingsDelegates()

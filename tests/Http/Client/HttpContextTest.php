@@ -37,6 +37,16 @@ class HttpContextTest extends TestCase
         $this->assertSame($expected2, $options2->ssl_ciphers);
     }
 
+    public function testProxySslDefaults()
+    {
+        $context = new HttpContext(ssl_verify_peer: false, ssl_verify_host: false);
+
+        $this->assertTrue($context->proxy_ssl_verify_peer);
+        $this->assertTrue($context->proxy_ssl_verify_host);
+        $this->assertNull($context->proxy_ssl_cafile);
+        $this->assertNull($context->proxy_ssl_capath);
+    }
+
     public function testMake_null()
     {
         $options = HttpContext::make(['proxy' => 'https://getberlioz.com:8080']);
@@ -60,6 +70,10 @@ class HttpContextTest extends TestCase
             ssl_local_cert_passphrase: 'cert-secret',
             ssl_local_passphrase: 'key-secret',
             credentials_origins: ['https://*.example.com'],
+            proxy_ssl_verify_peer: false,
+            proxy_ssl_verify_host: false,
+            proxy_ssl_cafile: '/proxy-ca.pem',
+            proxy_ssl_capath: '/proxy-ca',
         );
         $without = $context->withoutOriginCredentials();
 
@@ -73,6 +87,10 @@ class HttpContextTest extends TestCase
         $this->assertFalse($without->ssl_verify_host);
         $this->assertSame('HIGH', $without->ssl_ciphers);
         $this->assertSame('/ca.pem', $without->ssl_cafile);
+        $this->assertFalse($without->proxy_ssl_verify_peer);
+        $this->assertFalse($without->proxy_ssl_verify_host);
+        $this->assertSame('/proxy-ca.pem', $without->proxy_ssl_cafile);
+        $this->assertSame('/proxy-ca', $without->proxy_ssl_capath);
         $this->assertSame('/ca', $without->ssl_capath);
 
         // Original is untouched
