@@ -15,13 +15,17 @@ namespace Berlioz\Http\Client\Tests\Adapter;
 use Berlioz\Http\Client\Adapter\CurlAdapter;
 use Berlioz\Http\Client\Exception\RequestException;
 use Berlioz\Http\Client\HttpContext;
+use Berlioz\Http\Client\Tests\ProxyEnvironmentTrait;
 use Berlioz\Http\Message\Request;
 use Berlioz\Http\Message\ServerRequest;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\RequestInterface;
 
 class CurlAdapterTest extends TestCase
 {
+    use ProxyEnvironmentTrait;
+
     public function testOptions()
     {
         $adapter = new class([
@@ -222,8 +226,170 @@ class CurlAdapterTest extends TestCase
         );
 
         $this->assertFalse($options[CURLOPT_HTTPPROXYTUNNEL]);
-        $this->assertArrayNotHasKey(CURLOPT_PROXY, $options);
+        // Explicitly empty: libcurl must not read the environment by itself
+        $this->assertSame('', $options[CURLOPT_PROXY]);
         $this->assertArrayNotHasKey(CURLOPT_PROXYTYPE, $options);
+    }
+
+    public static function provideContexts(): array
+    {
+        return [
+            'default context' => [new HttpContext()],
+            'no context' => [null],
+        ];
+    }
+
+    #[DataProvider('provideContexts')]
+    public function testOptions_environmentSocksProxy(?HttpContext $context)
+    {
+        $this->setProxyEnv(['all_proxy' => 'socks5h://user:pass@socks.local:1080', 'no_proxy' => 'example.com']);
+
+        $options = $this->createAdapter()->prepareCurlOptions(
+            new Request(method: Request::HTTP_METHOD_GET, uri: 'https://getberlioz.com/'),
+            context: $context,
+        );
+
+        // Handed over to libcurl, which supports SOCKS proxies
+        $this->assertSame('socks5h://user:pass@socks.local:1080', $options[CURLOPT_PROXY]);
+        $this->assertFalse($options[CURLOPT_HTTPPROXYTUNNEL]);
+        $this->assertSame('', $options[CURLOPT_NOPROXY]);
+        $this->assertArrayNotHasKey(CURLOPT_PROXYTYPE, $options);
+
+        // Excluded host
+        $options = $this->createAdapter()->prepareCurlOptions(
+            new Request(method: Request::HTTP_METHOD_GET, uri: 'https://www.example.com/'),
+            context: $context,
+        );
+        $this->assertSame('', $options[CURLOPT_PROXY]);
+    }
+
+    public function testOptions_environmentSocksProxyIgnoredWhenConfigured()
+    {
+        $this->setProxyEnv(['all_proxy' => 'socks5://socks.local:1080']);
+
+        $cases = [[false, ''], ['http://configured.local:8080', 'http://configured.local:8080']];
+
+        foreach ($cases as [$proxy, $expected]) {
+            $options = $this->createAdapter()->prepareCurlOptions(
+                new Request(method: Request::HTTP_METHOD_GET, uri: 'https://getberlioz.com/'),
+                context: new HttpContext(proxy: $proxy),
+            );
+
+            $this->assertSame($expected, $options[CURLOPT_PROXY]);
+        }
+    }
+
+    #[DataProvider('provideContexts')]
+    public function testOptions_environmentProxy(?HttpContext $context)
+    {
+        $this->setProxyEnv(['https_proxy' => 'http://user:pass@env.local:3128', 'no_proxy' => 'example.com']);
+
+        $options = $this->createAdapter()->prepareCurlOptions(
+            new Request(method: Request::HTTP_METHOD_GET, uri: 'https://getberlioz.com/'),
+            context: $context,
+        );
+
+        $this->assertSame('http://env.local:3128', $options[CURLOPT_PROXY]);
+        $this->assertSame(CURLPROXY_HTTP, $options[CURLOPT_PROXYTYPE]);
+        $this->assertTrue($options[CURLOPT_HTTPPROXYTUNNEL]);
+        $this->assertSame('user', $options[CURLOPT_PROXYUSERNAME]);
+        $this->assertSame('pass', $options[CURLOPT_PROXYPASSWORD]);
+        // "no_proxy" applied by the adapter, not by libcurl
+        $this->assertSame('', $options[CURLOPT_NOPROXY]);
+    }
+
+    #[DataProvider('provideContexts')]
+    public function testOptions_environmentProxyExcluded(?HttpContext $context)
+    {
+        $this->setProxyEnv(['https_proxy' => 'http://env.local:3128', 'no_proxy' => '.getberlioz.com']);
+
+        $options = $this->createAdapter()->prepareCurlOptions(
+            new Request(method: Request::HTTP_METHOD_GET, uri: 'https://www.getberlioz.com/'),
+            context: $context,
+        );
+
+        $this->assertSame('', $options[CURLOPT_PROXY]);
+        $this->assertArrayNotHasKey(CURLOPT_PROXYTYPE, $options);
+    }
+
+    public function testOptions_proxyDisabled()
+    {
+        $this->setProxyEnv(['https_proxy' => 'http://env.local:3128', 'all_proxy' => 'http://env.local:3128']);
+
+        $options = $this->createAdapter()->prepareCurlOptions(
+            new Request(method: Request::HTTP_METHOD_GET, uri: 'https://getberlioz.com/'),
+            context: new HttpContext(proxy: false),
+        );
+
+        $this->assertSame('', $options[CURLOPT_PROXY]);
+        $this->assertFalse($options[CURLOPT_HTTPPROXYTUNNEL]);
+        $this->assertArrayNotHasKey(CURLOPT_PROXYTYPE, $options);
+    }
+
+    public function testOptions_configuredProxyIgnoresNoProxy()
+    {
+        $this->setProxyEnv(['https_proxy' => 'http://env.local:3128', 'no_proxy' => 'getberlioz.com']);
+
+        $options = $this->createAdapter()->prepareCurlOptions(
+            new Request(method: Request::HTTP_METHOD_GET, uri: 'https://getberlioz.com/'),
+            context: new HttpContext(proxy: 'http://configured.local:8080'),
+        );
+
+        $this->assertSame('http://configured.local:8080', $options[CURLOPT_PROXY]);
+        $this->assertSame('', $options[CURLOPT_NOPROXY]);
+    }
+
+    public function testOptions_rawProxyOptionBeforeEnvironment()
+    {
+        $this->setProxyEnv(['https_proxy' => 'http://env.local:3128']);
+
+        $options = $this->createAdapter()->prepareCurlOptions(
+            new Request(method: Request::HTTP_METHOD_GET, uri: 'https://getberlioz.com/'),
+            [CURLOPT_PROXY => 'http://raw.local:3128'],
+            new HttpContext(),
+        );
+
+        $this->assertSame('http://raw.local:3128', $options[CURLOPT_PROXY]);
+
+        $options = $this->createAdapter()->prepareCurlOptions(
+            new Request(method: Request::HTTP_METHOD_GET, uri: 'https://getberlioz.com/'),
+            [CURLOPT_PROXY => 'http://raw.local:3128'],
+            new HttpContext(proxy: 'http://configured.local:8080'),
+        );
+
+        $this->assertSame('http://configured.local:8080', $options[CURLOPT_PROXY]);
+
+        $options = $this->createAdapter([CURLOPT_PROXY => 'http://raw.local:3128'])->prepareCurlOptions(
+            new Request(method: Request::HTTP_METHOD_GET, uri: 'https://getberlioz.com/'),
+            context: new HttpContext(proxy: false),
+        );
+
+        $this->assertSame('', $options[CURLOPT_PROXY]);
+        $this->assertFalse($options[CURLOPT_HTTPPROXYTUNNEL]);
+    }
+
+    public static function provideProxyTunnels(): array
+    {
+        return [
+            'https origin' => ['https://getberlioz.com/', true],
+            'http origin' => ['http://getberlioz.com/', false],
+        ];
+    }
+
+    #[DataProvider('provideProxyTunnels')]
+    public function testOptions_proxyTunnelForHttpsOriginOnly(string $uri, bool $expected)
+    {
+        $this->setProxyEnv(['http_proxy' => 'http://env.local:3128', 'https_proxy' => 'http://env.local:3128']);
+
+        foreach ([new HttpContext(proxy: 'http://configured.local:8080'), new HttpContext(), null] as $context) {
+            $options = $this->createAdapter()->prepareCurlOptions(
+                new Request(method: Request::HTTP_METHOD_GET, uri: $uri),
+                context: $context,
+            );
+
+            $this->assertNotSame('', $options[CURLOPT_PROXY]);
+            $this->assertSame($expected, $options[CURLOPT_HTTPPROXYTUNNEL]);
+        }
     }
 
     public function testOptions_httpsProxyUnsupported()

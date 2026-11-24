@@ -18,6 +18,8 @@ use Symfony\Component\Process\Process;
 
 trait PhpServerTrait
 {
+    use ProxyEnvironmentTrait;
+
     /** @var Process */
     protected static Process $process;
 
