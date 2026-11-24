@@ -333,6 +333,13 @@ class Smtp extends AbstractTransport implements TransportInterface, LoggerAwareI
             throw new TransportException(sprintf('"STARTTLS" command failed: %s', $response));
         }
 
+        // Data received before TLS negotiation must not be trusted (RFC 3207)
+        if (stream_get_meta_data($this->resource)['unread_bytes'] > 0) {
+            $this->log(LogLevel::ERROR, 'Unexpected data received after STARTTLS reply');
+
+            throw new TransportException('Unexpected data received after "STARTTLS" reply');
+        }
+
         $result = $this->handleErrors(fn() => stream_socket_enable_crypto($this->resource, true), $error);
 
         if (true !== $result) {

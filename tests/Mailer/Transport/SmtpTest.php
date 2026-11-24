@@ -250,6 +250,29 @@ class SmtpTest extends TestCase
         $this->assertSame(['plain:EHLO', 'plain:STARTTLS'], $this->stopServer());
     }
 
+    public function testSend_starttlsInjectedReplies(): void
+    {
+        $port = $this->startServer('starttls-injected');
+
+        $smtp = new Smtp(
+            '127.0.0.1',
+            port: $port,
+            encryption: SmtpEncryption::STARTTLS,
+            context: ['ssl' => ['cafile' => self::$directory . '/ca.pem']],
+            timeout: 5,
+        );
+
+        try {
+            $smtp->send($this->createMail());
+            $this->fail('Exception expected');
+        } catch (TransportException $exception) {
+            $this->assertSame('Unexpected data received after "STARTTLS" reply', $exception->getMessage());
+        }
+
+        unset($smtp);
+        $this->assertSame(['plain:EHLO', 'plain:STARTTLS', 'tls:FAILED'], $this->stopServer());
+    }
+
     public function testSend_starttlsUntrustedCertificate(): void
     {
         $port = $this->startServer('starttls');

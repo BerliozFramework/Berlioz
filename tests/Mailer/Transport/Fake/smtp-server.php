@@ -21,6 +21,7 @@ declare(strict_types=1);
  * - plain: no STARTTLS capability
  * - starttls: STARTTLS advertised and accepted
  * - starttls-refused: STARTTLS advertised but refused (454)
+ * - starttls-injected: STARTTLS advertised, forged replies sent with the 220 reply, end of data rejected (550)
  * - implicit: implicit TLS
  *
  * Writes the listening port on STDOUT, and each received command prefixed by
@@ -70,7 +71,7 @@ while (false !== ($line = fgets($conn))) {
     if ($data) {
         if ('.' === $line) {
             $data = false;
-            $reply('250 OK');
+            $reply('starttls-injected' === $scenario ? '550 Rejected' : '250 OK');
         }
         continue;
     }
@@ -80,7 +81,7 @@ while (false !== ($line = fgets($conn))) {
 
     switch ($command) {
         case 'EHLO':
-            $advertise = !$tls && in_array($scenario, ['starttls', 'starttls-refused'], true);
+            $advertise = !$tls && in_array($scenario, ['starttls', 'starttls-refused', 'starttls-injected'], true);
             $reply(...array_filter(['250-fake', $advertise ? '250-STARTTLS' : null, '250 AUTH PLAIN']));
             break;
         case 'STARTTLS':
@@ -88,7 +89,20 @@ while (false !== ($line = fgets($conn))) {
                 $reply('454 TLS not available');
                 break;
             }
-            $reply('220 Ready to start TLS');
+            if ('starttls-injected' === $scenario) {
+                $reply(
+                    '220 Ready to start TLS',
+                    '250-injected',
+                    '250 OK',
+                    '250 OK',
+                    '250 OK',
+                    '354 Go ahead',
+                    '250 Queued (forged)',
+                    '221 Bye',
+                );
+            } else {
+                $reply('220 Ready to start TLS');
+            }
             if (true !== @stream_socket_enable_crypto($conn, true)) {
                 fwrite($log, 'tls:FAILED' . PHP_EOL);
                 exit(0);
