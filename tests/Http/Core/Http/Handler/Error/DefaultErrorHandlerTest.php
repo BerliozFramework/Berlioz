@@ -22,6 +22,7 @@ use Berlioz\Http\Core\TestProject\FakeDefaultDirectories;
 use Berlioz\Http\Message\Response;
 use Berlioz\Http\Message\ServerRequest;
 use Exception;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 class DefaultErrorHandlerTest extends TestCase
@@ -78,5 +79,43 @@ class DefaultErrorHandlerTest extends TestCase
         $this->assertStringContainsString('404 error', (string)$response->getBody());
         $this->assertStringContainsString('Oops, the page you\'re looking for doesn\'t exist',
             (string)$response->getBody());
+    }
+
+    public static function provideUsableReasonPhrases(): iterable
+    {
+        yield 'text' => ['User not found'];
+        yield 'tab' => ["User\tnot found"];
+    }
+
+    #[DataProvider('provideUsableReasonPhrases')]
+    public function testHandle_reasonPhrase(string $message): void
+    {
+        $handler = $this->getHandler();
+        $response = $handler->handle(new ServerRequest('GET', '/'), new NotFoundHttpException($message));
+
+        $this->assertSame(Response::HTTP_STATUS_NOT_FOUND, $response->getStatusCode());
+        $this->assertSame($message, $response->getReasonPhrase());
+    }
+
+    public static function provideUnusableReasonPhrases(): iterable
+    {
+        yield 'line feed' => ["User 42\nnot found"];
+        yield 'carriage return' => ["User 42\rnot found"];
+        yield 'carriage return and line feed' => ["Not\r\nFound"];
+        yield 'NUL' => ["Not\0Found"];
+        yield 'escape' => ["\x1B[31mUser not found\x1B[0m"];
+        yield 'vertical tab' => ["User\x0Bnot found"];
+        yield 'DEL' => ["User\x7Fnot found"];
+    }
+
+    #[DataProvider('provideUnusableReasonPhrases')]
+    public function testHandle_unusableReasonPhrase(string $message): void
+    {
+        $handler = $this->getHandler();
+        $response = $handler->handle(new ServerRequest('GET', '/'), new NotFoundHttpException($message));
+
+        $this->assertSame(Response::HTTP_STATUS_NOT_FOUND, $response->getStatusCode());
+        $this->assertSame('Not Found', $response->getReasonPhrase());
+        $this->assertStringContainsString('404 error', (string)$response->getBody());
     }
 }
